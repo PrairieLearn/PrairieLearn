@@ -120,6 +120,7 @@ async function prepareConversationProxyRequest(
       courseId: course.id,
       courseTitle: course.title ?? '',
       courseShortName: course.short_name,
+      timezone: course.display_timezone,
     }),
   );
   return authn_user.id;

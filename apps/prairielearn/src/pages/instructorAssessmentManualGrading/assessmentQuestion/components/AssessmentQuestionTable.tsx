@@ -389,6 +389,8 @@ export function AssessmentQuestionTable({
     },
   });
 
+  const { handleDismissItemStatuses } = serverJobProgress;
+
   // Show the review alert when a job completes that we haven't already
   // recorded. The seen set is genuinely history-dependent (it must outlive
   // the job leaving `jobsProgress`), so this is a legitimate accumulator
@@ -425,10 +427,10 @@ export function AssessmentQuestionTable({
         courseInstanceId: courseInstance.id,
         studentLabels,
         scrollRef,
-        onEditPointsSuccess: () => {
-          void queryClientInstance.invalidateQueries({
-            queryKey: trpc.manualGrading.instances.queryKey(),
-          });
+        onEditPointsSuccess: (instanceQuestionId) => {
+          void queryClientInstance
+            .invalidateQueries({ queryKey: trpc.manualGrading.instances.queryKey() })
+            .then(() => handleDismissItemStatuses([instanceQuestionId]));
         },
         onEditPointsConflict: (conflictDetailsUrl: string) => {
           onSetConflictModalState({ type: 'conflict', conflictDetailsUrl });
@@ -438,6 +440,7 @@ export function AssessmentQuestionTable({
       aiGradingMode,
       instanceQuestionGroups,
       serverJobProgress.displayedStatuses,
+      handleDismissItemStatuses,
       assessment,
       assessmentQuestion,
       hasCourseInstancePermissionEdit,
@@ -769,129 +772,16 @@ export function AssessmentQuestionTable({
           ),
         }}
         headerButtons={
-          hasCourseInstancePermissionEdit ? (
-            aiGradingMode ? (
-              <>
-                <Dropdown>
-                  <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
-                    <i className="bi bi-stars" aria-hidden="true" />
-                    <span>AI grading</span>
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu align="end">
-                    <AiGradingOption
-                      text="Grade all human-graded"
-                      numToGrade={aiGradingCounts.humanGraded}
-                      onSelect={() =>
-                        modelSelectionModalState.showWithData({
-                          type: 'human_graded',
-                          numToGrade: aiGradingCounts.humanGraded,
-                        })
-                      }
-                    />
-                    <AiGradingOption
-                      text="Grade selected"
-                      numToGrade={aiGradingCounts.selected}
-                      hint={
-                        aiGradingCounts.selected === 0 && aiGradingCounts.all > 0
-                          ? 'Checkboxes on the left select submissions. Shift-click to select a range.'
-                          : undefined
-                      }
-                      onSelect={() =>
-                        modelSelectionModalState.showWithData({
-                          type: 'selected',
-                          ids: selectedIds,
-                          numToGrade: aiGradingCounts.selected,
-                        })
-                      }
-                    />
-                    <AiGradingOption
-                      text="Grade all"
-                      numToGrade={aiGradingCounts.all}
-                      hint={
-                        aiGradingCounts.all === 0
-                          ? 'Receive at least one submission to perform AI grading.'
-                          : undefined
-                      }
-                      onSelect={() =>
-                        modelSelectionModalState.showWithData({
-                          type: 'all',
-                          numToGrade: aiGradingCounts.all,
-                        })
-                      }
-                    />
-                    <Dropdown.Divider />
-                    <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
-                      Delete all AI grading results
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-                {aiSubmissionGroupingEnabled &&
-                  (!availableAiGradingProviders.includes('openai') ? (
-                    <OverlayTrigger
-                      tooltip={{
-                        body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
-                        props: { id: 'ai-grouping-no-openai-tooltip' },
-                      }}
-                    >
-                      <span style={{ display: 'inline-block' }}>
-                        <Button
-                          variant="light"
-                          size="sm"
-                          style={{ pointerEvents: 'none' }}
-                          disabled
-                        >
-                          <i className="bi bi-stars" aria-hidden="true" />
-                          <span className="d-none d-sm-inline">AI submission grouping</span>
-                        </Button>
-                      </span>
-                    </OverlayTrigger>
-                  ) : (
-                    <Dropdown>
-                      <Dropdown.Toggle variant="light" size="sm">
-                        <i className="bi bi-stars" aria-hidden="true" />
-                        <span className="d-none d-sm-inline">AI submission grouping</span>
-                      </Dropdown.Toggle>
-                      <Dropdown.Menu align="end">
-                        <Dropdown.Item
-                          disabled={selectedIds.length === 0}
-                          onClick={() =>
-                            onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
-                          }
-                        >
-                          <div className="d-flex justify-content-between align-items-center w-100">
-                            <span>Group selected submissions</span>
-                            <span className="badge bg-secondary ms-2">
-                              {aiGroupingCounts.selected}
-                            </span>
-                          </div>
-                        </Dropdown.Item>
-                        <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
-                          <div className="d-flex justify-content-between align-items-center w-100">
-                            <span>Group all submissions</span>
-                            <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
-                          </div>
-                        </Dropdown.Item>
-                        <Dropdown.Item
-                          onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
-                        >
-                          <div className="d-flex justify-content-between align-items-center w-100">
-                            <span>Group ungrouped submissions</span>
-                            <span className="badge bg-secondary ms-2">
-                              {aiGroupingCounts.ungrouped}
-                            </span>
-                          </div>
-                        </Dropdown.Item>
-                        <Dropdown.Divider />
-                        <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
-                          Delete all AI groupings
-                        </Dropdown.Item>
-                      </Dropdown.Menu>
-                    </Dropdown>
-                  ))}
-              </>
-            ) : (
+          hasCourseInstancePermissionEdit && (
+            <>
               <Dropdown>
-                <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
+                <Dropdown.Toggle
+                  variant="light"
+                  size="sm"
+                  // Overlapping tag requests would skip all but the last request's
+                  // `onSuccess`, leaving AI grading statuses undismissed.
+                  disabled={selectedIds.length === 0 || setRequiresManualGradingMutation.isPending}
+                >
                   <i className="fas fa-tags" aria-hidden="true" />{' '}
                   <span className="d-none d-sm-inline">Tag for grading</span>
                 </Dropdown.Toggle>
@@ -943,10 +833,10 @@ export function AssessmentQuestionTable({
                   <Dropdown.Item
                     key="tag-as-required-grading"
                     onClick={() =>
-                      setRequiresManualGradingMutation.mutate({
-                        requires_manual_grading: true,
-                        instance_question_ids: selectedIds,
-                      })
+                      setRequiresManualGradingMutation.mutate(
+                        { requires_manual_grading: true, instance_question_ids: selectedIds },
+                        { onSuccess: () => handleDismissItemStatuses(selectedIds) },
+                      )
                     }
                   >
                     <i className="fas fa-tag" /> Tag as required grading
@@ -954,19 +844,139 @@ export function AssessmentQuestionTable({
                   <Dropdown.Item
                     key="tag-as-graded"
                     onClick={() =>
-                      setRequiresManualGradingMutation.mutate({
-                        requires_manual_grading: false,
-                        instance_question_ids: selectedIds,
-                      })
+                      setRequiresManualGradingMutation.mutate(
+                        { requires_manual_grading: false, instance_question_ids: selectedIds },
+                        { onSuccess: () => handleDismissItemStatuses(selectedIds) },
+                      )
                     }
                   >
                     <i className="fas fa-check-square" /> Tag as graded
                   </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
-            )
-          ) : (
-            <></>
+              {aiGradingMode && (
+                <>
+                  <Dropdown>
+                    <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
+                      <i className="bi bi-stars" aria-hidden="true" />
+                      <span>AI grading</span>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu align="end">
+                      <AiGradingOption
+                        text="Grade all human-graded"
+                        numToGrade={aiGradingCounts.humanGraded}
+                        onSelect={() =>
+                          modelSelectionModalState.showWithData({
+                            type: 'human_graded',
+                            numToGrade: aiGradingCounts.humanGraded,
+                          })
+                        }
+                      />
+                      <AiGradingOption
+                        text="Grade selected"
+                        numToGrade={aiGradingCounts.selected}
+                        hint={
+                          aiGradingCounts.selected === 0 && aiGradingCounts.all > 0
+                            ? 'Checkboxes on the left select submissions. Shift-click to select a range.'
+                            : undefined
+                        }
+                        onSelect={() =>
+                          modelSelectionModalState.showWithData({
+                            type: 'selected',
+                            ids: selectedIds,
+                            numToGrade: aiGradingCounts.selected,
+                          })
+                        }
+                      />
+                      <AiGradingOption
+                        text="Grade all"
+                        numToGrade={aiGradingCounts.all}
+                        hint={
+                          aiGradingCounts.all === 0
+                            ? 'Receive at least one submission to perform AI grading.'
+                            : undefined
+                        }
+                        onSelect={() =>
+                          modelSelectionModalState.showWithData({
+                            type: 'all',
+                            numToGrade: aiGradingCounts.all,
+                          })
+                        }
+                      />
+                      <Dropdown.Divider />
+                      <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
+                        Delete all AI grading results
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                  {aiSubmissionGroupingEnabled &&
+                    (!availableAiGradingProviders.includes('openai') ? (
+                      <OverlayTrigger
+                        tooltip={{
+                          body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
+                          props: { id: 'ai-grouping-no-openai-tooltip' },
+                        }}
+                      >
+                        <span style={{ display: 'inline-block' }}>
+                          <Button
+                            variant="light"
+                            size="sm"
+                            style={{ pointerEvents: 'none' }}
+                            disabled
+                          >
+                            <i className="bi bi-stars" aria-hidden="true" />
+                            <span className="d-none d-sm-inline">AI submission grouping</span>
+                          </Button>
+                        </span>
+                      </OverlayTrigger>
+                    ) : (
+                      <Dropdown>
+                        <Dropdown.Toggle variant="light" size="sm">
+                          <i className="bi bi-stars" aria-hidden="true" />
+                          <span className="d-none d-sm-inline">AI submission grouping</span>
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu align="end">
+                          <Dropdown.Item
+                            disabled={selectedIds.length === 0}
+                            onClick={() =>
+                              onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
+                            }
+                          >
+                            <div className="d-flex justify-content-between align-items-center w-100">
+                              <span>Group selected submissions</span>
+                              <span className="badge bg-secondary ms-2">
+                                {aiGroupingCounts.selected}
+                              </span>
+                            </div>
+                          </Dropdown.Item>
+                          <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
+                            <div className="d-flex justify-content-between align-items-center w-100">
+                              <span>Group all submissions</span>
+                              <span className="badge bg-secondary ms-2">
+                                {aiGroupingCounts.all}
+                              </span>
+                            </div>
+                          </Dropdown.Item>
+                          <Dropdown.Item
+                            onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
+                          >
+                            <div className="d-flex justify-content-between align-items-center w-100">
+                              <span>Group ungrouped submissions</span>
+                              <span className="badge bg-secondary ms-2">
+                                {aiGroupingCounts.ungrouped}
+                              </span>
+                            </div>
+                          </Dropdown.Item>
+                          <Dropdown.Divider />
+                          <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
+                            Delete all AI groupings
+                          </Dropdown.Item>
+                        </Dropdown.Menu>
+                      </Dropdown>
+                    ))}
+                </>
+              )}
+            </>
           )
         }
         globalFilter={{
@@ -1041,7 +1051,6 @@ export function AssessmentQuestionTable({
           setLastSelectedCredentialId(
             selection.provider === 'openai-compatible' ? selection.credential_id : null,
           );
-          setRowSelection({});
         }}
       />
 
@@ -1063,7 +1072,12 @@ export function AssessmentQuestionTable({
             disabled={deleteAiGradingJobsMutation.isPending}
             onClick={() =>
               deleteAiGradingJobsMutation.mutate(undefined, {
-                onSuccess: () => setShowDeleteAiGradingModal(false),
+                onSuccess: () => {
+                  setShowDeleteAiGradingModal(false);
+                  handleDismissItemStatuses(
+                    instanceQuestionsInfo.map((row) => row.instance_question.id),
+                  );
+                },
               })
             }
           >

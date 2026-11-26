@@ -18,6 +18,19 @@ export type CallType =
   | 'ping'
   | 'restart';
 
+/**
+ * Describes the most recent call for error logging. The call's arguments are
+ * deliberately omitted: they can include entire submissions, so logging them
+ * can be very expensive, and they can be reconstructed from the database.
+ */
+export interface CallSummary {
+  type: CallType;
+  directory: string | null;
+  file: string | null;
+  fcn: string | null;
+  bytes: number;
+}
+
 export interface PrepareForCourseOptions {
   coursePath: string;
   forbiddenModules: string[];

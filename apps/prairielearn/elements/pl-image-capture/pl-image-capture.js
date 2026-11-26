@@ -543,6 +543,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           },
           (msg) => {
             if (!msg) {
+              // Stop reconnecting, since every attempt would reuse the same
+              // (likely expired) variant token.
+              socket.disconnect();
               throw new Error('Failed to join external image capture room');
             }
           },

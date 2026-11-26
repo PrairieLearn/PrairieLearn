@@ -91,6 +91,7 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
     : formatLegacyAssessmentInstanceAccess(
         rawRow.authz_result,
         res.locals.course_instance.display_timezone,
+        res.locals.req_date,
       );
   const row: SelectAndAuthzAssessmentInstance = { ...rawRow, authz_result: authzResult };
 

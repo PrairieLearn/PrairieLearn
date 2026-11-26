@@ -62,6 +62,8 @@ question_state AS (
     SELECT
         iq.id AS instance_question_id,
         (row_number() OVER w)::integer AS row_order,
+        -- Keep in sync with the question_number formatting for printed forms
+        -- in lib/printing/print-forms.sql.
         CASE
             WHEN a.type = 'Homework' THEN
                 CASE

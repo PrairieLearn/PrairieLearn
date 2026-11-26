@@ -255,6 +255,9 @@ async function selectVariantForInstanceQuestion(
  * @param params.question_course - The course for the question.
  * @param params.options - Options controlling the creation.
  * @param params.options.variant_seed - The seed for the variant.
+ * @param params.options.preferences - Assessment question preferences for a variant that has no
+ * instance question, such as a print form's. Most callers should omit this: variants for instance
+ * questions already get these preferences from the instance question.
  * @param params.require_open - If true, only use an existing variant if it is open.
  * @param params.client_fingerprint_id - The client fingerprint for this variant.
  */
@@ -277,7 +280,7 @@ async function makeAndInsertVariant({
   course_instance: CourseInstance | null;
   variant_course: Course;
   question_course: Course;
-  options: { variant_seed?: string | null };
+  options: { variant_seed?: string | null; preferences?: QuestionPreferenceValues };
   require_open: boolean;
   client_fingerprint_id: string | null;
 }): Promise<Variant> {
@@ -287,6 +290,10 @@ async function makeAndInsertVariant({
   let preferences: QuestionPreferenceValues = extractDefaultPreferences(
     question.preferences_schema,
   );
+
+  if (options.preferences) {
+    preferences = { ...preferences, ...options.preferences };
+  }
 
   if (instance_question_id) {
     const result = await selectPreferencesForInstanceQuestion(instance_question_id);
@@ -433,6 +440,9 @@ async function makeAndInsertVariant({
  * @param params.question_course - The course for the question.
  * @param params.options - Options controlling the creation.
  * @param params.options.variant_seed - The seed for the variant.
+ * @param params.options.preferences - Assessment question preferences for a variant that has no
+ * instance question, such as a print form's. Most callers should omit this: variants for instance
+ * questions already get these preferences from the instance question.
  * @param params.require_open - If true, only use an existing variant if it is open.
  * @param params.client_fingerprint_id - The client fingerprint for this variant. Can be null.
  */
@@ -455,7 +465,7 @@ export async function ensureVariant({
   course_instance: CourseInstance | null;
   variant_course: Course;
   question_course: Course;
-  options: { variant_seed?: string | null };
+  options: { variant_seed?: string | null; preferences?: QuestionPreferenceValues };
   require_open: boolean;
   client_fingerprint_id: string | null;
 }): Promise<Variant> {

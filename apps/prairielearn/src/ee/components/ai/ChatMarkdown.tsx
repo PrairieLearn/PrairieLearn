@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { createElement } from 'react';
+import { createElement, useMemo } from 'react';
 import type { UrlTransform } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import {
@@ -93,19 +93,29 @@ export function ChatMarkdown({
   math = false,
   className,
   urlTransform,
+  codeBlock,
 }: {
   content: string;
   streaming: boolean;
   math?: boolean;
   className?: string;
   urlTransform?: UrlTransform;
+  /** Renders fenced code blocks, in place of a plain `<pre>`. */
+  codeBlock?: Components['code'];
 }) {
+  // Streamdown renders every block again when it is given a new `components` object.
+  const allComponents = useMemo(
+    () => (codeBlock ? { ...components, code: codeBlock } : components),
+    [codeBlock],
+  );
   return (
     <Streamdown
       // Question pages typeset the whole page with MathJax, which would read
       // prices like `$5 and $10` in a message as math.
       className={clsx(math && 'mathjax_ignore', className)}
-      components={components}
+      components={allComponents}
+      // Streamdown's own streaming behavior, such as `useIsCodeFenceIncomplete`, keys off this.
+      isAnimating={streaming}
       // Closing unfinished syntax would also rewrite finished messages, e.g.
       // dropping the `[` from a half-open interval like `[0, 1)`.
       parseIncompleteMarkdown={streaming}

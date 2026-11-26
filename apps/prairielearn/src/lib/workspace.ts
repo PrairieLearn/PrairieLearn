@@ -7,7 +7,6 @@ import * as async from 'async';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import mustache from 'mustache';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
@@ -31,6 +30,7 @@ import {
   WorkspaceSchema,
 } from './db-types.js';
 import * as issues from './issues.js';
+import { renderMustache } from './mustache.js';
 import * as socketServer from './socket-server.js';
 import * as workspaceHostUtils from './workspaceHost.js';
 
@@ -450,13 +450,18 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     targetPath: sourcePath,
   });
 
-  // Update permissions so that the directory and all contents are owned by the workspace user
-  for await (const file of klaw(sourcePath)) {
-    await fsPromises.chown(
-      file.path,
-      config.workspaceJobsDirectoryOwnerUid,
-      config.workspaceJobsDirectoryOwnerGid,
-    );
+  // Update permissions so that the directory and all contents are owned by the
+  // workspace user. Only root can change ownership; when running natively as a
+  // regular user, the container starts as root and the image's entrypoint
+  // handles ownership instead.
+  if (process.getuid?.() === 0) {
+    for await (const file of klaw(sourcePath)) {
+      await fsPromises.chown(
+        file.path,
+        config.workspaceJobsDirectoryOwnerUid,
+        config.workspaceJobsDirectoryOwnerGid,
+      );
+    }
   }
 
   if (fileGenerationErrors.length > 0) {
@@ -532,7 +537,7 @@ export async function generateWorkspaceFiles({
           if (!file.stats.isFile()) return null;
           return {
             name: generatedFileName,
-            buffer: mustache.render(
+            buffer: renderMustache(
               await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
               mustacheParams,
             ),

@@ -221,11 +221,12 @@ export class CodexAppServerClient {
     });
   }
 
-  async connect() {
+  /** Starting a runner for this connection sets the sandbox's clock to `timezone`. */
+  async connect(timezone?: string) {
     if (this.failure) throw this.failure;
     if (this.rpc) return;
     const response = await this.sandbox.fetch('http://codex.internal/', {
-      headers: { Upgrade: 'websocket' },
+      headers: { Upgrade: 'websocket', ...(timezone && { 'X-Course-Timezone': timezone }) },
     });
     if (response.status !== 101 || !response.webSocket) {
       throw new Error('Native runner supplied no WebSocket');

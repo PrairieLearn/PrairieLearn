@@ -1,25 +1,20 @@
-import {
-  type FileDiffMetadata,
-  type SupportedLanguages,
-  getFiletypeFromFileName,
-  getSingularPatch,
-  preloadHighlighter,
-} from '@pierre/diffs';
-import { FileDiff, Virtualizer } from '@pierre/diffs/react';
-import clsx from 'clsx';
+import { Virtualizer } from '@pierre/diffs/react';
 import { filesize } from 'filesize';
-import {
-  type CSSProperties,
-  use,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { use, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Form, ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
 
 import type { ReviewDiffFile } from '../../lib/course-agent/review-diff.js';
+
+import {
+  CHANGES,
+  ChangeIcon,
+  FileChanges,
+  LineCounts,
+  bootstrapThemeType,
+  loadHighlighter,
+  parseFile,
+  viewerStyle,
+} from './diffFiles.js';
 
 const WIDE_QUERY = '(min-width: 992px)';
 
@@ -29,123 +24,12 @@ function subscribeWide(onChange: () => void) {
   return () => query.removeEventListener('change', onChange);
 }
 
-// Pierre's blue/orange palette, which stays distinguishable with red-green color blindness.
-const THEME = {
-  light: 'pierre-light-protanopia-deuteranopia',
-  dark: 'pierre-dark-protanopia-deuteranopia',
-} as const;
-
-// The themes' added/deleted colors, for line counts and icons outside Pierre's shadow root.
-const LINE_COLORS = {
-  light: { added: '#216cab', deleted: '#ac6023' },
-  dark: { added: '#97c4ff', deleted: '#fe8c2c' },
-} as const;
-
-const ADDED_COLOR = 'var(--review-diff-added)';
-const DELETED_COLOR = 'var(--review-diff-deleted)';
-
-const CHANGES = {
-  added: { icon: 'bi-file-earmark-plus', color: ADDED_COLOR, label: 'Added', type: 'new' },
-  modified: {
-    icon: 'bi-file-earmark-diff',
-    color: 'var(--bs-warning)',
-    label: 'Modified',
-    type: 'change',
-  },
-  deleted: {
-    icon: 'bi-file-earmark-minus',
-    color: DELETED_COLOR,
-    label: 'Deleted',
-    type: 'deleted',
-  },
-} as const;
-
-// Pierre puts +/− flush against the line numbers; leave room on both sides, as GitHub does.
-const INDICATOR_CSS = `
-[data-indicators='classic'] :is([data-line], [data-no-newline]) { padding-inline-start: 3ch; }
-[data-indicators='classic'] :is([data-line], [data-no-newline])::before { left: 1ch; }
-`;
-
-interface ParsedFile {
-  file: ReviewDiffFile;
-  diff: FileDiffMetadata | null;
-  additions: number;
-  deletions: number;
-}
-
-function parseFile(file: ReviewDiffFile): ParsedFile {
-  if (file.patch === null) return { file, diff: null, additions: 0, deletions: 0 };
-  // jsdiff patches lack Git's new/deleted file mode lines, so Pierre would treat every file as changed.
-  const diff = { ...getSingularPatch(file.patch), type: CHANGES[file.change].type };
-  return {
-    file,
-    diff,
-    additions: diff.hunks.reduce((sum, hunk) => sum + hunk.additionLines, 0),
-    deletions: diff.hunks.reduce((sum, hunk) => sum + hunk.deletionLines, 0),
-  };
-}
-
-const highlighterLoads = new Map<string, Promise<void>>();
-
-const NOTHING_TO_HIGHLIGHT = Promise.resolve();
-
-/**
- * Pierre renders no lines until its highlighter has loaded, so every file would mount as an empty
- * bordered box. The virtualizer would then treat all of them as visible and highlight every file
- * at once. Suspending until the highlighter is ready keeps the loading spinner up instead, and
- * lets the virtualizer measure real heights.
- */
-function loadHighlighter(parsed: ParsedFile[]) {
-  const langs = new Set<SupportedLanguages>();
-  for (const { diff } of parsed) {
-    if (!diff || diff.hunks.length === 0) continue;
-    langs.add(getFiletypeFromFileName(diff.prevName ?? diff.name));
-    langs.add(getFiletypeFromFileName(diff.name));
-  }
-  // Binary and empty files only show a notice.
-  if (langs.size === 0) return NOTHING_TO_HIGHLIGHT;
-  const key = [...langs].sort().join(',');
-  let load = highlighterLoads.get(key);
-  if (!load) {
-    // If preloading fails, render anyway and let Pierre retry and report the error.
-    load = preloadHighlighter({ themes: [THEME.light, THEME.dark], langs: [...langs] }).catch(
-      () => undefined,
-    );
-    highlighterLoads.set(key, load);
-  }
-  return load;
-}
-
 function basename(path: string) {
   return path.slice(path.lastIndexOf('/') + 1);
 }
 
 function dirname(path: string) {
   return path.slice(0, Math.max(path.lastIndexOf('/'), 0));
-}
-
-function LineCounts({ additions, deletions }: { additions: number; deletions: number }) {
-  return (
-    <span className="font-monospace small text-nowrap">
-      <span style={{ color: DELETED_COLOR }}>−{deletions}</span>{' '}
-      <span style={{ color: ADDED_COLOR }}>+{additions}</span>
-    </span>
-  );
-}
-
-function ChangeIcon({ change }: { change: ReviewDiffFile['change'] }) {
-  const { icon, color, label } = CHANGES[change];
-  return (
-    <>
-      <i className={clsx('bi', icon)} style={{ color }} aria-hidden="true" />
-      <span className="visually-hidden">{label}:</span>
-    </>
-  );
-}
-
-/** Pierre renders inside a shadow root, so it can't see Bootstrap's color mode. */
-function bootstrapThemeType() {
-  return document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
 }
 
 export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
@@ -177,13 +61,7 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
   return (
     <div
       className="d-flex flex-column flex-grow-1"
-      style={
-        {
-          minHeight: 0,
-          '--review-diff-added': LINE_COLORS[themeType].added,
-          '--review-diff-deleted': LINE_COLORS[themeType].deleted,
-        } as CSSProperties
-      }
+      style={{ minHeight: 0, ...viewerStyle(themeType) }}
     >
       <div className="d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom">
         <span>{files.length === 1 ? '1 file changed' : `${files.length} files changed`}</span>
@@ -256,12 +134,6 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
         <Virtualizer
           className="flex-grow-1 overflow-auto position-relative"
           contentClassName="d-flex flex-column gap-3 p-3"
-          style={
-            {
-              '--diffs-font-family': 'var(--bs-font-monospace)',
-              '--diffs-header-font-family': 'var(--bs-body-font-family)',
-            } as CSSProperties
-          }
         >
           {parsed.map(({ file, diff }) => (
             <section
@@ -277,50 +149,17 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
               className="border rounded overflow-hidden flex-shrink-0"
               style={{ scrollMarginTop: '1rem' }}
             >
-              {diff ? (
-                diff.hunks.length > 0 ? (
-                  <FileDiff
-                    fileDiff={diff}
-                    options={{
-                      // One side of an added or deleted file is empty, so split adds nothing.
-                      diffStyle: split && file.change === 'modified' ? 'split' : 'unified',
-                      theme: THEME,
-                      themeType,
-                      overflow: 'wrap',
-                      lineDiffType: 'word',
-                      // Mark changed lines with +/−, not just color.
-                      diffIndicators: 'classic',
-                      unsafeCSS: INDICATOR_CSS,
-                    }}
-                  />
-                ) : (
-                  <FileNotice
-                    file={file}
-                    message={file.change === 'modified' ? 'No content changes.' : 'Empty file.'}
-                  />
-                )
-              ) : (
-                <FileNotice
-                  file={file}
-                  message={`Binary file (${filesize(file.bytes)}) can't be previewed.`}
-                />
-              )}
+              <FileChanges
+                file={file}
+                diff={diff}
+                themeType={themeType}
+                split={split}
+                binaryNotice={`Binary file (${filesize(file.bytes)}) can't be previewed.`}
+              />
             </section>
           ))}
         </Virtualizer>
       </div>
     </div>
-  );
-}
-
-function FileNotice({ file, message }: { file: ReviewDiffFile; message: string }) {
-  return (
-    <>
-      <div className="d-flex align-items-center gap-2 px-3 py-2 bg-body-tertiary border-bottom">
-        <ChangeIcon change={file.change} />
-        <span className="small text-break">{file.path}</span>
-      </div>
-      <p className="text-muted small px-3 py-3 mb-0">{message}</p>
-    </>
   );
 }

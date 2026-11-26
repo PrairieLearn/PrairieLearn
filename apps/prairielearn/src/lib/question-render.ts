@@ -18,8 +18,10 @@ import { QuestionScorePanelContent } from '../components/QuestionScore.js';
 import {
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
-  type SubmissionForRender,
+  SubmissionGradingJobSchema,
   SubmissionPanel,
+  type SubmissionSummary,
+  type SubmissionWithDetails,
 } from '../components/SubmissionPanel.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
@@ -41,7 +43,6 @@ import {
   CourseSchema,
   type EnumQuestionAccessMode,
   EnumQuestionAccessModeSchema,
-  GradingJobSchema,
   type GroupConfig,
   GroupConfigSchema,
   type InstanceQuestion,
@@ -73,8 +74,9 @@ import { ensureVariant, getQuestionCourse } from './question-variant.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SubmissionInfoSchema = z.object({
-  grading_job: GradingJobSchema.nullable(),
+  grading_job: SubmissionGradingJobSchema.nullable(),
   submission: SubmissionSchema,
+  feedback_manual: z.string().nullable(),
   question_number: z.string().nullable(),
   question_access_mode: EnumQuestionAccessModeSchema.nullable(),
   next_instance_question: z.object({
@@ -94,11 +96,12 @@ const SubmissionInfoSchema = z.object({
   group_config: GroupConfigSchema.nullable(),
 });
 
-/**
- * To improve performance, we'll only render at most three submissions on page
- * load. If the user requests more, we'll render them on the fly.
- */
-const MAX_RECENT_SUBMISSIONS = 3;
+export class FatalQuestionRenderError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'FatalQuestionRenderError';
+  }
+}
 
 /**
  * Renders the HTML for a variant.
@@ -114,6 +117,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param params.locals The current locals for the page response.
  * @param params.user The effective user to attribute errors to.
  * @param params.authn_user The authenticated user to attribute errors to.
+ * @param params.throwOnFatalError Reject fatal rendering errors instead of returning incomplete HTML.
  */
 async function render({
   variant_course,
@@ -126,6 +130,7 @@ async function render({
   locals,
   user,
   authn_user,
+  throwOnFatalError = false,
 }: {
   variant_course: Course;
   renderSelection: questionServers.RenderSelection;
@@ -139,6 +144,7 @@ async function render({
   user: User;
   /** The authenticated user to attribute errors to. */
   authn_user: User;
+  throwOnFatalError?: boolean;
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -167,6 +173,15 @@ async function render({
     studentMessage,
     courseData,
   );
+  if (throwOnFatalError) {
+    const fatalIssue = courseIssues.find((issue) => issue.fatal);
+    if (fatalIssue) {
+      throw new FatalQuestionRenderError(
+        `Question ${question.qid ?? question.id} could not be rendered.`,
+        { cause: fatalIssue },
+      );
+    }
+  }
   return data;
 }
 
@@ -263,7 +278,7 @@ interface ResLocalsBuildLocals {
   hasAttemptsOtherVariants: boolean;
   variantAttemptsLeft: number;
   variantAttemptsTotal: number;
-  submissions: SubmissionForRender[];
+  submissions: SubmissionSummary[];
   variantToken: string;
   jobSequenceTokens: Record<string, string>;
 }
@@ -462,6 +477,9 @@ export async function getAndRenderVariant(
     publicQuestionPreview = false,
     issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
     questionRenderContext,
+    includeSubmissions = true,
+    showCorrectAnswer: showCorrectAnswerOverride,
+    throwOnFatalError = false,
   }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
@@ -481,6 +499,12 @@ export async function getAndRenderVariant(
      * Leave undefined for normal student/instructor rendering.
      */
     questionRenderContext?: QuestionRenderContext;
+    /** Whether to load and render previous submissions. Defaults to true. */
+    includeSubmissions?: boolean;
+    /** Overrides correct-answer visibility. If omitted, the existing visibility rules apply. */
+    showCorrectAnswer?: boolean;
+    /** Reject fatal rendering errors instead of returning incomplete HTML. Defaults to false. */
+    throwOnFatalError?: boolean;
   } = {},
 ): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
@@ -574,51 +598,54 @@ export async function getAndRenderVariant(
   }
   Object.assign(locals, newLocals);
 
-  // We only fully render a small number of submissions on initial page
-  // load; the rest only require basic information like timestamps. As
-  // such, we'll load submissions in two passes: we'll load basic
-  // information for all submissions to this variant, and then we'll
-  // load the full submission for only the submissions that we'll
-  // actually render.
-  const basicSubmissions = await sqldb.queryRows(
-    sql.select_basic_submissions,
-    { variant_id: variant.id },
-    SubmissionBasicSchema,
-  );
+  // Submissions can be very large, and we only render the latest one on page
+  // load. The others only need basic information like timestamps, and are
+  // rendered on the fly if the user expands them. So we load submissions in
+  // two passes: basic information for all submissions to this variant, and
+  // then the full submission for only the ones that we need.
+  const basicSubmissions = includeSubmissions
+    ? await sqldb.queryRows(
+        sql.select_basic_submissions,
+        { variant_id: variant.id },
+        SubmissionBasicSchema,
+      )
+    : [];
   const submissionCount = basicSubmissions.length;
 
-  const submissions = await run(async () => {
-    if (submissionCount === 0) {
-      return [];
-    }
+  // Non-Freeform questions serialize every submission into the HTML (see
+  // `questionJsonBase64` below), so they need details for all of them. v2
+  // questions don't have any easy way to support async rendering of
+  // submissions.
+  const needsAllSubmissions = locals.question.type !== 'Freeform';
+  const submissionDetails = await sqldb.queryRows(
+    sql.select_detailed_submissions,
+    {
+      submission_ids: (needsAllSubmissions ? basicSubmissions : basicSubmissions.slice(0, 1)).map(
+        (s) => s.id,
+      ),
+    },
+    SubmissionDetailedSchema,
+  );
+  const detailsById = new Map(submissionDetails.map((details) => [details.id, details]));
 
-    // Load detailed information for the submissions that we'll render.
-    // Note that for non-Freeform questions, we unfortunately have to
-    // eagerly load detailed data for all submissions, as that ends up
-    // being serialized in the HTML. v2 questions don't have any easy
-    // way to support async rendering of submissions.
-    const needsAllSubmissions = locals.question.type !== 'Freeform';
-    const submissionsToRender = needsAllSubmissions
-      ? basicSubmissions
-      : basicSubmissions.slice(0, MAX_RECENT_SUBMISSIONS);
-    const submissionDetails = await sqldb.queryRows(
-      sql.select_detailed_submissions,
-      { submission_ids: submissionsToRender.map((s) => s.id) },
-      SubmissionDetailedSchema,
-    );
-
-    return basicSubmissions.map((s, idx) => ({
-      submission_number: submissionCount - idx,
-      ...s,
-      // Both queries order results consistently, so we can just use
-      // the array index to match up the basic and detailed results.
-      ...(idx < submissionDetails.length ? submissionDetails[idx] : {}),
-    })) satisfies SubmissionForRender[];
+  // The panels for all submissions share these objects, so that data added to
+  // them below (such as rubric gradings) is shared too.
+  const detailedSubmissions: SubmissionWithDetails[] = [];
+  const submissions = basicSubmissions.map((s, idx): SubmissionSummary => {
+    const basic = { ...s, submission_number: submissionCount - idx };
+    const details = detailsById.get(s.id);
+    if (!details) return basic;
+    const detailed = { ...basic, ...details };
+    detailedSubmissions.push(detailed);
+    return detailed;
   });
 
-  const submission = submissions.at(0) ?? null;
+  const submission = detailedSubmissions.at(0) ?? null;
 
   const showCorrectAnswer = run(() => {
+    if (showCorrectAnswerOverride !== undefined) {
+      return showCorrectAnswerOverride;
+    }
     if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
       // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
       return true;
@@ -647,8 +674,8 @@ export async function getAndRenderVariant(
     renderSelection,
     variant,
     question,
-    submission: isAiGradingPreview ? null : (submission as Submission),
-    submissions: submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
+    submission: isAiGradingPreview ? null : submission,
+    submissions: submission ? [submission] : [],
     question_course,
     locals: {
       ...urls,
@@ -659,6 +686,7 @@ export async function getAndRenderVariant(
     },
     user: locals.user,
     authn_user: locals.authn_user,
+    throwOnFatalError,
   });
 
   // Load issues last in case rendering produced any new ones.
@@ -704,7 +732,7 @@ export async function getAndRenderVariant(
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
       trueAnswer: showCorrectAnswer ? variant.true_answer : null,
-      submissions: submissions.length > 0 ? submissions : null,
+      submissions: detailedSubmissions.length > 0 ? detailedSubmissions : null,
     });
 
     const encodedJson = encodeURIComponent(questionJson);
@@ -789,6 +817,7 @@ export async function renderPanelsForSubmission({
     course_instance,
     submission_index,
     submission_count,
+    feedback_manual,
     grading_job,
     user_uid,
     question_number,
@@ -873,6 +902,7 @@ export async function renderPanelsForSubmission({
         course_instance,
         submission: {
           ...submission,
+          feedback_manual,
           grading_job,
           user_uid,
           submission_number: submission_index,

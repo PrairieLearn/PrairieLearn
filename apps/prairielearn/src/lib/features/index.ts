@@ -10,7 +10,7 @@ const featureNames = [
   'ai-grading',
   'ai-submission-grouping',
   'disable-public-workspaces',
-  'printable-exams',
+  'printable-assessments',
 
   // Should be applied to courses only.
   'ai-question-generation-course-toggle',

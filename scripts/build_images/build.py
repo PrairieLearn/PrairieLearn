@@ -5,7 +5,9 @@ import os
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.request
+from http import HTTPStatus
 from typing import Literal, cast, get_args
 
 from utils import (
@@ -101,6 +103,19 @@ def check_path_modified(path: str) -> bool:
     )
 
     return diff_result.returncode != 0
+
+
+def docker_hub_repository_exists(image: str) -> bool:
+    """Check if the given image already has a repository on Docker Hub."""
+    try:
+        with urllib.request.urlopen(
+            f"https://hub.docker.com/v2/repositories/{image}/", timeout=30
+        ):
+            return True
+    except urllib.error.HTTPError as e:
+        if e.code == HTTPStatus.NOT_FOUND:
+            return False
+        raise
 
 
 def validate_image_order(images: list[str]) -> None:
@@ -259,6 +274,7 @@ def build_image(
         metadata["image.name"] = image
         metadata["image.platform"] = platform
         metadata["image.size"] = image_size
+        metadata["image.pushed"] = should_push
 
         # We need a unique name for the metadata file. We'll use the part of the
         # image name after the last slash, and a hash of the build ref.
@@ -277,6 +293,7 @@ def build_images(
     platform: str,
     builder: str,
     should_push: bool = False,
+    allow_new_repositories: bool = False,
     only_changed: bool = False,
     metadata_dir: str | None = None,
     cache_strategy: CacheStrategy = "none",
@@ -298,11 +315,25 @@ def build_images(
             print(f"Skipping {image} because it hasn't changed.")
             continue
 
+        # Pushing to a Docker Hub repository that doesn't exist yet creates it
+        # publicly. Only let builds of merged code do that, so experimental
+        # PRs don't leave behind public repositories that look supported.
+        push_this_image = should_push
+        if (
+            should_push
+            and not allow_new_repositories
+            and not docker_hub_repository_exists(image)
+        ):
+            print(
+                f"Not pushing {image} because its Docker Hub repository doesn't exist yet. It will be created when this image is built from merged code."
+            )
+            push_this_image = False
+
         digest = build_image(
             image,
             platform=platform,
             builder=builder,
-            should_push=should_push,
+            should_push=push_this_image,
             base_image_digest=base_image_digest,
             metadata_dir=metadata_dir,
             cache_strategy=cache_strategy,
@@ -316,6 +347,9 @@ if __name__ == "__main__":
     images = get_env_or_exit("IMAGES")
     metadata_dir = os.environ.get("METADATA_DIR")
     should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
+    allow_new_repositories = (
+        os.environ.get("ALLOW_NEW_REPOSITORIES", "false").lower() == "true"
+    )
     only_changed = os.environ.get("ONLY_CHANGED", "false").lower() == "true"
     cache_strategy = os.environ.get("CACHE_STRATEGY", "none").lower()
     cache_only_str = os.environ.get("CACHE_ONLY", "")
@@ -353,6 +387,7 @@ if __name__ == "__main__":
             platform=platform,
             builder=BUILDER_NAME,
             should_push=should_push,
+            allow_new_repositories=allow_new_repositories,
             only_changed=only_changed,
             metadata_dir=metadata_dir,
             cache_strategy=cache_strategy,

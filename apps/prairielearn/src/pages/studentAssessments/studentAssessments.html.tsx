@@ -5,10 +5,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import {
-  StudentAccessRulesSchedule,
-  StudentAccessTimelineSchedule,
-} from '../../components/StudentAccessSchedules.js';
+import { StudentAvailableCredit } from '../../components/StudentAvailableCredit.js';
 import type { AssessmentAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import {
   AssessmentInstanceSchema,
@@ -124,12 +121,13 @@ export function StudentAssessments({
                                     </a>
                                   `
                           }
-                          ${AccessSchedule({
+                        </td>
+                        <td class="text-center align-middle">
+                          ${AvailableCredit({
                             row,
                             displayTimezone: resLocals.course_instance.display_timezone,
                           })}
                         </td>
-                        <td class="text-center align-middle">${AvailableCredit({ row })}</td>
                         <td class="text-center align-middle">
                           ${
                             row.multiple_instance_header
@@ -177,7 +175,13 @@ function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: Student
   }
 }
 
-function AvailableCredit({ row }: { row: StudentAssessmentsRow }) {
+function AvailableCredit({
+  row,
+  displayTimezone,
+}: {
+  row: StudentAssessmentsRow;
+  displayTimezone: string;
+}) {
   const authzResult = row.authz_result;
   if (row.modern_access_control && row.assessment_instance_id == null && !authzResult.authorized) {
     if (authzResult.next_active_time) {
@@ -185,35 +189,13 @@ function AvailableCredit({ row }: { row: StudentAssessmentsRow }) {
     }
     return html`<span class="text-muted">Not yet available</span>`;
   }
-  const creditDateString = authzResult.credit_date_string ?? 'None';
-  if (creditDateString === 'None') return null;
+  if ((authzResult.credit_date_string ?? 'None') === 'None') return null;
   if (row.assessment_instance_open !== false) {
-    return html`${creditDateString}`;
+    return StudentAvailableCredit({
+      authzResult,
+      modernAccessControl: row.modern_access_control,
+      displayTimezone,
+    });
   }
   return html`Assessment closed.`;
-}
-
-function AccessSchedule({
-  row,
-  displayTimezone,
-}: {
-  row: StudentAssessmentsRow;
-  displayTimezone: string;
-}) {
-  if (
-    (row.modern_access_control &&
-      row.assessment_instance_id == null &&
-      !row.authz_result.authorized) ||
-    row.assessment_instance_open === false ||
-    (row.authz_result.credit_date_string ?? 'None') === 'None'
-  ) {
-    return '';
-  }
-
-  return row.modern_access_control
-    ? StudentAccessTimelineSchedule({
-        accessTimeline: row.authz_result.access_timeline,
-        displayTimezone,
-      })
-    : StudentAccessRulesSchedule({ accessRules: row.authz_result.access_rules });
 }

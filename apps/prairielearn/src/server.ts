@@ -76,6 +76,12 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { closePrintRenderer } from './lib/printing/index.js';
+import {
+  beginPrintExportShutdown,
+  initPrintExportWorker,
+  waitForPrintExportWorkers,
+} from './lib/printing/print-exports.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -1019,6 +1025,15 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print/exports',
+    (await import('./pages/instructorAssessmentPrintExport/instructorAssessmentPrintExport.js'))
+      .default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print',
+    (await import('./pages/instructorAssessmentPrint/instructorAssessmentPrint.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',
     [
       function (req: Request, res: Response, next: NextFunction) {
@@ -1142,6 +1157,12 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./pages/instructorAssessmentManualGrading/assessment/assessment.js')).default,
     ],
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print_form/:print_form_id(\\d+)',
+    (await import('./pages/instructorAssessmentPrintForm/instructorAssessmentPrintForm.js'))
+      .default,
   );
 
   app.use(
@@ -2730,6 +2751,7 @@ if (esMain(import.meta)) {
     // requests, as they may actually end up executing course code.
     await externalGraderResults.init();
     await externalGraderDeadLetters.init();
+    initPrintExportWorker();
 
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
@@ -2805,6 +2827,8 @@ if (esMain(import.meta)) {
  * Stops background work before closing its dependencies and database pools.
  */
 async function close() {
+  beginPrintExportShutdown();
+
   // Disconnect clients before draining workspace startups, but keep Redis
   // adapters available for progress broadcasts from running jobs.
   socketServer.io?.engine.close();
@@ -2822,6 +2846,10 @@ async function close() {
   // Server jobs may render questions or publish progress after an await. Wait
   // for their final status writes and notifications before closing dependencies.
   await settleShutdownTasks([serverJobs.stop()]);
+
+  // Let print workers finish cleanup before closing the renderer they use.
+  await settleShutdownTasks([waitForPrintExportWorkers()]);
+  await settleShutdownTasks([closePrintRenderer()]);
 
   await settleShutdownTasks([
     serverJobProgressSocket.close(),

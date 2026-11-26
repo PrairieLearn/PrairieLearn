@@ -4,6 +4,8 @@ import type { Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
 
+const CLIENT_DISCONNECT_CODES = new Set(['ECONNABORTED', 'ECONNRESET', 'EPIPE']);
+
 /**
  * A small wrapper around {@link Response#sendFile} that send a prettier 404
  * error if the file is not found.
@@ -27,6 +29,17 @@ export function sendCourseFile(
       if (err && 'code' in err && err.code === 'ENOENT') {
         const pathInCourse = path.normalize(path.join(directory, filename));
         reject(new HttpStatusError(404, `File not found: ${pathInCourse}`));
+        return;
+      } else if (
+        err &&
+        'code' in err &&
+        CLIENT_DISCONNECT_CODES.has(err.code) &&
+        res.req.socket.destroyed
+      ) {
+        // The client went away mid-transfer; there's no one left to respond to.
+        // The socket check ensures that we don't swallow file read errors that
+        // happen to share these codes (e.g. from network-backed storage).
+        resolve();
         return;
       } else if (err) {
         reject(err);

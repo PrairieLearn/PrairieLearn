@@ -8,9 +8,8 @@ export function useManualGradingActions() {
 
   const deleteAiGradingJobsMutation = useMutation({
     ...trpc.manualGrading.deleteAiGradingJobs.mutationOptions(),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: trpc.manualGrading.instances.queryKey() });
-    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: trpc.manualGrading.instances.queryKey() }),
   });
 
   const deleteAiGroupingsMutation = useMutation({
@@ -33,9 +32,10 @@ export function useManualGradingActions() {
 
   const setRequiresManualGradingMutation = useMutation({
     ...trpc.manualGrading.setRequiresManualGrading.mutationOptions(),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: trpc.manualGrading.instances.queryKey() });
-    },
+    // Return the refetch so that per-call `onSuccess` callbacks run once the
+    // table shows the updated grading status.
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: trpc.manualGrading.instances.queryKey() }),
   });
 
   const setAiGradingModeMutation = useMutation(

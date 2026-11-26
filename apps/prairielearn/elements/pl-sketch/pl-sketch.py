@@ -91,6 +91,12 @@ class SketchAnswerParams(TypedDict):
 WEIGHT_DEFAULT = 1
 XRANGE_DEFAULT = "-5,5"
 YRANGE_DEFAULT = "-5,5"
+X_AXIS_LABEL_DEFAULT = "x"
+Y_AXIS_LABEL_DEFAULT = "y"
+X_LABEL_GAP_DEFAULT = 10
+X_LABEL_INSET_DEFAULT = 10
+Y_LABEL_GAP_DEFAULT = 10
+Y_LABEL_INSET_DEFAULT = 20
 WIDTH_DEFAULT = 800
 HEIGHT_DEFAULT = 450
 ENFORCE_BOUNDS_DEFAULT = False
@@ -106,6 +112,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "weight",
         "x-range",
         "y-range",
+        "x-axis-label",
+        "y-axis-label",
+        "x-label-gap",
+        "x-label-inset",
+        "y-label-gap",
+        "y-label-inset",
         "width",
         "height",
         "enforce-bounds",
@@ -179,11 +191,23 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # Add axes/grid for the canvas (technically a "tool" on the client side)
     axes_plugins: AxesPlugin = {
         "name": "axes",
-        "xaxisLabel": {"value": "x", "dx": 10, "dy": 10},
+        "xaxisLabel": {
+            "value": pl.get_string_attrib(
+                element, "x-axis-label", X_AXIS_LABEL_DEFAULT
+            ),
+            "dx": pl.get_integer_attrib(
+                element, "x-label-inset", X_LABEL_INSET_DEFAULT
+            ),
+            "dy": pl.get_integer_attrib(element, "x-label-gap", X_LABEL_GAP_DEFAULT),
+        },
         "yaxisLabel": {
-            "value": "y",
-            "dx": 10,
-            "dy": 20,
+            "value": pl.get_string_attrib(
+                element, "y-axis-label", Y_AXIS_LABEL_DEFAULT
+            ),
+            "dx": pl.get_integer_attrib(element, "y-label-gap", Y_LABEL_GAP_DEFAULT),
+            "dy": pl.get_integer_attrib(
+                element, "y-label-inset", Y_LABEL_INSET_DEFAULT
+            ),
         },
         "colors": {"xaxisLabel": "blue", "yaxisLabel": "blue"},
         "fontSize": {"xaxisLabel": 14, "yaxisLabel": 14},
@@ -880,6 +904,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     config: SketchClientConfig = copy.deepcopy(params["config"])
     solution = params["solution_state"]
 
+    format_error = data["format_errors"].get(name)
     submission = data["raw_submitted_answers"].get(
         name + "-sketchresponse-submission", None
     )
@@ -891,7 +916,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # the same format, so piping one into the other is very convenient.
             config["initialstate"] = submission_parsed["data"]
         except Exception:
-            data["format_errors"][name] = (
+            format_error = (
                 "Invalid or corrupted submission data received from SketchResponse."
             )
 
@@ -959,7 +984,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "score_class": score_class,
         "score_icon": score_icon,
         "alert_class": alert_class,
-        "format_error": data["format_errors"].get(name, None),
+        "format_error": format_error,
         "read_only": read_only,
     }
 

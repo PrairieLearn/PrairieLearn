@@ -75,6 +75,7 @@ router.get(
           authzResult = formatLegacyAssessmentAccess(
             rawAuthzResult,
             res.locals.course_instance.display_timezone,
+            res.locals.req_date,
           );
         }
 
