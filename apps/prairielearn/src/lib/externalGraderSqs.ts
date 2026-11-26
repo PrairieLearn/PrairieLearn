@@ -20,7 +20,13 @@ import {
   type Submission,
   type Variant,
 } from './db-types.js';
-import { type Grader, buildDirectory, getJobDirectory } from './externalGraderCommon.js';
+import {
+  ExternalGradingPreparationError,
+  type Grader,
+  type GradingRequestErrorContext,
+  buildDirectory,
+  getJobDirectory,
+} from './externalGraderCommon.js';
 import { getQueueUrl } from './sqs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -47,6 +53,7 @@ export class ExternalGraderSqs implements Grader {
     const prepared = grading_job.s3_bucket !== null && grading_job.s3_root_key !== null;
 
     void (async () => {
+      let stage: GradingRequestErrorContext['stage'] = 'preparation';
       try {
         // A recovered dispatch reuses its committed payload after a process interruption.
         if (!prepared) {
@@ -83,6 +90,7 @@ export class ExternalGraderSqs implements Grader {
           }
         }
 
+        stage = 'publication';
         await sendJobToQueue({
           jobId: grading_job.id,
           question,
@@ -93,7 +101,11 @@ export class ExternalGraderSqs implements Grader {
         });
         emitter.emit('submit');
       } catch (err) {
-        emitter.emit('error', err);
+        const context: GradingRequestErrorContext =
+          stage === 'publication'
+            ? { stage, retryable: true }
+            : { stage, retryable: !(err instanceof ExternalGradingPreparationError) };
+        emitter.emit('error', err, context);
       }
     })();
 

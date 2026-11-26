@@ -12,6 +12,17 @@ import { getRuntimeDirectoryForCourse } from './chunks.js';
 import { type Config } from './config.js';
 import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
 
+export class ExternalGradingPreparationError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'ExternalGradingPreparationError';
+  }
+}
+
+export type GradingRequestErrorContext =
+  | { stage: 'preparation'; retryable: boolean }
+  | { stage: 'publication'; retryable: true };
+
 export interface Grader {
   handleGradingRequest(
     grading_job: GradingJob,
@@ -55,7 +66,15 @@ export async function buildDirectory(
     for (const file of question.external_grading_files ?? []) {
       const src = path.join(coursePath, 'serverFilesCourse', file);
       const dest = path.join(dir, 'serverFilesCourse', file);
-      await fs.copy(src, dest);
+      await fs.copy(src, dest).catch((err) => {
+        if (err.code === 'ENOENT') {
+          throw new ExternalGradingPreparationError(
+            `Configured external grading file "${file}" was not found.`,
+            { cause: err },
+          );
+        }
+        throw err;
+      });
     }
 
     // This is temporary while /grade/shared is deprecated but still supported
@@ -74,10 +93,10 @@ export async function buildDirectory(
 
     for (const file of submission.submitted_answer?._files ?? []) {
       if (!file.name) {
-        throw new Error("File was missing 'name' property.");
+        throw new ExternalGradingPreparationError("File was missing 'name' property.");
       }
       if (file.contents == null) {
-        throw new Error("File was missing 'contents' property.");
+        throw new ExternalGradingPreparationError("File was missing 'contents' property.");
       }
 
       // Files are expected to be base-64 encoded
@@ -86,7 +105,7 @@ export async function buildDirectory(
       // the directory hierarchy
       const fullPath = path.join(dir, 'student', file.name);
       if (!contains(path.join(dir, 'student'), fullPath)) {
-        throw new Error('Invalid filename');
+        throw new ExternalGradingPreparationError('Invalid filename');
       }
 
       await fsPromises.mkdir(path.dirname(fullPath), { recursive: true });

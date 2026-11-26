@@ -24,7 +24,7 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from './db-types.js';
-import { type Grader } from './externalGraderCommon.js';
+import { type Grader, type GradingRequestErrorContext } from './externalGraderCommon.js';
 import { ExternalGraderLocal } from './externalGraderLocal.js';
 import { ExternalGraderSqs } from './externalGraderSqs.js';
 import * as externalGradingSocket from './externalGradingSocket.js';
@@ -138,15 +138,22 @@ export async function beginGradingJob(
         (err) => logger.error(`Error processing grading job ${grading_job.id}`, err),
       );
     });
-    gradeRequest.on('error', (err: Error) => {
-      if (waitForSubmission && config.externalGradingUseAws) {
-        // A failed send can still reach the queue, so preserve this job for a retry.
+    gradeRequest.on('error', (err: Error, context?: GradingRequestErrorContext) => {
+      if (waitForSubmission && config.externalGradingUseAws && context?.retryable !== false) {
+        // Retry transient preparation failures and sends that may have reached the queue.
         logger.error(`Error submitting external grading job ${grading_job.id}`, err);
         Sentry.captureException(err);
         reject(err);
       } else {
-        handleGraderError(grading_job.id, err);
-        if (waitForSubmission) reject(err);
+        const processed = handleGraderError(grading_job.id, err);
+        if (waitForSubmission) {
+          if (config.externalGradingUseAws) {
+            // Finish permanent preparation failures before another retry can acquire the lock.
+            processed.then(() => reject(err), reject);
+          } else {
+            reject(err);
+          }
+        }
       }
     });
 
@@ -154,11 +161,11 @@ export async function beginGradingJob(
   });
 }
 
-function handleGraderError(grading_job_id: string, err: Error): void {
+function handleGraderError(grading_job_id: string, err: Error): Promise<void> {
   logger.error(`Error processing external grading job ${grading_job_id}`);
   logger.error('handleGraderError', err);
   Sentry.captureException(err);
-  processGradingResult({
+  return processGradingResult({
     gradingId: grading_job_id,
     grading: {
       score: 0,

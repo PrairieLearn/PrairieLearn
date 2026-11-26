@@ -9,17 +9,21 @@ WHERE
   iq.assessment_instance_id = $assessment_instance_id
   AND q.qid = 'addNumbers';
 
--- BLOCK set_question_grading_method
+-- BLOCK set_question_external_grading
 UPDATE questions
 SET
-  grading_method = $grading_method
+  grading_method = $grading_method,
+  external_grading_files = $external_grading_files,
+  external_grading_image = $external_grading_image
 WHERE
   id = $question_id;
 
--- BLOCK mark_external_job_submitted
-UPDATE grading_jobs
-SET
-  grading_submitted_at = CURRENT_TIMESTAMP
+-- BLOCK select_external_grading_location
+SELECT
+  s3_bucket,
+  s3_root_key
+FROM
+  grading_jobs
 WHERE
   id = $grading_job_id;
 
