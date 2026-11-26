@@ -190,7 +190,7 @@ function QuestionInfo({
 
     <div class="d-flex flex-wrap">
       <div class="pe-1">QID:</div>
-      <div>
+      <div class="text-break">
         ${
           questionContext === 'public'
             ? html`<a href="${publicPreviewUrl}?variant_seed=${variant.variant_seed}">
@@ -214,11 +214,11 @@ function QuestionInfo({
               ${
                 question.share_publicly || question.share_source_publicly
                   ? html`
-                      <div>
+                      <div class="text-break">
                         <a href="${publicPreviewUrl}">${sharingQid}</a>
                       </div>
                     `
-                  : html`<div>${sharingQid}</div>`
+                  : html`<div class="text-break">${sharingQid}</div>`
               }
             </div>
           `
