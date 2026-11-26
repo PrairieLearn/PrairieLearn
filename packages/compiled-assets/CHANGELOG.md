@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 4.1.18
+
+### Patch Changes
+
+- f0d7f2a: Bundle `.ttf` font files referenced from stylesheets, as is already done for `.woff` and `.woff2`.
+
 ## 4.1.17
 
 ### Patch Changes
