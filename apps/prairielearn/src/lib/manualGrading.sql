@@ -275,11 +275,8 @@ SET
     WHEN $number >= 10 THEN NULL
     ELSE MOD($number + 1, 10)
   END,
-  always_show_to_students = COALESCE($always_show_to_students, always_show_to_students),
-  show_to_students = CASE
-    WHEN COALESCE($always_show_to_students, always_show_to_students) THEN 'always'::enum_rubric_item_show_to_students
-    ELSE 'when_selected'::enum_rubric_item_show_to_students
-  END,
+  always_show_to_students = $show_to_students::enum_rubric_item_show_to_students = 'always',
+  show_to_students = $show_to_students::enum_rubric_item_show_to_students,
   deleted_at = NULL
 WHERE
   id = $id
@@ -312,11 +309,8 @@ VALUES
       WHEN $number >= 10 THEN NULL
       ELSE MOD($number + 1, 10)
     END,
-    $always_show_to_students,
-    CASE
-      WHEN $always_show_to_students THEN 'always'::enum_rubric_item_show_to_students
-      ELSE 'when_selected'::enum_rubric_item_show_to_students
-    END
+    $show_to_students::enum_rubric_item_show_to_students = 'always',
+    $show_to_students::enum_rubric_item_show_to_students
   );
 
 -- BLOCK select_instance_questions_to_update
