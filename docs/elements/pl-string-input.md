@@ -39,7 +39,7 @@ def generate(data):
 | `show-score`              | boolean                 | true            | Whether to show the score badge next to this element.                                                                                                                                                 |
 | `size`                    | integer                 | 35              | Width of the input box.                                                                                                                                                                               |
 | `suffix`                  | string                  | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                                                     |
-| `weight`                  | integer                 | 1               | Weight to use when computing a weighted average score over elements.                                                                                                                                  |
+| `weight`                  | non-negative integer    | 1               | Weight to use when computing a weighted average score over elements.                                                                                                                                  |
 
 ### Migrating from deprecated attributes
 

@@ -87,6 +87,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "gradable", defaults.element_defaults["gradable"]
     )
 
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    if weight < 0:
+        raise ValueError(
+            f'Attribute "weight" must be a non-negative integer, not {weight}'
+        )
+
     load_extensions(data)
 
     # Some preparation for elements with grading component

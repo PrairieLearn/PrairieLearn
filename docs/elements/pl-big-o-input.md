@@ -24,7 +24,7 @@ Gives automated feedback in the case of improper asymptotic input.
 | `size`           | integer                                                            | 35                        | Size of the input box.                                                                                                                                                            |
 | `type`           | `"big-o"`, `"theta"`, `"omega"`, `"little-o"`, or `"little-omega"` | `"big-o"`                 | Type of asymptotic answer required.                                                                                                                                               |
 | `variables`      | string                                                             | —                         | A comma-delimited list of symbols that can be used in the symbolic expression. Up to 7 variables are supported. If omitted, the variables are inferred from the `correct-answer`. |
-| `weight`         | integer                                                            | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                              |
+| `weight`         | non-negative integer                                               | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                              |
 
 ### Migrating from deprecated attributes
 

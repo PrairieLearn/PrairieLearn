@@ -62,6 +62,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    if weight < 0:
+        raise ValueError(
+            f'Attribute "weight" must be a non-negative integer, not {weight}'
+        )
+
     correct_answer = pl.get_string_attrib(
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
     )

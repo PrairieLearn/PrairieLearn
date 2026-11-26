@@ -39,6 +39,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    if weight < 0:
+        raise ValueError(
+            f'Attribute "weight" must be a non-negative integer, not {weight}'
+        )
+
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
 
     if base != 0 and (base < 2 or base > 36):

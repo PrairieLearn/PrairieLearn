@@ -45,7 +45,7 @@ def generate(data):
 | `rows`                 | integer                               | —                        | Number of rows in the matrix. Required (and must be at least 1) when no correct answer is provided in `data["correct_answers"]`; otherwise the size is inferred from the correct answer.                                       |
 | `rtol`                 | number                                | 1e-2                     | Relative tolerance for `comparison="relabs"`.                                                                                                                                                                                  |
 | `suffix`               | string                                | —                        | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                        |
-| `weight`               | integer                               | 1                        | Weight to use when computing a weighted average score over elements.                                                                                                                                                           |
+| `weight`               | non-negative integer                  | 1                        | Weight to use when computing a weighted average score over elements.                                                                                                                                                           |
 
 ## Details
 

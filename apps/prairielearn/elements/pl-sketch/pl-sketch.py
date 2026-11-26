@@ -130,6 +130,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    if weight < 0:
+        raise ValueError(
+            f'Attribute "weight" must be a non-negative integer, not {weight}'
+        )
+
     read_only = pl.get_boolean_attrib(element, "read-only", READ_ONLY_DEFAULT)
 
     # Just validate this is actually boolean - we don't need the value here
@@ -779,6 +785,12 @@ def _check_grader(
         "mode": pl.get_string_attrib(grader_tag, "mode", None),
         "allowundefined": pl.get_boolean_attrib(grader_tag, "allow-undefined", None),
     }
+
+    grader_weight = tool_params["weight"]
+    if grader_weight < 0:
+        raise ValueError(
+            f'Attribute "weight" of a grading criterion must be a non-negative integer, not {grader_weight}'
+        )
 
     return tool_params
 
