@@ -49,10 +49,8 @@ function dataset<Shape extends Record<string, z.ZodType>>({
 }: {
   description: string;
   /**
-   * The roles that can read these rows, as model functions take them: any one is enough. Match the
-   * PrairieLearn page that shows the rows. A model function checks a course instance role in its
-   * record's course instance; a dataset spans every course instance, so it checks the role in each
-   * one and returns only rows from course instances where it passes.
+   * Roles that can read this dataset (any one is enough). A course instance role only returns rows
+   * from course instances where the user has it.
    */
   requiredRole: (CourseRole | InstructorCourseInstanceRole)[];
   query: string;
@@ -60,8 +58,7 @@ function dataset<Shape extends Record<string, z.ZodType>>({
   /** Columns whose values can be large, so rows that include them are read a few at a time. */
   largeColumns?: (keyof Shape & string)[];
 }) {
-  // Rows are limited by course instance, so a dataset without the column, or with nulls in it,
-  // would silently lose rows. The shape's type allows any column name, so it may be missing.
+  // Rows are filtered by course_instance_id, so it must exist and be non-null.
   const courseInstanceId = schema.shape.course_instance_id as z.ZodType | undefined;
   if (
     requiredRole.some(isCourseInstanceRole) &&

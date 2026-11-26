@@ -49,11 +49,7 @@ router.use(
   }),
 );
 
-/**
- * The course instances the user can see, each with their student data access, from the same query
- * the Issues page uses. Checked on every request, so a role removed during a conversation applies
- * to its next read.
- */
+/** The user's course instances, with their student data permissions in each. */
 async function selectStaffCourseInstances(locals: ResLocalsForPage<'course'>) {
   const authzData = CoursePageAuthzDataSchema.parse(locals.authz_data);
   const courseInstances = await selectCourseInstancesWithStaffAccess({
@@ -63,10 +59,7 @@ async function selectStaffCourseInstances(locals: ResLocalsForPage<'course'>) {
   return { authzData, courseInstances };
 }
 
-/**
- * Whether the user has one of `requiredRole` in a course instance: `hasRole` on the course's
- * permissions with that course instance's student data access, as on a course instance page.
- */
+/** Whether the user has one of `requiredRole` in this course instance. */
 function hasRoleInCourseInstance(
   authzData: z.infer<typeof CoursePageAuthzDataSchema>,
   courseInstance: CourseInstanceAuthz,
@@ -82,10 +75,7 @@ function hasRoleInCourseInstance(
   );
 }
 
-/**
- * Why a read was refused for lacking all of `requiredRole`, in words the course agent can pass on
- * to the instructor.
- */
+/** Error message for the course agent when the user lacks `requiredRole`. */
 function missingRoleMessage(requiredRole: Role[]) {
   const where = requiredRole.some(isCourseInstanceRole)
     ? 'in at least one course instance'
@@ -129,7 +119,7 @@ router.post(
       const permitted = courseInstances.filter((ci) =>
         hasRoleInCourseInstance(authzData, ci, dataset.requiredRole),
       );
-      // A course with no course instances has no rows; refusing would blame a missing role.
+      // A course with no course instances has no rows, so return none rather than a 403.
       if (courseInstances.length > 0 && permitted.length === 0) {
         throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
       }

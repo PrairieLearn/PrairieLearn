@@ -22,10 +22,7 @@ const ColumnSchema = JsonSchemaProperty.extend({
 });
 const SchemaResponse = z.object({
   version: z.number(),
-  /**
-   * Short names of the course instances whose student data the instructor can see. Absent from
-   * an older PrairieLearn.
-   */
+  /** Course instances where the instructor can see student data. */
   student_data_course_instances: z.array(z.string()).optional(),
   datasets: z.record(
     z.string(),

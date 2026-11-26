@@ -17,8 +17,7 @@ const OPERATORS = {
  * dataset's request schema, so every column is one of the dataset's own; operators and directions
  * come from fixed lists, and every value, `in` list, and the limit are parameters.
  *
- * `courseInstanceIds`, when given, keeps only rows from those course instances. The request's
- * filters are joined to it with AND, so no filter can reach the other course instances.
+ * If `courseInstanceIds` is set, only rows from those course instances are returned.
  */
 export function selectCourseDatasetRowsQuery(
   datasetQuery: string,

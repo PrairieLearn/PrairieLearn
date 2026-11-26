@@ -120,7 +120,7 @@ const STUDENT_DATA_DATASETS = Object.entries(COURSE_DATA_DATASETS)
 describe('course agent course data', { timeout: 60_000, concurrent: false }, function () {
   let dataUrl: string;
   let owner: Record<string, string>;
-  // The test course's course instances. The exam attempt below is in Sp15.
+  // The exam attempt below is in Sp15.
   let sp15Id: string;
   let publicId: string;
 
