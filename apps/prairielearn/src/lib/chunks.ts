@@ -388,9 +388,10 @@ export function identifyChunksFromChangedFiles(
       // deeply-nested directories is the root of a particular question.
       const pathComponents = changedFile.split(path.sep).slice(1);
       // Progressively join more and more path components until we get
-      // something that corresponds to an actual question
+      // something that corresponds to an actual question. The path itself may
+      // be a question directory (e.g. when a file editor creates a question).
       let questionId: string | null = null;
-      for (let i = 1; i < pathComponents.length; i++) {
+      for (let i = 1; i <= pathComponents.length; i++) {
         const candidateQuestionId = path.join(...pathComponents.slice(0, i));
         if (candidateQuestionId in courseData.questions) {
           questionId = candidateQuestionId;
@@ -455,6 +456,31 @@ export function identifyChunksFromChangedFiles(
 }
 
 /**
+ * Returns a {@link CourseChunks} that marks every chunk in the course as
+ * changed, so that all of them are rebuilt.
+ */
+function allCourseChunks(courseData: CourseData): CourseChunks {
+  const courseInstances = new DefaultMap<string, CourseInstanceChunks>(() => ({
+    clientFilesCourseInstance: false,
+    assessments: new Set(),
+  }));
+  for (const [ciid, courseInstance] of Object.entries(courseData.courseInstances)) {
+    courseInstances.set(ciid, {
+      clientFilesCourseInstance: true,
+      assessments: new Set(Object.keys(courseInstance.assessments)),
+    });
+  }
+  return {
+    elements: true,
+    elementExtensions: true,
+    clientFilesCourse: true,
+    serverFilesCourse: true,
+    questions: new Set(Object.keys(courseData.questions)),
+    courseInstances,
+  };
+}
+
+/**
  * Returns all the chunks the are currently stored for the given course.
  */
 async function getAllChunksForCourse(courseId: string) {
@@ -490,7 +516,7 @@ interface DiffChunksOptions {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
-  changedFiles: string[];
+  changedCourseChunks: CourseChunks;
 }
 
 interface ChunksDiff {
@@ -508,7 +534,7 @@ async function diffChunks({
   coursePath,
   courseId,
   courseData,
-  changedFiles,
+  changedCourseChunks,
 }: DiffChunksOptions): Promise<ChunksDiff> {
   const rawCourseChunks = await getAllChunksForCourse(courseId);
 
@@ -584,8 +610,6 @@ async function diffChunks({
       }
     }
   });
-
-  const changedCourseChunks = identifyChunksFromChangedFiles(changedFiles, courseData);
 
   // Now, let's compute the set of chunks that we need to update or delete.
   const updatedChunks: ChunkMetadata[] = [];
@@ -888,43 +912,54 @@ export function getRuntimeDirectoryForCourse(course: CourseWithRuntimeDirectory)
   }
 }
 
-interface UpdateChunksForCourseOptions {
+/**
+ * Determines which chunks are rebuilt. Chunks that don't exist yet are always
+ * built, and chunks whose files were deleted are always removed.
+ */
+export type ChunkUpdateMode =
+  /** Rebuild chunks affected by files changed between two commits. */
+  | { mode: 'git-diff'; oldHash: string; newHash: string }
+  /** Rebuild chunks affected by the given course-relative file paths. */
+  | { mode: 'changed-files'; changedFiles: string[] }
+  /** Rebuild every chunk, e.g. to recover from chunks that are out of date. */
+  | { mode: 'full' };
+
+type UpdateChunksForCourseOptions = {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
-  oldHash?: string | null;
-  newHash?: string | null;
-  changedFiles?: string[];
-}
+  /** The commit the chunks are built from, or null if the course isn't a git repository. */
+  commitHash: string | null;
+} & ChunkUpdateMode;
 
-export async function updateChunksForCourse({
-  coursePath,
-  courseId,
-  courseData,
-  oldHash,
-  newHash,
-  changedFiles,
-}: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
-  const resolvedChangedFiles = await run(async () => {
-    if (changedFiles && (oldHash || newHash)) {
-      throw new Error('cannot specify changedFiles with oldHash or newHash');
+export async function updateChunksForCourse(
+  options: UpdateChunksForCourseOptions,
+): Promise<ChunksDiff> {
+  const { coursePath, courseId, courseData, commitHash } = options;
+  const changedCourseChunks = await run(async () => {
+    switch (options.mode) {
+      case 'git-diff': {
+        const changedFiles = await identifyChangedFiles(
+          coursePath,
+          options.oldHash,
+          options.newHash,
+        );
+        return identifyChunksFromChangedFiles(changedFiles, courseData);
+      }
+      case 'changed-files':
+        return identifyChunksFromChangedFiles(options.changedFiles, courseData);
+      case 'full':
+        return allCourseChunks(courseData);
     }
-
-    if (changedFiles) return changedFiles;
-
-    if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
-
-    return [];
   });
 
   const { updatedChunks, deletedChunks, replacedChunkIds } = await diffChunks({
     coursePath,
     courseId,
     courseData,
-    changedFiles: resolvedChangedFiles,
+    changedCourseChunks,
   });
 
-  const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
   const generatedChunks = await createAndUploadChunks(coursePath, courseId, updatedChunks);
 
   // Uploads finish before the transaction, so it only holds row locks briefly.
@@ -995,12 +1030,13 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     job.verbose('Loaded course data');
 
     job.info(chalk.bold('Generating all chunks'));
-    const chunkOptions = {
+    const chunkChanges = await updateChunksForCourse({
       coursePath: courseDir,
       courseId: String(course_id),
       courseData,
-    };
-    const chunkChanges = await updateChunksForCourse(chunkOptions);
+      commitHash: await getCourseCommitHash(courseDir),
+      mode: 'full',
+    });
     logChunkChangesToJob(chunkChanges, job);
     job.verbose('Generated all chunks');
   });

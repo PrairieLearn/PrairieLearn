@@ -7,7 +7,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { insertCourse, updateCourseCommitHash } from '../models/course.js';
+import { getCourseCommitHash, insertCourse, updateCourseCommitHash } from '../models/course.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
@@ -489,6 +489,8 @@ export async function createCourseRepoJob(
         coursePath: inserted_course.path,
         courseId: inserted_course.id,
         courseData: syncResult.courseData,
+        commitHash: await getCourseCommitHash(inserted_course.path),
+        mode: 'full',
       });
       logChunkChangesToJob(chunkChanges, job);
     }
