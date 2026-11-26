@@ -112,36 +112,14 @@ FROM
 LIMIT
   100;
 
--- BLOCK lock_course_for_chunk_publication
-SELECT
-  id
-FROM
-  courses
-WHERE
-  id = $course_id
-FOR NO KEY UPDATE;
-
 -- BLOCK supersede_chunks
-WITH
-  chunk_publication AS (
-    SELECT
-      clock_timestamp() AS created_at
-  ),
-  superseded AS (
-    UPDATE chunks
-    SET
-      superseded_at = chunk_publication.created_at
-    FROM
-      chunk_publication
-    WHERE
-      course_id = $course_id
-      AND id = ANY ($chunk_ids::bigint[])
-      AND superseded_at IS NULL
-  )
-SELECT
-  created_at::text
-FROM
-  chunk_publication;
+UPDATE chunks
+SET
+  superseded_at = $created_at::timestamptz
+WHERE
+  course_id = $course_id
+  AND id = ANY ($chunk_ids::bigint[])
+  AND superseded_at IS NULL;
 
 -- BLOCK insert_chunks
 INSERT INTO

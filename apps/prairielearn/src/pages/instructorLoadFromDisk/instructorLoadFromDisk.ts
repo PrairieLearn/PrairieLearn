@@ -8,7 +8,6 @@ import fs from 'fs-extra';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { chalk } from '../../lib/chalk.js';
-import { logChunkChangesToJob, updateChunksForCourse } from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { CourseSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
@@ -59,16 +58,6 @@ async function update(locals: UntypedResLocals) {
       }
       if (index !== courseDirs.size - 1) job.info('');
       if (syncResult.hadJsonErrors) anyCourseHadJsonErrors = true;
-      if (config.chunksGenerator) {
-        const chunkChanges = await updateChunksForCourse({
-          coursePath: courseDir,
-          courseId: syncResult.courseId,
-          courseData: syncResult.courseData,
-          oldHash: 'HEAD~1',
-          newHash: 'HEAD',
-        });
-        logChunkChangesToJob(chunkChanges, job);
-      }
     });
 
     if (anyCourseHadJsonErrors) {

@@ -4,6 +4,7 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -16,12 +17,20 @@ import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
-import { syncDiskToSql } from '../sync/syncFromDisk.js';
+import { syncDiskToSql, syncOrCreateDiskToSql } from '../sync/syncFromDisk.js';
 
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
+import { withConfig } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+async function initializeCourseRepository(courseDir: string) {
+  await execa('git', ['init'], { cwd: courseDir });
+  await execa('git', ['config', 'maintenance.auto', 'false'], { cwd: courseDir });
+  await execa('git', ['config', 'user.email', 'test@example.com'], { cwd: courseDir });
+  await execa('git', ['config', 'user.name', 'Test User'], { cwd: courseDir });
+}
 
 const COURSE: courseDB.CourseData = {
   course: makeInfoFile(),
@@ -367,6 +376,149 @@ describe('chunks', () => {
       );
     });
 
+    it('publishes chunks and question settings atomically', async () => {
+      const { logger } = makeMockLogger();
+      const publicationDate = () =>
+        sqldb.queryScalar(sql.select_publication_date, { question_id: questionId }, z.string());
+      const chunkDate = (chunkId: string) =>
+        sqldb.queryScalar(sql.select_chunk_creation_date, { chunk_id: chunkId }, z.string());
+
+      await withConfig({ chunksGenerator: true }, async () => {
+        await syncDiskToSql(course, logger);
+        const initialChunks = await chunksLib.selectChunksForCourse(course.id);
+        const initialDate = await publicationDate();
+        const initialDependency = initialChunks.find(
+          (chunk) => chunk.type === 'serverFilesCourse',
+        )!;
+
+        await fs.appendFile(
+          path.join(tempTestCourseDir.path, 'questions/addNumbers/server.py'),
+          '\n# New revision\n',
+        );
+        await sqldb.execute(sql.reject_settings);
+        try {
+          await expect(syncDiskToSql(course, logger)).rejects.toThrow('reject_settings');
+        } finally {
+          await sqldb.execute(sql.allow_settings);
+        }
+        expect(await chunksLib.selectChunksForCourse(course.id)).toEqual(initialChunks);
+        expect(await publicationDate()).toBe(initialDate);
+
+        await syncDiskToSql(course, logger);
+        const retriedChunks = await chunksLib.selectChunksForCourse(course.id);
+        const retriedDate = await publicationDate();
+        expect(retriedDate).not.toBe(initialDate);
+        const questionChunk = retriedChunks.find((chunk) => chunk.question_id === questionId)!;
+        expect(retriedDate).toBe(await chunkDate(questionChunk.id));
+        expect(retriedChunks).toContainEqual(initialDependency);
+
+        await fs.writeFile(
+          path.join(tempTestCourseDir.path, 'serverFilesCourse/helper.py'),
+          '# Dependency edit\n',
+        );
+        await syncDiskToSql(course, logger);
+        const chunks = await chunksLib.selectChunksForCourse(course.id);
+        const dependency = chunks.find((chunk) => chunk.type === 'serverFilesCourse')!;
+        expect(chunks).toContainEqual(questionChunk);
+        expect(dependency.id).not.toBe(initialDependency.id);
+        expect(await publicationDate()).toBe(await chunkDate(dependency.id));
+      });
+    });
+
+    it('updates existing instance and assessment asset chunks from the last Load From Disk sync', async () => {
+      const courseDir = tempTestCourseDir.path;
+      const { logger } = makeMockLogger();
+      const assets = [
+        'courseInstances/Sp15/clientFilesCourseInstance/data.txt',
+        'courseInstances/Sp15/assessments/exam1-automaticTestSuite/clientFilesAssessment/test.txt',
+      ];
+      async function expectArchivedAssets(contents: string) {
+        await chunksLib.ensureChunksForCourseAsync(course.id, [
+          { type: 'clientFilesCourseInstance', courseInstanceId },
+          { type: 'clientFilesAssessment', courseInstanceId, assessmentId },
+        ]);
+        const runtimeDir = chunksLib.getRuntimeDirectoryForCourse(course);
+        for (const asset of assets) {
+          expect(await fs.readFile(path.join(runtimeDir, asset), 'utf8')).toBe(contents);
+        }
+      }
+      for (const asset of assets) {
+        await fs.outputFile(path.join(courseDir, asset), 'Initial asset');
+      }
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+      });
+      expect((await selectCourseById(course.id)).commit_hash).toBeNull();
+
+      for (const asset of assets) {
+        await fs.writeFile(path.join(courseDir, asset), 'First synced asset');
+      }
+      await initializeCourseRepository(courseDir);
+      await execa('git', ['add', '-A'], { cwd: courseDir });
+      await execa('git', ['commit', '-m', 'Initial course'], { cwd: courseDir });
+
+      await withConfig({ chunksGenerator: true }, async () => {
+        await syncOrCreateDiskToSql(courseDir, logger);
+        await expectArchivedAssets('First synced asset');
+
+        // Separate commits distinguish the last sync baseline from HEAD~1.
+        for (const asset of assets) {
+          await fs.writeFile(path.join(courseDir, asset), 'Updated asset');
+          await execa('git', ['add', '--', asset], { cwd: courseDir });
+          await execa('git', ['commit', '-m', 'Update asset'], { cwd: courseDir });
+        }
+        const { stdout: commitHash } = await execa('git', ['rev-parse', 'HEAD'], {
+          cwd: courseDir,
+        });
+        await syncOrCreateDiskToSql(courseDir, logger);
+
+        expect((await selectCourseById(course.id)).commit_hash).toBe(commitHash);
+        await expectArchivedAssets('Updated asset');
+      });
+    });
+
+    it('refreshes course assets once when establishing a Git baseline without local questions', async () => {
+      const courseDir = path.join(tempTestCourseDir.path, 'courseWithoutQuestions');
+      const { logger } = makeMockLogger();
+      const asset = path.join('clientFilesCourse', 'data.txt');
+      const assetPath = path.join(courseDir, asset);
+      await fs.outputJson(path.join(courseDir, 'infoCourse.json'), {
+        name: 'No questions',
+        title: 'Course without local questions',
+        topics: [],
+      });
+      await fs.outputFile(assetPath, 'Original asset');
+
+      await withConfig({ chunksGenerator: true }, async () => {
+        const { courseId } = await syncOrCreateDiskToSql(courseDir, logger);
+        const legacyCourse = await selectCourseById(courseId);
+        expect(legacyCourse.commit_hash).toBeNull();
+        const baseline = await chunksLib.selectChunksForCourse(courseId);
+        expect(baseline).toMatchObject([{ type: 'clientFilesCourse' }]);
+
+        await syncOrCreateDiskToSql(courseDir, logger);
+        expect(await chunksLib.selectChunksForCourse(courseId)).toEqual(baseline);
+
+        await initializeCourseRepository(courseDir);
+        await execa('git', ['add', '-A'], { cwd: courseDir });
+        await execa('git', ['commit', '-m', 'Initial course'], { cwd: courseDir });
+        await fs.writeFile(assetPath, 'Updated asset');
+        await execa('git', ['add', '--', asset], { cwd: courseDir });
+        await execa('git', ['commit', '-m', 'Update asset'], { cwd: courseDir });
+
+        await syncOrCreateDiskToSql(courseDir, logger);
+        const refreshed = await chunksLib.selectChunksForCourse(courseId);
+        await chunksLib.ensureChunksForCourseAsync(courseId, { type: 'clientFilesCourse' });
+        const runtimeDir = chunksLib.getRuntimeDirectoryForCourse(legacyCourse);
+        expect(await fs.readFile(path.join(runtimeDir, asset), 'utf8')).toBe('Updated asset');
+
+        await syncOrCreateDiskToSql(courseDir, logger);
+        expect(await chunksLib.selectChunksForCourse(courseId)).toEqual(refreshed);
+      });
+    });
+
     it('handles question nesting after a rename', async () => {
       // Scenario: there's a question named `foo/bar` (that is,
       // `foo/bar/info.json` exists). We load the chunk for that
@@ -486,10 +638,8 @@ describe('chunks', () => {
       const serverFilePath = path.join(courseDir, 'serverFilesCourse', 'helper.py');
 
       await fs.writeFile(questionFilePath, 'def get_value():\n    return 42\n');
-      await execa('git', ['init'], { cwd: courseDir });
+      await initializeCourseRepository(courseDir);
       await execa('git', ['config', 'diff.renames', 'true'], { cwd: courseDir });
-      await execa('git', ['config', 'user.email', 'test@example.com'], { cwd: courseDir });
-      await execa('git', ['config', 'user.name', 'Test User'], { cwd: courseDir });
       await execa('git', ['add', '-A'], { cwd: courseDir });
       await execa('git', ['commit', '-m', 'Initial course'], { cwd: courseDir });
       const oldHash = (await execa('git', ['rev-parse', 'HEAD'], { cwd: courseDir })).stdout;
@@ -533,7 +683,7 @@ describe('chunks', () => {
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         oldHash,
-        newHash,
+        commitHash: newHash,
       });
       await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
@@ -1086,49 +1236,18 @@ describe('chunks', () => {
     it('no-op update does not create duplicate chunks when IDs unchanged', async () => {
       const courseDir = tempTestCourseDir.path;
 
-      // Generate initial chunks for the test course.
-      await chunksLib.updateChunksForCourse({
+      const options = {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-      });
-
-      // Capture baseline chunk set and counts
+      };
+      await chunksLib.updateChunksForCourse(options);
       const initialChunks = await chunksLib.selectChunksForCourse(course.id);
-      const initialCount = initialChunks.length;
-      const countBy = (pred: (c: any) => boolean) => initialChunks.filter(pred).length;
 
-      const initialCourseCount = countBy((c) => c.type === 'clientFilesCourse');
-      const initialCiCount = countBy(
-        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
+      await chunksLib.updateChunksForCourse(options);
+      expect(new Set(await chunksLib.selectChunksForCourse(course.id))).toEqual(
+        new Set(initialChunks),
       );
-      const initialAssessCount = countBy(
-        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
-      );
-
-      // Run update again with no changes
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId: course.id,
-        courseData: await courseDB.loadFullCourse(course.id, courseDir),
-      });
-
-      // Fetch again and ensure counts are unchanged
-      const afterChunks = await chunksLib.selectChunksForCourse(course.id);
-      const afterCount = afterChunks.length;
-      assert.equal(afterCount, initialCount);
-
-      const afterCourseCount = afterChunks.filter((c) => c.type === 'clientFilesCourse').length;
-      const afterCiCount = afterChunks.filter(
-        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
-      ).length;
-      const afterAssessCount = afterChunks.filter(
-        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
-      ).length;
-
-      assert.equal(afterCourseCount, initialCourseCount);
-      assert.equal(afterCiCount, initialCiCount);
-      assert.equal(afterAssessCount, initialAssessCount);
     });
   });
 });

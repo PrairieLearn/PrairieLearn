@@ -1,24 +1,26 @@
 import assert from 'assert';
-import * as child_process from 'child_process';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
-import * as util from 'util';
 
 import { S3, S3ServiceException } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
+import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tar from 'tar';
 import z from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
-import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { getCourseCommitHash, getLockNameForCoursePath } from '../models/course.js';
+import { getLockNameForCoursePath, getOptionalCourseCommitHash } from '../models/course.js';
+import {
+  beginQuestionVersionPublication,
+  prepareQuestionVersions,
+  writeQuestionVersions,
+} from '../models/question-version.js';
 import * as courseDB from '../sync/course-db.js';
 import { type CourseData } from '../sync/course-db.js';
 
@@ -287,62 +289,14 @@ export function coursePathForChunk(coursePath: string, chunkMetadata: ChunkMetad
   return path.join(coursePath, pathForChunk(chunkMetadata));
 }
 
-/**
- * Identifies the files that changes between two commits in a given course.
- *
- * @param coursePath The course directory to diff
- * @param oldHash The old (previous) hash for the diff
- * @param newHash The new (current) hash for the diff
- * @returns List of changed files
- */
-async function identifyChangedFiles(
-  coursePath: string,
-  oldHash: string,
-  newHash: string,
-): Promise<string[]> {
-  // In some specific scenarios, the course directory and the root of the course
-  // repository might be different. For example, the example course is usually
-  // manually cloned in production environments, and then the course is added
-  // with the path set to the absolute path of the repo _plus_ `exampleCourse/`.
-  //
-  // In these cases, we need to make sure that the paths we're returning from
-  // this function are relative to the course directory, not the root of the
-  // repository. To do this, we query git itself for the root of the repository,
-  // construct an absolute path for each file, and then trim off the course path.
-  const { stdout: topLevelStdout } = await util.promisify(child_process.exec)(
-    'git rev-parse --show-toplevel',
-    { cwd: coursePath },
+/** Returns both sides of renames, relative to the course even when it is a subdirectory. */
+async function identifyChangedFiles(coursePath: string, oldHash: string, commitHash: string) {
+  const { stdout } = await execa(
+    'git',
+    ['diff', '--relative', '--no-renames', '--name-only', '-z', oldHash, commitHash, '--', '.'],
+    { cwd: coursePath, maxBuffer: 10 * 1024 * 1024 },
   );
-  const topLevel = topLevelStdout.trim();
-
-  // Both sides of a rename may belong to independently invalidated chunks. NUL
-  // delimiters keep filenames unambiguous.
-  const { stdout: diffStdout } = await util.promisify(child_process.exec)(
-    `git diff --no-renames --name-only -z ${oldHash}..${newHash}`,
-    {
-      cwd: coursePath,
-      // This defaults to 1MB of output, however, we've observed in the past that
-      // courses will go long periods of time without syncing, which in turn will
-      // result in a large number of changed files. The largest diff we've seen
-      // is 1.6MB of text; this new value was chosen to give us plenty of
-      // headroom.
-      maxBuffer: 10 * 1024 * 1024,
-    },
-  );
-  const changedFiles = diffStdout.split('\0').filter((changedFile) => changedFile.length > 0);
-
-  // Construct absolute path to all changed files.
-  const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
-
-  // Exclude any changed files that aren't in the course directory.
-  const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
-    contains(coursePath, absoluteChangedFile),
-  );
-
-  // Convert all absolute paths back into relative paths.
-  return courseChangedFiles.map((absoluteChangedFile) =>
-    path.relative(coursePath, absoluteChangedFile),
-  );
+  return stdout.split('\0').filter(Boolean);
 }
 
 /**
@@ -491,6 +445,9 @@ interface DiffChunksOptions {
   courseId: string;
   courseData: CourseData;
   changedFiles: string[];
+  questionsToArchive: Set<string>;
+  dependenciesChanged: boolean;
+  refreshNonQuestionChunks: boolean;
 }
 
 interface ChunksDiff {
@@ -509,9 +466,11 @@ async function diffChunks({
   courseId,
   courseData,
   changedFiles,
+  questionsToArchive,
+  dependenciesChanged,
+  refreshNonQuestionChunks,
 }: DiffChunksOptions): Promise<ChunksDiff> {
   const rawCourseChunks = await getAllChunksForCourse(courseId);
-
   // Build a data structure from the result of getAllChunksForCourse so that
   // we can efficiently query to see if a given chunk exists
   const existingCourseChunks: CourseChunks = {
@@ -563,6 +522,7 @@ async function diffChunks({
       case 'question':
         assert(courseChunk.question_name != null);
         existingCourseChunks.questions.add(courseChunk.question_name);
+        if (courseChunk.deleted) questionsToArchive.add(courseChunk.question_name);
         break;
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
@@ -599,7 +559,13 @@ async function diffChunks({
     'serverFilesCourse',
   ] as const) {
     const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
-    if (hasChunkDirectory && (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])) {
+    if (
+      hasChunkDirectory &&
+      (refreshNonQuestionChunks ||
+        !existingCourseChunks[chunkType] ||
+        changedCourseChunks[chunkType] ||
+        dependenciesChanged)
+    ) {
       updatedChunks.push({ type: chunkType });
     } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
       deletedChunks.push({ type: chunkType });
@@ -608,7 +574,11 @@ async function diffChunks({
 
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
-    if (!existingCourseChunks.questions.has(qid) || changedCourseChunks.questions.has(qid)) {
+    if (
+      !existingCourseChunks.questions.has(qid) ||
+      changedCourseChunks.questions.has(qid) ||
+      questionsToArchive.has(qid)
+    ) {
       updatedChunks.push({
         type: 'question',
         questionName: qid,
@@ -675,7 +645,10 @@ async function diffChunks({
         changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCourseInstanceChunk || changedCourseInstanceChunk || courseInstanceIdMismatch)
+        (refreshNonQuestionChunks ||
+          !existingCourseInstanceChunk ||
+          changedCourseInstanceChunk ||
+          courseInstanceIdMismatch)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -705,7 +678,10 @@ async function diffChunks({
           changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          (!hasExistingAssessment || hasChangedAssessment || assessmentIdMismatch)
+          (refreshNonQuestionChunks ||
+            !hasExistingAssessment ||
+            hasChangedAssessment ||
+            assessmentIdMismatch)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -892,8 +868,11 @@ interface UpdateChunksForCourseOptions {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
+  questionIds?: Record<string, string>;
+  /** An explicit null denotes a sync with no previous publication commit. */
   oldHash?: string | null;
-  newHash?: string | null;
+  /** The resolved commit at HEAD, if the caller already has it. */
+  commitHash?: string | null;
   changedFiles?: string[];
 }
 
@@ -901,52 +880,66 @@ export async function updateChunksForCourse({
   coursePath,
   courseId,
   courseData,
+  questionIds,
   oldHash,
-  newHash,
+  commitHash: knownCommitHash,
   changedFiles,
 }: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
-  const resolvedChangedFiles = await run(async () => {
-    if (changedFiles && (oldHash || newHash)) {
-      throw new Error('cannot specify changedFiles with oldHash or newHash');
-    }
+  if (changedFiles && oldHash) throw new Error('cannot specify both changedFiles and oldHash');
+  const commitHash =
+    knownCommitHash === undefined ? await getOptionalCourseCommitHash(coursePath) : knownCommitHash;
+  // Existing non-question archives may be stale when a course starts tracking its Git baseline.
+  const refreshNonQuestionChunks = !changedFiles && oldHash === null && commitHash !== null;
+  if (!changedFiles && oldHash && commitHash) {
+    changedFiles = await identifyChangedFiles(coursePath, oldHash, commitHash);
+  }
 
-    if (changedFiles) return changedFiles;
-
-    if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
-
-    return [];
+  const publication = await prepareQuestionVersions({
+    courseId,
+    coursePath,
+    courseData,
+    questionIds,
+    usesChunks: true,
   });
-
-  const { updatedChunks, deletedChunks, replacedChunkIds } = await diffChunks({
+  const diff = await diffChunks({
     coursePath,
     courseId,
     courseData,
-    changedFiles: resolvedChangedFiles,
+    changedFiles: changedFiles ?? [],
+    questionsToArchive: publication.questionsToArchive,
+    dependenciesChanged: publication.dependenciesChanged,
+    refreshNonQuestionChunks,
   });
 
-  const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
-  const generatedChunks = await createAndUploadChunks(coursePath, courseId, updatedChunks);
+  if (
+    !diff.updatedChunks.length &&
+    !diff.replacedChunkIds.length &&
+    !publication.versions.length &&
+    !publication.supersededIds.length
+  ) {
+    return diff;
+  }
+
+  const generatedChunks = await createAndUploadChunks(coursePath, courseId, diff.updatedChunks);
 
   // Uploads finish before the transaction, so it only holds row locks briefly.
   await sqldb.runInTransactionAsync(async () => {
-    await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
-    // Preserve database precision so old and new revisions meet at the same instant.
-    const publishedAt = await sqldb.queryScalar(
-      sql.supersede_chunks,
-      { course_id: courseId, chunk_ids: replacedChunkIds },
-      z.string(),
-    );
+    const publishedAt = await beginQuestionVersionPublication(courseId);
+    await sqldb.execute(sql.supersede_chunks, {
+      course_id: courseId,
+      chunk_ids: diff.replacedChunkIds,
+      created_at: publishedAt,
+    });
     await sqldb.execute(sql.insert_chunks, {
       course_id: courseId,
-      // Force this to a string; otherwise, our code in `sql-db.js` will try to
-      // convert it into a Postgres `ARRAY[...]` type, which we don't want.
       chunks: JSON.stringify(generatedChunks),
       created_at: publishedAt,
       commit_hash: commitHash,
     });
+    await writeQuestionVersions({ publication, publishedAt, commitHash });
   });
 
-  return { updatedChunks, deletedChunks, replacedChunkIds };
+  return diff;
 }
 
 /**

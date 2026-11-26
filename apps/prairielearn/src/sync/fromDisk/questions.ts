@@ -4,27 +4,16 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { QuestionVersionSettingSchema } from '../../lib/db-types.js';
 import { isDraftQid } from '../../lib/draft-question.js';
 import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const VersionSettingsSchema = QuestionVersionSettingSchema.omit({ question_version_id: true });
 
-function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
-  if (!q) return null;
-
-  let partialCredit;
-  if (q.partialCredit != null) {
-    partialCredit = q.partialCredit;
-  } else {
-    if (q.type === 'v3') {
-      partialCredit = true;
-    } else {
-      partialCredit = false;
-    }
-  }
-
+function getParamsForQuestion(qid: string, q: QuestionJson) {
   const workspaceOptions = q.workspaceOptions ?? defaultWorkspaceOptions;
   let external_grading_entrypoint = q.externalGradingOptions?.entrypoint;
   if (Array.isArray(external_grading_entrypoint)) {
@@ -38,7 +27,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
     type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,
     authors: q.authors,
-    partial_credit: partialCredit,
+    partial_credit: q.partialCredit ?? q.type === 'v3',
     template_directory: q.template,
     options: q.options,
     client_files: q.clientFiles,
@@ -71,6 +60,16 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   };
 }
 
+/** Uses the same defaults and command normalization as live question sync. */
+export function getQuestionVersionSettings(qid: string, question: QuestionJson) {
+  const params = getParamsForQuestion(qid, question);
+  return VersionSettingsSchema.parse({
+    // SQL sync stores absent settings as NULL. Preserve that distinction in snapshots.
+    ...Object.fromEntries(Object.entries(params).map(([key, value]) => [key, value ?? null])),
+    directory: qid,
+  });
+}
+
 export async function sync(
   courseId: string,
   courseData: CourseData,
@@ -81,7 +80,7 @@ export async function sync(
       question.uuid,
       infofile.stringifyErrors(question),
       infofile.stringifyWarnings(question),
-      getParamsForQuestion(qid, question.data),
+      question.data ? getParamsForQuestion(qid, question.data) : null,
     ]);
   });
 

@@ -25,7 +25,7 @@ import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { renderMustache } from '../lib/mustache.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
-import { getOrUpdateCourseCommitHash } from '../models/course.js';
+import { getCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
   ElementCoreJsonSchema,
@@ -1910,7 +1910,7 @@ async function getCacheKey(
   context: QuestionProcessingContext,
 ): Promise<string | null> {
   try {
-    const commitHash = await getOrUpdateCourseCommitHash(course);
+    const commitHash = course.commit_hash ?? (await getCourseCommitHash(course.path));
 
     const dataHash = objectHash(
       [
