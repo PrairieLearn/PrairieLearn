@@ -36,8 +36,6 @@ export type ConversationState = ConversationLifecycle & {
   reviewId: string | null;
   /** Generated from the first message; PrairieLearn shows its own fallback until then. */
   title: string | null;
-  /** Whether reviews the agent submits from now on are approved for the instructor. */
-  approvalMode: ApprovalMode;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
@@ -331,29 +329,21 @@ export const PageLocationSchema = z.object({
 
 export type PageLocation = z.infer<typeof PageLocationSchema>;
 
-/**
- * Whether the instructor decides each `request_changes` review or it is approved for them. The
- * browser sets it on the conversation, and a new conversation's first message carries the mode
- * chosen before it existed. It applies to reviews the agent submits from then on.
- */
-export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
-
-export type ApprovalMode = z.infer<typeof ApprovalModeSchema>;
-
 /** Metadata the browser attaches to a user message. */
-export const UserMessageMetadataSchema = z.object({
-  location: PageLocationSchema.optional(),
-  // A mode added by a newer PrairieLearn must not discard the rest of the metadata.
-  approvalMode: ApprovalModeSchema.optional().catch(undefined),
-});
+export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
+
+/** PrairieLearn's answer when the agent service reports a submitted review. */
+export const ReviewSubmittedSchema = z.object({ autoApproved: z.boolean() });
+
+export type ReviewSubmitted = z.infer<typeof ReviewSubmittedSchema>;
 
 /**
- * A `data-review` part, which shows a review in chat history by ID. `autoApprove` records that the
- * review was submitted under `always_approve`, so the agent service is approving it.
+ * A `data-review` part, which shows a review in chat history by ID. `autoApproved` records that
+ * PrairieLearn approved it when it was submitted, so no one is asked to review it.
  */
 export const ReviewPartSchema = z.object({
   reviewId: z.string(),
-  autoApprove: z.boolean().optional(),
+  autoApproved: z.literal(true).optional(),
 });
 
 export type ReviewPart = z.infer<typeof ReviewPartSchema>;

@@ -244,6 +244,17 @@ function Summary({
   );
 }
 
+/** A review PrairieLearn approved when the agent submitted it; the agent reports the result. */
+export function AutoApprovedChanges() {
+  return (
+    <div className="d-flex align-items-center gap-2 text-body-secondary">
+      {/* Takes a tool row's chevron space, so the icons line up. */}
+      <i className="bi bi-chevron-right small flex-shrink-0 invisible" aria-hidden="true" />
+      <Summary icon="bi-shield-check" running={false} label="Auto-approved changes" note={null} />
+    </div>
+  );
+}
+
 function Row({
   summary,
   onExpand,

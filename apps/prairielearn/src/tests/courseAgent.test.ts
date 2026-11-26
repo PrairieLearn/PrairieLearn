@@ -12,7 +12,6 @@ import { dir as temporaryDirectory } from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
-  MAX_REVIEW_FILE_BYTES,
   PageCatalogSchema,
   UsageDecisionSchema,
   type UsageReport,
@@ -24,6 +23,7 @@ import { withResolvers } from '@prairielearn/utils';
 import { buildPageCatalog } from '../ee/lib/course-agent/pages.js';
 import {
   insertCourseAgentConversation,
+  selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
 } from '../ee/models/course-agent-conversation.js';
 import { selectCourseAgentConversationUsage } from '../ee/models/course-agent-usage-report.js';
@@ -61,6 +61,7 @@ function createConversation(user: User) {
     user_id: user.id,
     agent_conversation_id: crypto.randomUUID(),
     title: 'Test conversation',
+    approval_mode: 'approval_required',
   });
 }
 
@@ -170,34 +171,6 @@ describe('Course agent access and conversation privacy', () => {
     expect(response.status).toBe(200);
     return UsageDecisionSchema.parse(await response.json());
   }
-
-  test('accepts an approved review above the shared JSON limit, after authenticating', async () => {
-    const body = JSON.stringify({
-      snapshot: {
-        type: 'github',
-        repository: 'PrairieLearn/course',
-        branch: 'master',
-        baseCommit: 'a'.repeat(40),
-        additions: Array.from({ length: 6 }, (_, index) => ({
-          path: `file${index}.txt`,
-          contents: 'A'.repeat(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3)),
-        })),
-        deletions: [],
-      },
-    });
-    const approve = (token: string) =>
-      fetch(
-        `${siteUrl}/pl/api/course-agent/conversations/${crypto.randomUUID()}/reviews/${crypto.randomUUID()}/approve`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body,
-        },
-      );
-    expect((await approve('wrong-token')).status).toBe(401);
-    // No conversation has this ID. Reaching that check means the body was parsed and validated.
-    expect((await approve('test-token')).status).toBe(404);
-  });
 
   test('records each report once and prices it', async () => {
     const conversation = await createConversation(owner);
@@ -329,7 +302,7 @@ describe('Course agent access and conversation privacy', () => {
     ]);
   });
 
-  test("tells only the caller's own conversation its approval mode", async () => {
+  test("saves the approval mode on the caller's own conversation and as their default", async () => {
     const own = await createConversation(owner);
     const other = await createConversation(otherOwner);
     await withUser(owner, async () => {
@@ -344,13 +317,20 @@ describe('Course agent access and conversation privacy', () => {
         conversationId: own.id,
         approvalMode: 'always_approve',
       });
+      expect(await client.courseAgent.settings.query()).toMatchObject({
+        approvalMode: 'always_approve',
+      });
     });
-    expect(serviceRequests.map(({ path, body }) => ({ path, body }))).toEqual([
-      {
-        path: `/conversations/${own.agent_conversation_id}/approval-mode`,
-        body: { approvalMode: 'always_approve' },
-      },
-    ]);
+    const modes = Object.fromEntries(
+      (await selectCourseAgentConversationsForUser({ course_id: '1', user_id: owner.id }))
+        .concat(
+          await selectCourseAgentConversationsForUser({ course_id: '1', user_id: otherOwner.id }),
+        )
+        .map((conversation) => [conversation.id, conversation.approval_mode]),
+    );
+    expect(modes[own.id]).toBe('always_approve');
+    expect(modes[other.id]).toBe('approval_required');
+    expect(serviceRequests).toEqual([]);
   });
 
   test('downloads a sent file, and displays an image preview', async () => {

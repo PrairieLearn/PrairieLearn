@@ -10,7 +10,6 @@ import { type UIMessage, createUIMessageStreamResponse, parseJsonEventStream } f
 import { z } from 'zod';
 
 import {
-  type ApprovalMode,
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
@@ -20,6 +19,7 @@ import {
   type Review,
   type ReviewPart,
   type ReviewSnapshot,
+  ReviewSubmittedSchema,
   type Usage,
   UsageDecisionSchema,
   type UsageReport,
@@ -101,13 +101,8 @@ const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
 // Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
 // within one decision.
 const MAX_PROVIDER_REQUESTS = 4;
-// A review submitted under `always_approve` is approved here and sent to PrairieLearn to save.
-// While PrairieLearn is unreachable the request is retried with backoff, then the review waits
-// for the instructor.
-const AUTO_APPROVAL_RETRY_SECONDS = 15;
-const MAX_AUTO_APPROVAL_ATTEMPTS = 6;
-// The request carries the changed files, so it gets longer than other service requests.
-const AUTO_APPROVAL_TIMEOUT_MS = 30_000;
+// Reporting a review may approve it, which fetches its snapshot and starts the save.
+const REVIEW_SUBMITTED_TIMEOUT_MS = 30_000;
 
 const OPENAI_API = 'https://api.openai.com';
 
@@ -227,13 +222,6 @@ interface RecordData {
    * the denial with that message, which the browser sends once PrairieLearn records the denial.
    */
   deniedByMessage?: string | null;
-  /**
-   * Set by the browser. A user message's mode applies only while this is absent, which is how a
-   * mode chosen before the conversation existed arrives; later the browser sets it directly, so a
-   * message that waited for admission cannot restore an older choice. Absent means
-   * `approval_required`.
-   */
-  approvalMode?: ApprovalMode;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
   /** User messages refused by the usage limit, sent to Codex with the next admitted message. */
@@ -286,7 +274,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     sandboxLost: false,
     reviewId: null,
     title: null,
-    approvalMode: 'approval_required',
   };
 
   private metering: MeteringState = {
@@ -363,7 +350,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
       title: this.record.title ?? null,
-      approvalMode: this.record.approvalMode ?? 'approval_required',
     };
     // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
     const retryAt = this.metering.limitedUntil;
@@ -480,14 +466,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     );
     // Idempotent: every connection shares one interval schedule.
     await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
-  }
-
-  /**
-   * Lets the instructor change the mode without sending a message, so it also applies to a review
-   * the agent submits while receiving an earlier review's result.
-   */
-  setApprovalMode(approvalMode: ApprovalMode) {
-    this.setRecord({ ...this.record, approvalMode });
   }
 
   /** Clients ignore this message type; sending it only keeps proxied sockets from idling out. */
@@ -725,39 +703,26 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
   }
 
-  private scheduleAutoApproval(reviewId: string, attempt: number, delaySeconds: number) {
-    void this.schedule(delaySeconds, 'approveReview', { reviewId, attempt }).catch(
-      (error: unknown) => this.reportError(error),
-    );
-  }
-
   /**
-   * Approves a review submitted under `always_approve` and sends its changes to PrairieLearn to
-   * save. The decision is made here, where the mode is known, so no browser needs to be open and
-   * PrairieLearn does not fetch the changes back. PrairieLearn still refuses to save for an
-   * instructor who can no longer edit the course, which leaves the review for them to decide.
+   * Tells PrairieLearn about a submitted review, which it approves now if the conversation's owner
+   * chose auto-approve. A review PrairieLearn could not be told about waits for the instructor.
    */
-  async approveReview({ reviewId, attempt }: { reviewId: string; attempt: number }) {
-    if (this.record.review?.result) return;
-    const review = this.getReview(reviewId);
-    if (!review) return;
-    let status: number;
+  private async reportReviewSubmitted(reviewId: string) {
     try {
-      status = (
-        await this.postToPrairieLearn(
-          `conversations/${this.name}/reviews/${reviewId}/approve`,
-          { snapshot: review.snapshot },
-          AUTO_APPROVAL_TIMEOUT_MS,
-        )
-      ).status;
-    } catch {
-      status = 0;
-    }
-    if (status >= 200 && status < 300) return;
-    const unreachable = status === 0 || status >= 500;
-    logEvent('review_auto_approval_failed', { conversationId: this.name, reviewId, status });
-    if (unreachable && attempt + 1 < MAX_AUTO_APPROVAL_ATTEMPTS) {
-      this.scheduleAutoApproval(reviewId, attempt + 1, AUTO_APPROVAL_RETRY_SECONDS * 2 ** attempt);
+      const response = await this.postToPrairieLearn(
+        `conversations/${this.name}/reviews/${reviewId}`,
+        {},
+        REVIEW_SUBMITTED_TIMEOUT_MS,
+      );
+      if (!response.ok) throw new Error(`PrairieLearn answered ${response.status}`);
+      return ReviewSubmittedSchema.parse(await response.json()).autoApproved;
+    } catch (error) {
+      logEvent('review_submitted_report_failed', {
+        conversationId: this.name,
+        reviewId,
+        error: String(error),
+      });
+      return false;
     }
   }
 
@@ -1024,8 +989,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const delivered = continuation && review?.result ? review : null;
-    const metadata = message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data;
-    const location = metadata?.location;
+    const location =
+      message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
     // File parts are left out rather than joined as blank lines.
     const messageText = sent
       .map((entry) =>
@@ -1069,7 +1034,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
-      approvalMode: this.record.approvalMode ?? metadata?.approvalMode,
       // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
       unsentMessageIds: [],
@@ -1406,7 +1370,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       return { success: false, text: 'Another submission is already waiting for the instructor.' };
     }
     // A turn that stopped or failed during capture can no longer show the review, so it must not
-    // record one. Recording and showing it below happen without an intervening await.
+    // record one.
     if (!turn || this.active !== turn || turn.stop || !this.native?.streaming) {
       return { success: false, text: 'The turn ended before the changes were submitted.' };
     }
@@ -1429,18 +1393,18 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         waitsForResume: false,
       },
     });
-    // Chat history shows the review by ID; its contents and outcome stay out of history.
-    const autoApprove = this.record.approvalMode === 'always_approve';
+    const autoApproved = await this.reportReviewSubmitted(id);
+    // Chat history shows the review by ID; its contents and outcome stay out of history. If the
+    // turn ended meanwhile, the browser shows the conversation's pending review without this part.
     this.native?.emit({
       type: 'data-review',
       id,
-      data: { reviewId: id, ...(autoApprove ? { autoApprove } : {}) } satisfies ReviewPart,
+      data: { reviewId: id, ...(autoApproved ? { autoApproved } : {}) } satisfies ReviewPart,
     });
-    if (autoApprove) this.scheduleAutoApproval(id, 0, 0);
     return {
       success: true,
       text: `${
-        autoApprove
+        autoApproved
           ? 'Submitted the changes; edits after this point are not part of them. The instructor chose to approve changes without reviewing them, so they are being saved now. The result arrives in a later message.'
           : 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message.'
       } End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.`,

@@ -1,19 +1,15 @@
 import { timingSafeEqual } from 'node:crypto';
 
-import express, { Router } from 'express';
+import { Router } from 'express';
 import { z } from 'zod';
 
-import {
-  MAX_REVIEW_BYTES,
-  ReviewSnapshotSchema,
-  UsageReportSchema,
-} from '@prairielearn/course-agent-types';
+import { UsageReportSchema } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { parseRequest } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { approveReviewAutomatically } from '../lib/course-agent/apply-changes.js';
+import { approveSubmittedReview } from '../lib/course-agent/apply-changes.js';
 import { recordCourseAgentUsageReport } from '../lib/course-agent/usage.js';
 
 /** Requests from the course agent service, which authenticates with its service token. */
@@ -30,10 +26,6 @@ router.use((req, _res, next) => {
   next();
 });
 
-// The server's shared body parser skips these routes, so a body is parsed only once the service
-// token is accepted. An automatic approval carries the review's files, which need a higher limit.
-router.use(express.json({ limit: MAX_REVIEW_BYTES + 1024 * 1024 }));
-
 const UsageRequestSchemas = {
   params: z.strictObject({ agentId: z.uuid() }),
   query: z.strictObject({}),
@@ -49,24 +41,18 @@ router.post(
   }),
 );
 
-const ApproveRequestSchemas = {
+const ReviewSubmittedRequestSchemas = {
   params: z.strictObject({ agentId: z.uuid(), reviewId: z.uuid() }),
   query: z.strictObject({}),
-  body: z.strictObject({ snapshot: ReviewSnapshotSchema }),
+  body: z.strictObject({}),
 };
 
-// The conversation approved a review submitted while its owner chose "Auto-approve", and sends
-// the changes to save.
+// The agent submitted a review; it is approved now if the conversation's owner chose auto-approve.
 router.post(
-  '/conversations/:agentId/reviews/:reviewId/approve',
+  '/conversations/:agentId/reviews/:reviewId',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const { params, body } = parseRequest(req, ApproveRequestSchemas);
-    res.json(
-      await approveReviewAutomatically(params.agentId, {
-        id: params.reviewId,
-        snapshot: body.snapshot,
-      }),
-    );
+    const { params } = parseRequest(req, ReviewSubmittedRequestSchemas);
+    res.json(await approveSubmittedReview(params.agentId, params.reviewId));
   }),
 );
 

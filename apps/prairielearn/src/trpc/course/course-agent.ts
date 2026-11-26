@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { ApprovalModeSchema, CreateConversationInput } from '@prairielearn/course-agent-types';
+import { CreateConversationInput } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -14,7 +14,6 @@ import {
 import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
-  setCourseAgentApprovalMode,
 } from '../../ee/lib/course-agent/client.js';
 import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
 import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
@@ -22,14 +21,21 @@ import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
+  updateCourseAgentConversationApprovalMode,
   updateCourseAgentConversationTitle,
 } from '../../ee/models/course-agent-conversation.js';
 import {
   CourseAgentConversationUsageSchema,
   selectCourseAgentConversationUsage,
 } from '../../ee/models/course-agent-usage-report.js';
+import {
+  selectCourseAgentUserSettings,
+  updateCourseAgentUserApprovalMode,
+  updateCourseAgentUserAutoApproveOffered,
+} from '../../ee/models/course-agent-user-settings.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import { EnumCourseAgentApprovalModeSchema } from '../../lib/db-types.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
@@ -158,28 +164,75 @@ export const courseAgentRouter = t.router({
           });
         }
       });
+      // A new conversation starts in the mode the user last chose in this course.
+      const settings = await selectCourseAgentUserSettings({
+        user_id: ctx.locals.authn_user.id,
+        course_id: ctx.course.id,
+      });
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,
         user_id: ctx.locals.authn_user.id,
         agent_conversation_id: agentConversationId,
         title: formatCourseAgentConversationTitle(input.text),
+        approval_mode: settings.approval_mode,
       });
       return StaffCourseAgentConversationSchema.parse(conversation);
     }),
 
-  setApprovalMode: courseAgentProcedure
-    // A conversation keeps its own mode. This tells it at once, so a change does not wait for the
-    // conversation's next message.
-    .input(z.object({ conversationId: IdSchema, approvalMode: ApprovalModeSchema }))
-    .mutation(async ({ ctx, input }) => {
-      const conversation = await selectOptionalCourseAgentConversation({
-        id: input.conversationId,
-        course_id: ctx.course.id,
+  settings: courseAgentProcedure
+    .output(
+      z.strictObject({
+        approvalMode: EnumCourseAgentApprovalModeSchema,
+        autoApproveOffered: z.boolean(),
+      }),
+    )
+    .query(async ({ ctx }) => {
+      const settings = await selectCourseAgentUserSettings({
         user_id: ctx.locals.authn_user.id,
+        course_id: ctx.course.id,
       });
-      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      await setCourseAgentApprovalMode(conversation.agent_conversation_id, input.approvalMode);
+      return {
+        approvalMode: settings.approval_mode,
+        autoApproveOffered: settings.auto_approve_offered_at !== null,
+      };
     }),
+
+  // Without a conversation, this sets the mode the next new conversation starts in. A
+  // conversation's mode applies to the changes its agent submits from then on, and is also
+  // remembered for new conversations.
+  setApprovalMode: courseAgentProcedure
+    .input(
+      z.object({
+        conversationId: IdSchema.optional(),
+        approvalMode: EnumCourseAgentApprovalModeSchema,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.conversationId) {
+        const conversation = await selectOptionalCourseAgentConversation({
+          id: input.conversationId,
+          course_id: ctx.course.id,
+          user_id: ctx.locals.authn_user.id,
+        });
+        if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+        await updateCourseAgentConversationApprovalMode({
+          conversation,
+          approval_mode: input.approvalMode,
+        });
+      }
+      await updateCourseAgentUserApprovalMode({
+        user_id: ctx.locals.authn_user.id,
+        course_id: ctx.course.id,
+        approval_mode: input.approvalMode,
+      });
+    }),
+
+  markAutoApproveOffered: courseAgentProcedure.mutation(async ({ ctx }) => {
+    await updateCourseAgentUserAutoApproveOffered({
+      user_id: ctx.locals.authn_user.id,
+      course_id: ctx.course.id,
+    });
+  }),
 
   // The course agent acts with its user's permissions, and student data access is granted per
   // course instance, so this is what the agent can and cannot reach there.
@@ -227,5 +280,7 @@ export interface CourseAgentError {
   PostReviewDecision: never;
   SetTitle: never;
   SetApprovalMode: never;
+  Settings: never;
+  MarkAutoApproveOffered: never;
   StudentDataAccess: never;
 }

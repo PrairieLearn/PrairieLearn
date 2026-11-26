@@ -33,7 +33,6 @@ export function RequestChangesCard({
   conversationId,
   reviewId,
   canResume,
-  autoApprove,
   onApprovedOnce,
   onAlwaysApprove,
 }: {
@@ -41,9 +40,6 @@ export function RequestChangesCard({
   reviewId: string;
   /** The agent is idle but has not received this review's result, for example after Stop. */
   canResume: boolean;
-  /** Submitted under "Auto-approve", so the agent service approves it and has it saved. */
-  autoApprove: boolean;
-  /** The instructor approved this review and asked not to be asked again in this course. */
   /** The instructor approved this review alone, which is when auto-approve is worth offering. */
   onApprovedOnce: () => void;
   onAlwaysApprove: () => void;
@@ -52,17 +48,14 @@ export function RequestChangesCard({
   const queryClient = useQueryClient();
   const [showChanges, setShowChanges] = useState(false);
   const [confirmingAlways, setConfirmingAlways] = useState(false);
-  const [shownAt] = useState(Date.now);
   const reviewInput = { conversationId, reviewId };
   const review = useQuery({
     ...trpc.courseAgent.getReview.queryOptions(reviewInput),
     retry: false,
-    // Saving runs in the background; poll until it records a result. An automatic approval is
-    // polled for a while too, after which a refused one is left for the instructor.
+    // Saving runs in the background; poll until it records a result.
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (data?.status === 'decided' && !data.result) return 2000;
-      return autoApprove && autoApproving(query.state, shownAt) ? 2000 : false;
+      return data?.status === 'decided' && !data.result ? 2000 : false;
     },
   });
   const invalidate = () =>
@@ -90,14 +83,13 @@ export function RequestChangesCard({
   const files = pending?.diff.files ?? lastFiles;
   const decide = (value: 'approved' | 'denied') => {
     decision.mutate({ conversationId, reviewId, decision: value });
-    if (value === 'approved' && !autoApprove) onApprovedOnce();
+    if (value === 'approved') onApprovedOnce();
   };
   const approveAlways = () =>
     decision.mutate(
       { conversationId, reviewId, decision: 'approved' },
       { onSuccess: onAlwaysApprove },
     );
-  const autoApprovalPolled = autoApprove && autoApproving(review, shownAt);
   const actionsDisabled = !pending || decision.isPending;
   const canApprove = !!pending?.diff.files;
   return (
@@ -113,12 +105,6 @@ export function RequestChangesCard({
           onDecision={decide}
           onApproveAlways={() => setConfirmingAlways(true)}
         />
-      )}
-      {/* The buttons stay in case the automatic approval is refused. */}
-      {autoApprovalPolled && (
-        <p className="small text-muted mt-2 mb-0" role="status">
-          Approving automatically…
-        </p>
       )}
       {data?.status === 'decided' && !data.result && (
         <p className="small text-muted mt-2 mb-0" role="status">
@@ -192,23 +178,6 @@ export function RequestChangesCard({
         />
       )}
     </div>
-  );
-}
-
-const AUTO_APPROVAL_WAIT_MS = 60_000;
-
-/** Measured to the last fetch, successful or not, so failing fetches still end the wait. */
-function autoApproving(
-  {
-    data,
-    dataUpdatedAt,
-    errorUpdatedAt,
-  }: { data: { status: string } | undefined; dataUpdatedAt: number; errorUpdatedAt: number },
-  shownAt: number,
-) {
-  return (
-    data?.status === 'pending' &&
-    Math.max(dataUpdatedAt, errorUpdatedAt) - shownAt < AUTO_APPROVAL_WAIT_MS
   );
 }
 

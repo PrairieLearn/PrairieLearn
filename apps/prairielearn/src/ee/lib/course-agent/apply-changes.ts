@@ -14,6 +14,7 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  type ReviewSubmitted,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -190,7 +191,6 @@ export async function postReviewDecision({
   reviewId,
   decision,
   viaMessage = false,
-  review: suppliedReview,
 }: {
   course: Pick<Course, 'id'>;
   conversation: CourseAgentConversation;
@@ -200,8 +200,6 @@ export async function postReviewDecision({
   decision: 'approved' | 'denied';
   /** The browser sends a chat message once this denial is recorded, which delivers it. */
   viaMessage?: boolean;
-  /** The review, when the conversation sent it with its own approval; otherwise it is fetched. */
-  review?: Review;
 }) {
   const key = { course_agent_conversation_id: conversation.id, agent_review_id: reviewId };
   const existing = await selectOptionalCourseAgentReview(key);
@@ -210,8 +208,7 @@ export async function postReviewDecision({
     if (viaMessage) await deliverDenialByMessage(conversation, existing);
     return { decision };
   }
-  const review =
-    suppliedReview ?? (await getCourseAgentReview(conversation.agent_conversation_id, reviewId));
+  const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
   if (!review) throw new HttpStatusError(409, 'This review is no longer pending.');
   if (decision === 'denied') {
     const result = viaMessage ? { ...DENIED, viaMessage: true as const } : DENIED;
@@ -273,14 +270,17 @@ export async function postReviewDecision({
 }
 
 /**
- * Save a review the conversation approved because its owner chose "Auto-approve". The owner
- * must still be able to use the course agent in the course; the approval is then recorded as
- * theirs, with the same checks and saving as when they click "Approve once". The conversation
- * sends the review, so it is not fetched back.
+ * Called when the agent submits a review. If the conversation's owner chose auto-approve, the
+ * review is approved now as theirs, through the same checks and saving as "Approve once";
+ * otherwise it waits for them. A review that cannot be approved here waits too.
  */
-export async function approveReviewAutomatically(agentConversationId: string, review: Review) {
+export async function approveSubmittedReview(
+  agentConversationId: string,
+  reviewId: string,
+): Promise<ReviewSubmitted> {
   const conversation = await selectOptionalCourseAgentConversationByAgentId(agentConversationId);
   if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
+  if (conversation.approval_mode !== 'always_approve') return { autoApproved: false };
   const user = await selectUserById(conversation.user_id);
   const { authzData, course, institution } = await constructCourseOrInstanceContext({
     user,
@@ -304,20 +304,26 @@ export async function approveReviewAutomatically(agentConversationId: string, re
       },
     }))
   ) {
-    throw new HttpStatusError(403, 'The conversation owner cannot use the course agent here.');
+    return { autoApproved: false };
   }
-  return await postReviewDecision({
-    course,
-    conversation,
-    user,
-    authzData: {
-      has_course_permission_edit: authzData.has_course_permission_edit,
-      authn_user: user,
-    },
-    reviewId: review.id,
-    decision: 'approved',
-    review,
-  });
+  try {
+    await postReviewDecision({
+      course,
+      conversation,
+      user,
+      authzData: {
+        has_course_permission_edit: authzData.has_course_permission_edit,
+        authn_user: user,
+      },
+      reviewId,
+      decision: 'approved',
+    });
+  } catch (error) {
+    // For example, the course's repository or branch changed since the review was captured.
+    if (error instanceof HttpStatusError && error.status < 500) return { autoApproved: false };
+    throw error;
+  }
+  return { autoApproved: true };
 }
 
 async function applyChanges(

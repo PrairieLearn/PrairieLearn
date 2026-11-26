@@ -31,7 +31,6 @@ vi.mock('@cloudflare/ai-chat', () => ({
       sandboxLost: false,
       reviewId: null,
       title: null,
-      approvalMode: 'approval_required',
     };
 
     constructor(
@@ -185,16 +184,18 @@ function modelResponse(inputTokens = 10_000, outputTokens = 2_000) {
   return Response.json({ usage: { input_tokens: inputTokens, output_tokens: outputTokens } });
 }
 
-/** Route PrairieLearn usage reports and provider requests to separate handlers. */
+/** Route PrairieLearn usage reports, submitted reviews, and provider requests to handlers. */
 function stubFetch(handlers: {
   usage: () => Promise<Response>;
-  approve?: () => Promise<Response>;
+  reviewSubmitted?: () => Promise<Response>;
   model?: (options: RequestInit) => Promise<Response>;
 }) {
   const fetch = vi.fn(async (url: string | URL, options: RequestInit) => {
     if (String(url).endsWith('/usage')) return await handlers.usage();
-    if (String(url).endsWith('/approve')) {
-      return await (handlers.approve ?? (async () => new Response('{}')))();
+    if (String(url).includes('/pl/api/course-agent/conversations/')) {
+      return await (
+        handlers.reviewSubmitted ?? (async () => Response.json({ autoApproved: false }))
+      )();
     }
     return await (handlers.model ?? (async () => modelResponse()))(options);
   });
@@ -481,24 +482,14 @@ it('refuses messages while limited, and Resume after the reset sends them', asyn
   );
 });
 
-it("marks reviews for automatic approval from the conversation's mode", async () => {
-  stubFetch({ usage: async () => decision() });
+it('reports a submitted review to PrairieLearn, which decides whether it is auto-approved', async () => {
   vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
   const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
-  const startTurn = async (conversation: Conversation, metadata?: Record<string, unknown>) => {
-    await conversation.persistMessages([
-      ...conversation.messages,
-      { id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: 'Edit' }], metadata },
-    ]);
-    const requestId = crypto.randomUUID();
-    await conversation.onChatMessage(undefined, { requestId });
-    const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
-    await options.prepare();
-    options.onReady();
-    return { options, requestId };
-  };
-  const submitReview = async (options: ConstructorParameters<typeof SandboxTurn>[2]) => {
-    const reply = await options.onReview!({
+  const submitReview = async (reviewSubmitted: () => Promise<Response>) => {
+    emit.mockClear();
+    const { fetch } = stubFetch({ usage: async () => decision(), reviewSubmitted });
+    const { conversation } = await runningConversation();
+    const reply = await vi.mocked(SandboxTurn).mock.calls.at(-1)![2].onReview!({
       threadId: 'native-thread',
       turnId: 'native-turn',
       callId: 'call',
@@ -507,95 +498,23 @@ it("marks reviews for automatic approval from the conversation's mode", async ()
       arguments: {},
     });
     const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-review');
-    return { reply, part };
+    return { reply, part, fetch, reviewId: conversation.state.reviewId! };
   };
 
-  const required = fixture().conversation;
-  await required.onStart();
-  // A conversation that has not been given a mode asks.
-  expect(required.state.approvalMode).toBe('approval_required');
-  const unmarked = await submitReview((await startTurn(required)).options);
-  expect(unmarked.part).toMatchObject({ data: { reviewId: expect.any(String) } });
-  expect(unmarked.part).not.toHaveProperty('data.autoApprove');
-  expect(unmarked.reply.text).toContain('for instructor review');
-
-  emit.mockClear();
-  const always = fixture().conversation;
-  await always.onStart();
-  const first = await startTurn(always, { approvalMode: 'always_approve' });
-  sdk.finishTurn();
-  await sdk.completeResponse(first.requestId);
-  await vi.waitFor(() => expect(always.state.status).toBe('waiting_for_user'));
-  // A message that carries no mode, such as one from an older page, keeps the last choice.
-  const marked = await submitReview((await startTurn(always, {})).options);
-  expect(marked.part).toHaveProperty('data.autoApprove', true);
-  expect(marked.reply.text).toContain('they are being saved now');
-  const reviewId = always.state.reviewId!;
-  expect(always.schedule).toHaveBeenCalledWith(0, 'approveReview', { reviewId, attempt: 0 });
-
-  // A message that waited for admission while the instructor switched back carries the older mode,
-  // which must not replace the newer choice.
-  emit.mockClear();
-  const switched = fixture().conversation;
-  await switched.onStart();
-  const earlier = await startTurn(switched, { approvalMode: 'always_approve' });
-  sdk.finishTurn();
-  await sdk.completeResponse(earlier.requestId);
-  await vi.waitFor(() => expect(switched.state.status).toBe('waiting_for_user'));
-  switched.setApprovalMode('approval_required');
-  const stale = await startTurn(switched, { approvalMode: 'always_approve' });
-  expect(switched.state.approvalMode).toBe('approval_required');
-  expect((await submitReview(stale.options)).part).not.toHaveProperty('data.autoApprove');
-});
-
-it('sends an approved review to PrairieLearn, retrying only while it is unreachable', async () => {
-  const approvals: number[] = [];
-  const { fetch } = stubFetch({
-    usage: async () => decision(),
-    approve: async () => new Response(null, { status: approvals.shift() ?? 200 }),
-  });
-  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
-  vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
-  const { conversation } = await runningConversation();
-  await vi.mocked(SandboxTurn).mock.calls.at(-1)![2].onReview!({
-    threadId: 'native-thread',
-    turnId: 'native-turn',
-    callId: 'call',
-    namespace: null,
-    tool: 'request_changes',
-    arguments: {},
-  });
-  const reviewId = conversation.state.reviewId!;
-  const approve = async (attempt: number, status: number) => {
-    approvals.push(status);
-    vi.mocked(conversation.schedule).mockClear();
-    await conversation.approveReview({ reviewId, attempt });
-  };
-
-  await approve(0, 503);
-  expect(fetch).toHaveBeenLastCalledWith(
+  const approved = await submitReview(async () => Response.json({ autoApproved: true }));
+  expect(approved.fetch).toHaveBeenCalledWith(
     new URL(
-      `https://pl.test/pl/api/course-agent/conversations/test-conversation/reviews/${reviewId}/approve`,
+      `https://pl.test/pl/api/course-agent/conversations/test-conversation/reviews/${approved.reviewId}`,
     ),
-    expect.objectContaining({
-      method: 'POST',
-      // The changes travel with the approval, so PrairieLearn does not fetch them back.
-      body: JSON.stringify({
-        snapshot: {
-          type: 'github',
-          repository: 'PrairieLearn/course',
-          branch: 'master',
-          baseCommit: 'a'.repeat(40),
-          additions: [],
-          deletions: [{ path: 'question.html' }],
-        },
-      }),
-    }),
+    expect.objectContaining({ method: 'POST', body: '{}' }),
   );
-  expect(conversation.schedule).toHaveBeenCalledWith(15, 'approveReview', { reviewId, attempt: 1 });
-  // PrairieLearn refused, for example because the instructor can no longer edit the course.
-  await approve(1, 403);
-  expect(conversation.schedule).not.toHaveBeenCalled();
+  expect(approved.part).toHaveProperty('data', { reviewId: approved.reviewId, autoApproved: true });
+  expect(approved.reply.text).toContain('they are being saved now');
+
+  // A review PrairieLearn could not be told about waits for the instructor.
+  const unreachable = await submitReview(async () => new Response(null, { status: 503 }));
+  expect(unreachable.part).toHaveProperty('data', { reviewId: unreachable.reviewId });
+  expect(unreachable.reply.text).toContain('for instructor review');
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {
