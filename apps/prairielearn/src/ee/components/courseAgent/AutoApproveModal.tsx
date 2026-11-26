@@ -65,8 +65,8 @@ function AccessRow({ label, icon, description, courseInstances }: AccessItem) {
   );
 }
 
-/** Shown before "Always approve" turns on, so the instructor sees what they are agreeing to. */
-export function AlwaysApproveModal({
+/** Shown before "Auto-approve" turns on, so the instructor sees what they are agreeing to. */
+export function AutoApproveModal({
   show,
   onHide,
   onConfirm,
@@ -112,13 +112,14 @@ export function AlwaysApproveModal({
   ];
   const cannot = studentData.filter(({ allowed }) => !allowed).map(({ item }) => item);
   return (
-    <Modal show={show} aria-labelledby="course-agent-always-approve-title" onHide={onHide}>
+    <Modal show={show} aria-labelledby="course-agent-auto-approve-title" onHide={onHide}>
       <Modal.Header closeButton>
-        <Modal.Title id="course-agent-always-approve-title">Turn on always approve?</Modal.Title>
+        <Modal.Title id="course-agent-auto-approve-title">Turn on auto-approve?</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <p className="mb-2">
-          The agent will be able to read and edit anything you can. For example:
+          The agent will be able to read and edit anything you can, without asking for approval. For
+          example:
         </p>
         <ul className="list-unstyled mb-0">
           {can.map((item) => (
@@ -152,7 +153,7 @@ export function AlwaysApproveModal({
           Not now
         </Button>
         <Button variant="primary" onClick={onConfirm}>
-          Always approve
+          Turn on
         </Button>
       </Modal.Footer>
     </Modal>

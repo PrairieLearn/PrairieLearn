@@ -39,7 +39,6 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
-import { AlwaysApproveModal } from './AlwaysApproveModal.js';
 import {
   type DraftAttachment,
   DraftAttachmentList,
@@ -50,6 +49,7 @@ import {
   uploadDraftAttachments,
   useDraftAttachments,
 } from './Attachments.js';
+import { AutoApproveModal } from './AutoApproveModal.js';
 import { BlockedNotice } from './BlockedNotice.js';
 import { ChatCodeBlock } from './ChatDiff.js';
 import { ConversationStats } from './ConversationStats.js';
@@ -151,6 +151,13 @@ function ConversationPicker({
     'approval_required';
   const [newApprovalMode, setNewApprovalMode] = useState<ApprovalMode>(lastApprovalMode);
   const rememberApprovalMode = (mode: ApprovalMode) => localStorage.setItem(approvalModeKey, mode);
+  // The first "Approve once" in a course offers auto-approve, and only that once.
+  const autoApproveNoticeKey = `course-agent:${authnUserId}:${courseId}:auto-approve-notice`;
+  const claimAutoApproveNotice = () => {
+    if (localStorage.getItem(autoApproveNoticeKey)) return false;
+    localStorage.setItem(autoApproveNoticeKey, 'shown');
+    return true;
+  };
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -240,6 +247,7 @@ function ConversationPicker({
               ? { text: create.variables.text, attachments: initialAttachments }
               : undefined
           }
+          claimAutoApproveNotice={claimAutoApproveNotice}
           onApprovalModeChosen={rememberApprovalMode}
           onInitialMessageSent={create.reset}
         />
@@ -308,6 +316,7 @@ function Chat({
   onInitialMessageSent,
   showConversationStats,
   initialApprovalMode,
+  claimAutoApproveNotice,
   onApprovalModeChosen,
 }: {
   courseId: string;
@@ -317,6 +326,8 @@ function Chat({
   initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
   /** The mode chosen before this conversation existed, which its first message gives it. */
   initialApprovalMode: ApprovalMode | undefined;
+  /** True the first time it is called in this course, when a review offers auto-approve. */
+  claimAutoApproveNotice: () => boolean;
   /** The instructor chose a mode, which their next new conversation starts in. */
   onApprovalModeChosen: (mode: ApprovalMode) => void;
   onInitialMessageSent: () => void;
@@ -632,6 +643,7 @@ function Chat({
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
+              claimAutoApproveNotice={claimAutoApproveNotice}
               onAlwaysApprove={changeApprovalMode}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={(text) => void send(text, [])}
@@ -649,6 +661,7 @@ function Chat({
                 reviewId={lifecycle.reviewId}
                 canResume={awaitingReviewId === lifecycle.reviewId}
                 autoApprove={false}
+                claimAutoApproveNotice={claimAutoApproveNotice}
                 onAlwaysApprove={() => changeApprovalMode('always_approve')}
               />
             )}
@@ -858,7 +871,7 @@ function Composer({
 
 const APPROVAL_MODES: Record<ApprovalMode, { label: string; icon: string }> = {
   approval_required: { label: 'Ask first', icon: 'bi-hand-index-thumb' },
-  always_approve: { label: 'Always approve', icon: 'bi-shield-exclamation' },
+  always_approve: { label: 'Auto-approve', icon: 'bi-shield-exclamation' },
 };
 
 function ApprovalModePicker({
@@ -916,7 +929,7 @@ function ApprovalModePicker({
           })}
         </Dropdown.Menu>
       </Dropdown>
-      <AlwaysApproveModal
+      <AutoApproveModal
         show={confirming}
         onHide={() => setConfirming(false)}
         onConfirm={() => {
@@ -950,6 +963,7 @@ function Message({
   conversationId,
   uploadsUrl,
   awaitingReviewId,
+  claimAutoApproveNotice,
   onAlwaysApprove,
   hiddenReviewId,
   turnRunning,
@@ -970,6 +984,7 @@ function Message({
   uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
+  claimAutoApproveNotice: () => boolean;
   onAlwaysApprove: (mode: 'always_approve') => void;
   /** A review requested by the running turn, whose card waits for the turn to end. */
   hiddenReviewId: string | null;
@@ -1012,6 +1027,7 @@ function Message({
         reviewId={card.reviewId}
         canResume={awaitingReviewId === card.reviewId}
         autoApprove={card.autoApprove === true}
+        claimAutoApproveNotice={claimAutoApproveNotice}
         onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
     ) : (
