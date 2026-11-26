@@ -43,6 +43,8 @@ If you want to encourage structured answers, consider using separate input field
 
 Even if you expect students to provide rich-text answers, consider separating the question into multiple parts, each with its own input field, instead of asking students to provide a single answer with complex formatting. This can help students focus on each part of the question and provide more organized answers, while also simplifying the grading process and improving accessibility.
 
+See the [student accessibility guide](../student-guide/accessibility.md#editors) for keyboard navigation.
+
 ## Example implementations
 
 - [element/richTextEditor]

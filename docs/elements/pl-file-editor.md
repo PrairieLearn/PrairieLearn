@@ -39,6 +39,8 @@ def fib(n):
 
 ## Details
 
+See the [student accessibility guide](../student-guide/accessibility.md#editors) for keyboard navigation.
+
 When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
 This will initialize the editor area with a sufficient number of lines to display all the code simultaneously without the need for scrolling.
 

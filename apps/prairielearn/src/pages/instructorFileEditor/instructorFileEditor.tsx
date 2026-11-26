@@ -194,6 +194,7 @@ router.get(
           },
           options: {
             fullWidth: true,
+            fullHeight: true,
           },
           headContent: html`
             <meta
@@ -219,63 +220,68 @@ router.get(
             }
           `,
           content: html`
-            ${
-              editorData.fileMetadata?.syncErrors
-                ? html`
-                    <div class="alert alert-danger" role="alert">
-                      <h2 class="h5 alert-heading">Sync error</h2>
-                      <p>
-                        There were one or more errors in this file the last time you tried to sync.
-                        This file will not be able to be synced until the errors are corrected. The
-                        errors are listed below.
-                      </p>
-                      <pre
-                        class="text-white rounded p-3 mb-0"
-                        style="background-color: black;"
-                      ><code>${unsafeHtml(
-                        ansiToHtml(editorData.fileMetadata.syncErrors),
-                      )}</code></pre>
-                    </div>
-                  `
-                : ''
-            }
-            ${
-              editorData.fileMetadata?.syncWarnings
-                ? html`
-                    <div class="alert alert-warning" role="alert">
-                      <h2 class="h5 alert-heading">Sync warning</h2>
-                      <p>
-                        There were one or more warnings in this file the last time you tried to
-                        sync. These warnings do not prevent this file from being synced, but they
-                        should still be fixed. The warnings are listed below.
-                      </p>
-                      <pre
-                        class="text-white rounded p-3 mb-0"
-                        style="background-color: black;"
-                      ><code>${unsafeHtml(
-                        ansiToHtml(editorData.fileMetadata.syncWarnings),
-                      )}</code></pre>
-                    </div>
-                  `
-                : ''
-            }
-            <h1 class="visually-hidden">File editor</h1>
+            <div class="d-flex flex-column h-100">
+              ${
+                editorData.fileMetadata?.syncErrors
+                  ? html`
+                      <div class="alert alert-danger" role="alert">
+                        <h2 class="h5 alert-heading">Sync error</h2>
+                        <p>
+                          There were one or more errors in this file the last time you tried to
+                          sync. This file will not be able to be synced until the errors are
+                          corrected. The errors are listed below.
+                        </p>
+                        <pre
+                          class="text-white rounded p-3 mb-0"
+                          style="background-color: black;"
+                        ><code>${unsafeHtml(
+                          ansiToHtml(editorData.fileMetadata.syncErrors),
+                        )}</code></pre>
+                      </div>
+                    `
+                  : ''
+              }
+              ${
+                editorData.fileMetadata?.syncWarnings
+                  ? html`
+                      <div class="alert alert-warning" role="alert">
+                        <h2 class="h5 alert-heading">Sync warning</h2>
+                        <p>
+                          There were one or more warnings in this file the last time you tried to
+                          sync. These warnings do not prevent this file from being synced, but they
+                          should still be fixed. The warnings are listed below.
+                        </p>
+                        <pre
+                          class="text-white rounded p-3 mb-0"
+                          style="background-color: black;"
+                        ><code>${unsafeHtml(
+                          ansiToHtml(editorData.fileMetadata.syncWarnings),
+                        )}</code></pre>
+                      </div>
+                    `
+                  : ''
+              }
+              <h1 class="visually-hidden">File editor</h1>
 
-            ${hydrateHtml(
-              <FileEditor
-                editorData={editorData}
-                draftContents={draftEdit?.contents}
-                versionChoice={versionChoice}
-                draftEditResult={draftEditResult}
-                csrfToken={res.locals.__csrf_token}
-                fileEditorUseGit={config.fileEditorUseGit}
-                branch={paths.branch.map((dir) => ({
-                  name: dir.name,
-                  path: dir.path,
-                  href: dir.canView ? `${paths.urlPrefix}/file_view/${encodePath(dir.path)}` : null,
-                }))}
-              />,
-            )}
+              ${hydrateHtml(
+                <FileEditor
+                  editorData={editorData}
+                  draftContents={draftEdit?.contents}
+                  versionChoice={versionChoice}
+                  draftEditResult={draftEditResult}
+                  csrfToken={res.locals.__csrf_token}
+                  fileEditorUseGit={config.fileEditorUseGit}
+                  branch={paths.branch.map((dir) => ({
+                    name: dir.name,
+                    path: dir.path,
+                    href: dir.canView
+                      ? `${paths.urlPrefix}/file_view/${encodePath(dir.path)}`
+                      : null,
+                  }))}
+                />,
+                { className: 'd-flex flex-column flex-grow-1' },
+              )}
+            </div>
           `,
         }),
       );
