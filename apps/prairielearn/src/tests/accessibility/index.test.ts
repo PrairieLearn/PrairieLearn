@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { A11yError, A11yResults } from '@sa11y/format';
 import axe, { type RuleObject } from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
@@ -10,19 +12,31 @@ import * as sqldb from '@prairielearn/postgres';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import {
+  getInstanceQuestionUrl,
+  getInstructorUnsavedSubmissionPreviewUrl,
+} from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
+import {
+  selectUnsavedSubmissionGeneration,
+  selectUnsavedSubmissionsForAssessmentInstance,
+  upsertUnsavedSubmission,
+} from '../../models/unsaved-submission.js';
 import * as server from '../../server.js';
+import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 
 import Bootstrap4ConstructPlugin from './bootstrap4-construct-plugin.js';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Loads the given URL into a JSDOM object.
@@ -44,7 +58,7 @@ async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM 
   });
 
   // We need to mimic what Bootstrap will do at runtime for tooltips and popovers:
-  // it will copy the `data-bs-title` attribute to the `aria-label` attribute if
+  // it will copy the `data-bs-title` or legacy `title` attribute to `aria-label` if
   // the element doesn't already have an `aria-label` attribute and if its text
   // content is empty.
   //
@@ -57,7 +71,7 @@ async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM 
       // inspect the element's children, so we'll only use the presence of an
       // `aria-label` attribute to determine if we should add one.
       if (el.hasAttribute('aria-label')) return;
-      const title = el.getAttribute('data-bs-title');
+      const title = el.getAttribute('data-bs-title') ?? el.getAttribute('title');
       if (title) {
         el.setAttribute('aria-label', title);
       }
@@ -257,6 +271,7 @@ const SKIP_ROUTES = [
   '/pl/static/elements/*',
 
   // File downloads.
+  /^\/pl\/unsaved_submission_preview\//,
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file/:unsafe_file_id/:unsafe_display_filename',
   '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourseInstance/*',
@@ -441,6 +456,7 @@ function shouldSkipPath(path: string) {
 describe('accessibility', () => {
   let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
+  let routeUrls: Record<string, string> = {};
   let printAssessmentId: string;
 
   beforeAll(async function () {
@@ -454,11 +470,11 @@ describe('accessibility', () => {
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
 
-    const assessment_id = await sqldb.queryScalar(
-      'SELECT id FROM assessments WHERE tid = $tid',
-      { tid: 'hw1-automaticTestSuite' },
-      IdSchema,
-    );
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: STATIC_ROUTE_PARAMS.course_instance_id,
+      tid: 'hw1-automaticTestSuite',
+    });
+    const assessment_id = assessment.id;
     const printAssessment = await selectAssessmentByTid({
       course_instance_id: STATIC_ROUTE_PARAMS.course_instance_id,
       tid: 'exam20-assessmentTools',
@@ -491,14 +507,64 @@ describe('accessibility', () => {
     await features.enable('question-sharing');
     await features.enable('ai-grading');
     await features.enable('printable-assessments');
+    await features.enable('unsaved-submissions-ui');
+
+    const assessment_instance_id = await makeAssessmentInstance({
+      assessment,
+      user_id,
+      authn_user_id: user_id,
+      mode: 'Public',
+      time_limit_min: null,
+      date: new Date(),
+      client_fingerprint_id: null,
+    });
+    const instance_question_id = await sqldb.queryScalar(
+      sql.select_instance_question,
+      { assessment_instance_id },
+      IdSchema,
+    );
+    const questionPage = await helperClient.fetchCheerio(
+      SITE_URL +
+        getInstanceQuestionUrl({
+          courseInstanceId: courseInstance.id,
+          instanceQuestionId: instance_question_id,
+        }),
+    );
+    const variant_id = questionPage.$('input[name="__variant_id"]').val() as string;
+    assert.isTrue(
+      await upsertUnsavedSubmission({
+        instance_question_id,
+        variant_id,
+        user_id,
+        generation: await selectUnsavedSubmissionGeneration({ instance_question_id, user_id }),
+        credit: 100,
+        raw_submitted_answer: { c: '12' },
+        uuid: randomUUID(),
+      }),
+    );
+    const [draft] = await selectUnsavedSubmissionsForAssessmentInstance({
+      assessment_id,
+      assessment_instance_id,
+    });
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
       assessment_id,
+      assessment_instance_id,
+      unsaved_submission_id: draft.unsaved_submission.id,
       question_id,
       user_id,
       enrollment_id: enrollment.id,
       code: courseInstance.enrollment_code,
+    };
+    routeUrls = {
+      '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/unsaved_submission/:unsaved_submission_id':
+        getInstructorUnsavedSubmissionPreviewUrl({
+          courseInstanceId: courseInstance.id,
+          assessmentInstanceId: assessment_instance_id,
+          unsavedSubmissionId: draft.unsaved_submission.id,
+          revision: draft.revision,
+        }),
     };
 
     await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {
@@ -555,7 +621,7 @@ describe('accessibility', () => {
         continue;
       }
 
-      const url = substituteParams(endpoint.path, params);
+      const url = routeUrls[endpoint.path] ?? substituteParams(endpoint.path, params);
       const messages = await checkPage(url, endpoint.path);
       if (messages !== '') {
         failingEndpoints.push([endpoint, messages]);

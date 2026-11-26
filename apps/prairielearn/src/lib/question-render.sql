@@ -56,6 +56,7 @@ SELECT
   s.is_ai_graded,
   s.mode,
   s.override_score,
+  s.recovered_from_user_id,
   s.score,
   s.v2_score,
   s.variant_id,
@@ -65,7 +66,8 @@ SELECT
   -- `feedback` isn't loaded.
   s.feedback ->> 'manual' AS feedback_manual,
   to_jsonb(gj) AS grading_job,
-  u.uid AS user_uid
+  u.uid AS user_uid,
+  recovered_by.uid AS recovered_by_uid
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -93,11 +95,17 @@ FROM
     LIMIT
       1
   ) AS gj ON TRUE
-  LEFT JOIN users u ON (s.auth_user_id = u.id)
+  LEFT JOIN users AS u ON (
+    u.id = coalesce(s.recovered_from_user_id, s.auth_user_id)
+  )
+  LEFT JOIN users AS recovered_by ON (
+    s.recovered_from_user_id IS NOT NULL
+    AND recovered_by.id = s.auth_user_id
+  )
 WHERE
   v.id = $variant_id
 ORDER BY
-  s.date DESC;
+  s.id DESC;
 
 -- BLOCK select_detailed_submissions
 SELECT
@@ -189,6 +197,7 @@ SELECT
   to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
   u.uid AS user_uid,
+  recovered_by.uid AS recovered_by_uid,
   (
     SELECT
       count(*)
@@ -196,7 +205,7 @@ SELECT
       submissions AS s2
     WHERE
       s2.variant_id = s.variant_id
-      AND s2.date < s.date
+      AND s2.id < s.id
   ) + 1 AS submission_index,
   (
     SELECT
@@ -221,7 +230,13 @@ FROM
   JOIN courses AS c ON (c.id = v.course_id)
   JOIN courses AS qc ON (qc.id = q.course_id)
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
-  LEFT JOIN users AS u ON (s.auth_user_id = u.id)
+  LEFT JOIN users AS u ON (
+    u.id = coalesce(s.recovered_from_user_id, s.auth_user_id)
+  )
+  LEFT JOIN users AS recovered_by ON (
+    s.recovered_from_user_id IS NOT NULL
+    AND recovered_by.id = s.auth_user_id
+  )
   LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
   LEFT JOIN team_configs AS gc ON (
     gc.assessment_id = a.id

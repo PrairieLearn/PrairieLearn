@@ -175,18 +175,19 @@ export async function getDynamicFile({
   if (!questionModule.file) {
     throw new Error(`Question type ${question.type} does not support file generation`);
   }
-  const { courseIssues, data: fileData } = await questionModule.file(
+  const { courseIssues, data: fileData } = await questionModule.file({
     filename,
     variant,
     submission,
     question,
-    question_course,
-    {
+    course: question_course,
+    caller: {
       userId: variant.user_id,
+      unsavedSubmissionUserId: submission?.recovered_from_user_id ?? undefined,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
-  );
+  });
 
   const studentMessage = 'Error creating file: ' + filename;
   const courseData = { variant, question, course: variant_course };

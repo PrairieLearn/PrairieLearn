@@ -50,6 +50,7 @@ import {
   TagSchema as RawTagSchema,
   GroupSchema as RawTeamSchema,
   TopicSchema as RawTopicSchema,
+  UnsavedSubmissionSchema as RawUnsavedSubmissionSchema,
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
 } from '../db-types.js';
@@ -579,6 +580,19 @@ export const RawPublicTagSchema = RawTagSchema.pick({
 export const PublicTagSchema = RawPublicTagSchema.brand<'PublicTag'>();
 export type PublicTag = z.infer<typeof PublicTagSchema>;
 
+/** Unsaved submissions */
+export const RawStaffUnsavedSubmissionSchema = RawUnsavedSubmissionSchema.pick({
+  credit: true,
+  id: true,
+  instance_question_id: true,
+  updated_at: true,
+  user_id: true,
+  variant_id: true,
+});
+export const StaffUnsavedSubmissionSchema =
+  RawStaffUnsavedSubmissionSchema.brand<'StaffUnsavedSubmission'>();
+export type StaffUnsavedSubmission = z.infer<typeof StaffUnsavedSubmissionSchema>;
+
 /** Users */
 export const RawStaffUserSchema = RawUserSchema.pick({
   email: true,
@@ -591,6 +605,15 @@ export const RawStaffUserSchema = RawUserSchema.pick({
 export type RawStaffUser = z.infer<typeof RawStaffUserSchema>;
 export const StaffUserSchema = RawStaffUserSchema.brand<'StaffUser'>();
 export type StaffUser = z.infer<typeof StaffUserSchema>;
+
+export const StaffUnsavedSubmissionMetadataSchema = z.object({
+  assessment_instance_id: RawAssessmentInstanceSchema.shape.id,
+  revision: z.string(),
+  unsaved_submission: StaffUnsavedSubmissionSchema,
+  user: StaffUserSchema,
+  variant_invalidated: z.boolean(),
+});
+export type StaffUnsavedSubmissionMetadata = z.infer<typeof StaffUnsavedSubmissionMetadataSchema>;
 
 const RawStudentUserSchema = RawStaffUserSchema.pick({
   id: true,

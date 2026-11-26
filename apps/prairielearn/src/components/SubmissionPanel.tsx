@@ -56,6 +56,7 @@ export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionCol
   feedback_manual: z.string().nullable(),
   grading_job: SubmissionGradingJobSchema.nullable(),
   user_uid: z.string().nullable(),
+  recovered_by_uid: z.string().nullable(),
 });
 
 export const SubmissionDetailedSchema = SubmissionSchema.pick({
@@ -252,7 +253,9 @@ export function SubmissionPanel({
               ${
                 !submission.user_uid || questionContext === 'manual_grading'
                   ? `Submitted at ${formattedDate} `
-                  : `${submission.user_uid} submitted at ${formattedDate}`
+                  : submission.recovered_from_user_id !== null
+                    ? `Answer by ${submission.user_uid}, recovered at ${formattedDate}`
+                    : `${submission.user_uid} submitted at ${formattedDate}`
               }
             </span>
           </div>
@@ -508,8 +511,20 @@ function SubmissionInfoModal({
             submission.user_uid
               ? html`
                   <tr>
-                    <th>Submitted by</th>
+                    <th>
+                      ${submission.recovered_from_user_id !== null ? 'Answer author' : 'Submitted by'}
+                    </th>
                     <td>${submission.user_uid}</td>
+                  </tr>
+                `
+              : ''
+          }
+          ${
+            submission.recovered_by_uid
+              ? html`
+                  <tr>
+                    <th>Recovered by</th>
+                    <td>${submission.recovered_by_uid}</td>
                   </tr>
                 `
               : ''

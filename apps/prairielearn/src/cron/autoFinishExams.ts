@@ -6,6 +6,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { gradeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { retryPendingRecoveredSubmissions } from '../lib/unsaved-submissions.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -56,4 +57,7 @@ export async function run() {
       });
     }
   }
+
+  // Recovery can also target homework and older variants, which the exam pass does not select.
+  await retryPendingRecoveredSubmissions();
 }

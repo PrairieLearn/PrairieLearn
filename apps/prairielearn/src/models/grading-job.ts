@@ -40,6 +40,7 @@ export function gradingJobStatus(
 
 const VariantForGradingJobUpdateSchema = z.object({
   credit: SubmissionSchema.shape.credit,
+  recovered_from_user_id: SubmissionSchema.shape.recovered_from_user_id,
   variant_id: IdSchema,
   instance_question_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema.nullable(),
@@ -57,6 +58,22 @@ export async function selectOptionalGradingJobById(
   grading_job_id: string,
 ): Promise<GradingJob | null> {
   return await queryOptionalRow(sql.select_grading_job, { grading_job_id }, GradingJobSchema);
+}
+
+/** Select the persisted job to resume without loading its result payloads. */
+export async function selectLatestGradingJobForSubmission(submission_id: string) {
+  return await queryRow(
+    sql.select_latest_grading_job_for_submission,
+    { submission_id },
+    GradingJobSchema.pick({
+      id: true,
+      grading_method: true,
+      graded_at: true,
+      grading_request_canceled_at: true,
+      grading_submitted_at: true,
+      grading_received_at: true,
+    }),
+  );
 }
 
 /**
@@ -155,6 +172,7 @@ export async function updateGradingJobAfterGrading({
       assessment_instance_id,
       variant_id,
       credit,
+      recovered_from_user_id,
       partial_credit,
     } = await queryRow(
       sql.select_variant_for_grading_job_update,
@@ -212,6 +230,7 @@ export async function updateGradingJobAfterGrading({
         submissionScore: gradingJob.score ?? 0,
         grading_job_id,
         authn_user_id: gradingJob.auth_user_id,
+        allowClosed: recovered_from_user_id !== null,
       });
       await updateAssessmentInstanceGrade({
         assessment_instance_id,

@@ -6,6 +6,23 @@ FROM
 WHERE
   id = $grading_job_id;
 
+-- BLOCK select_latest_grading_job_for_submission
+SELECT
+  id,
+  grading_method,
+  graded_at,
+  grading_request_canceled_at,
+  grading_submitted_at,
+  grading_received_at
+FROM
+  grading_jobs
+WHERE
+  submission_id = $submission_id
+ORDER BY
+  id DESC
+LIMIT
+  1;
+
 -- BLOCK insert_grading_job
 WITH
   grading_job_data AS (
@@ -93,6 +110,7 @@ FROM
 -- BLOCK select_variant_for_grading_job_update
 SELECT
   s.credit,
+  s.recovered_from_user_id,
   v.id AS variant_id,
   iq.id AS instance_question_id,
   ai.id AS assessment_instance_id,
@@ -105,8 +123,7 @@ SELECT
       JOIN submissions AS snew ON (snew.variant_id = vnew.id)
     WHERE
       vnew.instance_question_id = iq.id
-      AND s.id != snew.id
-      AND snew.date > s.date
+      AND snew.id > s.id
   ) AS has_newer_submission
 FROM
   submissions AS s

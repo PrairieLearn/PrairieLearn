@@ -283,6 +283,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.equal(data[0]['Question'], 'addNumbers');
       assert.equal(data[0]['Correct'], 'TRUE');
+      assert.equal(data[0]['Recovered by'], '');
     });
   });
 

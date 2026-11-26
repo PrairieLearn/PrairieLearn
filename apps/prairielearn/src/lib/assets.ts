@@ -207,6 +207,12 @@ export function applyMiddleware(app: express.Application) {
   const assetsPrefix = assertAssetsPrefix();
   const router = Router();
 
+  // Sandboxed question previews load public fonts and modules from an opaque origin.
+  router.use((_req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+  });
+
   // Compiled assets have a digest/hash embedded in their filenames, so they
   // don't require a separate cachebuster.
   router.use('/build', compiledAssets.handler());

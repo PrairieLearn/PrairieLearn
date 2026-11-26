@@ -44,7 +44,10 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       await opentelemetry.init({ openTelemetryEnabled: false });
 
       debug('before(): initializing DB');
-      await helperDb.before();
+      const pgConfig = await helperDb.before();
+      await externalGrader.initRecoveredGradingJobLocks(pgConfig, (err) => {
+        throw err;
+      });
 
       debug('before(): create tmp dir for config.filesRoot');
       const tmpDir = await tmp.dir({ unsafeCleanup: true });
@@ -138,6 +141,7 @@ export async function after(): Promise<void> {
     load.close();
 
     debug('after(): finish DB');
+    await externalGrader.closeRecoveredGradingJobLocks();
     await helperDb.after();
   } finally {
     debug('after(): complete');

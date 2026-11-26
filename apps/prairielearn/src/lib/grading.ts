@@ -8,9 +8,14 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
-import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
+import {
+  insertGradingJob,
+  selectLatestGradingJobForSubmission,
+  updateGradingJobAfterGrading,
+} from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { insertSharedQuestionUsagesForSubmission } from '../models/shared-question-usages.js';
+import { selectOptionalSubmissionById } from '../models/submission.js';
 import { deleteUnsavedSubmissions } from '../models/unsaved-submission.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -19,6 +24,7 @@ import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
   type Course,
+  type GradingJob,
   InstanceQuestionSchema,
   type Question,
   QuestionSchema,
@@ -75,8 +81,10 @@ async function insertSubmission({
   variant_id,
   user_id,
   auth_user_id,
+  recovered_from_user_id,
   client_fingerprint_id,
   clearUnsavedSubmissions,
+  instructorRecovery,
   question,
 }: {
   submitted_answer: Record<string, any> | null;
@@ -92,8 +100,10 @@ async function insertSubmission({
   variant_id: string;
   user_id: string;
   auth_user_id: string | null;
+  recovered_from_user_id: string | null;
   client_fingerprint_id?: string | null;
   clearUnsavedSubmissions: boolean;
+  instructorRecovery?: { draftUserId: string };
   question: Question;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
@@ -117,33 +127,45 @@ async function insertSubmission({
       throw new error.AugmentedError('Variant is broken', { status: 400, data: { variant_id } });
     }
 
-    if (!variant.open) {
+    if (!instructorRecovery && !variant.open) {
       throw new error.AugmentedError('Variant is not open', { status: 403, data: { variant_id } });
     }
-    if (variant.instance_question_id != null && !variant.instance_question_open) {
+    if (
+      !instructorRecovery &&
+      variant.instance_question_id != null &&
+      !variant.instance_question_open
+    ) {
       throw new error.AugmentedError('Instance question is not open', {
         status: 403,
         data: { variant_id },
       });
     }
-    if (variant.assessment_instance_id != null && !variant.assessment_instance_open) {
+    if (
+      !instructorRecovery &&
+      variant.assessment_instance_id != null &&
+      !variant.assessment_instance_open
+    ) {
       throw new error.AugmentedError('Assessment instance is not open', {
         status: 403,
         data: { variant_id },
       });
     }
 
-    const delta = await sqldb.queryOptionalScalar(
-      sql.select_and_update_last_access,
-      { user_id: variant.user_id, group_id: variant.team_id },
-      IntervalSchema.nullable(),
-    );
+    const delta = instructorRecovery
+      ? 0
+      : await sqldb.queryOptionalScalar(
+          sql.select_and_update_last_access,
+          { user_id: variant.user_id, group_id: variant.team_id },
+          IntervalSchema.nullable(),
+        );
 
     const submission_id = await sqldb.queryScalar(
       sql.insert_submission,
       {
         variant_id,
+        instance_question_id: variant.instance_question_id,
         auth_user_id,
+        recovered_from_user_id,
         raw_submitted_answer,
         submitted_answer,
         format_errors,
@@ -172,7 +194,7 @@ async function insertSubmission({
       if (clearUnsavedSubmissions) {
         await deleteUnsavedSubmissions({
           instance_question_id: variant.instance_question_id,
-          user_id: variant.team_id !== null ? null : user_id,
+          user_id: instructorRecovery?.draftUserId ?? (variant.team_id !== null ? null : user_id),
         });
       }
       const instanceQuestion = await sqldb.queryRow(
@@ -200,6 +222,7 @@ async function insertSubmission({
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
+ * @param instructorRecovery - Author of an instructor-promoted draft, which may belong to a closed attempt.
  * @returns submission_id
  */
 export async function saveSubmission(
@@ -207,6 +230,7 @@ export async function saveSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
+  instructorRecovery?: { draftUserId: string },
 ): Promise<{ submission_id: string; variant: Variant; broken: boolean }> {
   const featureContext = {
     institution_id: variant_course.institution_id,
@@ -215,12 +239,14 @@ export async function saveSubmission(
     user_id: submissionData.auth_user_id ?? undefined,
   };
   const clearUnsavedSubmissions =
-    variant.instance_question_id !== null &&
-    ((await features.enabled('unsaved-submissions-collection', featureContext)) ||
-      (await features.enabled('unsaved-submissions-ui', featureContext)));
+    instructorRecovery !== undefined ||
+    (variant.instance_question_id !== null &&
+      ((await features.enabled('unsaved-submissions-collection', featureContext)) ||
+        (await features.enabled('unsaved-submissions-ui', featureContext))));
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
     raw_submitted_answer: submissionData.submitted_answer,
+    recovered_from_user_id: instructorRecovery?.draftUserId ?? null,
     gradable: true,
   };
 
@@ -278,6 +304,7 @@ export async function saveSubmission(
     question_course,
     {
       userId: variant.user_id,
+      unsavedSubmissionUserId: instructorRecovery?.draftUserId,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
@@ -299,9 +326,11 @@ export async function saveSubmission(
   const result = await insertSubmission({
     ...submission,
     ...data,
+    recovered_from_user_id: instructorRecovery?.draftUserId ?? null,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
     clearUnsavedSubmissions: clearUnsavedSubmissions && !hasFatalIssue,
+    instructorRecovery,
     question,
   });
   return { ...result, broken: hasFatalIssue };
@@ -355,6 +384,16 @@ async function selectSubmissionForGrading(
     if (submission == null) return null;
 
     if (check_submission_id != null && !idsEqual(submission.id, check_submission_id)) {
+      // A newer Save can supersede a recovery after its submission has committed.
+      const expectedSubmission = await selectOptionalSubmissionById({
+        submission_id: check_submission_id,
+      });
+      if (
+        expectedSubmission?.recovered_from_user_id != null &&
+        idsEqual(expectedSubmission.variant_id, variant_id)
+      ) {
+        return null;
+      }
       throw new error.AugmentedError('Submission ID mismatch', {
         status: 400,
         data: {
@@ -367,15 +406,102 @@ async function selectSubmissionForGrading(
     // Check if the submission needs grading
     if (
       submission.score != null || // already graded
-      submission.grading_requested_at != null || // grading is in progress
+      (submission.grading_requested_at != null && submission.recovered_from_user_id === null) ||
       submission.broken || // submission is broken
       !submission.gradable // submission did not pass parsing
     ) {
       return null;
     }
 
+    // A newer answer on another variant can supersede a recovered draft while it awaits grading.
+    if (
+      submission.recovered_from_user_id !== null &&
+      (await sqldb.queryScalar(
+        sql.has_newer_submission_for_instance_question,
+        { submission_id: submission.id },
+        z.boolean(),
+      ))
+    ) {
+      return null;
+    }
+
     return submission;
   });
+}
+
+async function gradeInternalSubmission({
+  submission,
+  grading_job,
+  variant,
+  question,
+  question_course,
+  variant_course,
+  user_id,
+}: {
+  submission: Submission;
+  grading_job: Pick<GradingJob, 'id'>;
+  variant: Variant;
+  question: Question;
+  question_course: Course;
+  variant_course: Course;
+  user_id: string | null;
+}): Promise<string | null> {
+  // For Internal grading we call the grading code. For Manual grading, if the question
+  // reached this point, it has auto points, so it should be treated like Internal.
+  const questionModule = questionServers.getModule(question.type);
+  const { courseIssues, data } = await questionModule.grade(
+    submission,
+    variant,
+    question,
+    question_course,
+    {
+      userId: variant.user_id,
+      unsavedSubmissionUserId: submission.recovered_from_user_id ?? undefined,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
+  );
+  const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
+
+  const studentMessage = 'Error grading submission';
+  const courseData = { variant, question, submission, course: variant_course };
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    submission.auth_user_id,
+    studentMessage,
+    courseData,
+  );
+
+  const grading_job_post_update = await updateGradingJobAfterGrading({
+    grading_job_id: grading_job.id,
+    // `received_time` and `start_time` were already set when the
+    // grading job was inserted, so they'll remain unchanged.
+    // `finish_time` will be set to `now()` by this function.
+    submitted_answer: data.submitted_answer,
+    format_errors: data.format_errors,
+    gradable: !!data.gradable && !hasFatalIssue,
+    broken: hasFatalIssue,
+    params: data.params,
+    true_answer: data.true_answer,
+    feedback: data.feedback,
+    partial_scores: data.partial_scores,
+    score: data.score,
+    v2_score: data.v2_score,
+  });
+
+  // If the submission was marked invalid during grading the grading
+  // job will be marked ungradable and we should bail here to prevent
+  // LTI updates.
+  if (!grading_job_post_update.gradable) return null;
+
+  const assessment_instance_id = await sqldb.queryOptionalScalar(
+    sql.select_assessment_for_submission,
+    { submission_id: submission.id },
+    IdSchema.nullable(),
+  );
+  return assessment_instance_id;
 }
 
 /**
@@ -412,8 +538,8 @@ export async function gradeVariant({
 }): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
-  // Keep the selection lock until the job exists so a newer submission's
-  // cancellation pass cannot miss it.
+  // Keep the assessment lock through internal recovery grading. A crash rolls
+  // back its job and result together, while older committed jobs can be resumed.
   const gradingData = await sqldb.runInTransactionAsync(async () => {
     const submission = await selectSubmissionForGrading(
       variant.id,
@@ -429,22 +555,42 @@ export async function gradeVariant({
       if (nextGradingAllowedMs > 0) return null;
     }
 
-    const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
-    return { submission, grading_job };
-  });
-  if (gradingData == null) return;
-  const { submission, grading_job } = gradingData;
+    const grading_job =
+      submission.grading_requested_at !== null
+        ? await selectLatestGradingJobForSubmission(submission.id)
+        : await insertGradingJob({ submission_id: submission.id, authn_user_id });
+    if (
+      grading_job.graded_at !== null ||
+      grading_job.grading_request_canceled_at !== null ||
+      (grading_job.grading_method !== 'Internal' && grading_job.grading_method !== 'External')
+    ) {
+      return null;
+    }
 
-  if (question.grading_method === 'External') {
-    // For external grading we just need to trigger the grading job to start.
-    // We haven't actually graded this question yet - don't attempt
-    // to update the grading job or submission.
-    //
-    // Before starting the grading process, we need to ensure that any relevant
-    // chunks are available on disk. This uses the same list of chunks as
-    // `getContext` in `freeform.js`. We technically probably don't need to
-    // load element and element extension chunks, but we do so anyway to be
-    // consistent with the other code path.
+    if (submission.recovered_from_user_id !== null && grading_job.grading_method !== 'External') {
+      const assessment_instance_id = await gradeInternalSubmission({
+        submission,
+        grading_job,
+        variant,
+        question,
+        question_course,
+        variant_course,
+        user_id,
+      });
+      return { kind: 'graded' as const, assessment_instance_id };
+    }
+    return { kind: 'pending' as const, submission, grading_job };
+  });
+  if (gradingData === null) return;
+  if (gradingData.kind === 'graded') {
+    if (gradingData.assessment_instance_id !== null) {
+      await ltiOutcomes.updateScore(gradingData.assessment_instance_id);
+    }
+    return;
+  }
+
+  const { submission, grading_job } = gradingData;
+  if (grading_job.grading_method === 'External') {
     await ensureChunksForCourseAsync(question_course.id, [
       { type: 'question', questionId: question.id },
       { type: 'clientFilesCourse' },
@@ -452,63 +598,44 @@ export async function gradeVariant({
       { type: 'elements' },
       { type: 'elementExtensions' },
     ]);
-    await externalGrader.beginGradingJob(grading_job.id);
+    if (submission.recovered_from_user_id === null) {
+      await externalGrader.beginGradingJob(grading_job.id);
+      return;
+    }
+
+    // Serialize producers without a database transaction so the S3 payload's
+    // location commits before publication and local grader callbacks stay detached.
+    await externalGrader.withRecoveredGradingJobDispatchLock(grading_job.id, async () => {
+      const canDispatch = await sqldb.runInTransactionAsync(async () => {
+        const current = await selectSubmissionForGrading(
+          variant.id,
+          submission.id,
+          ignoreRealTimeGradingDisabled,
+        );
+        if (current === null) return false;
+        const currentJob = await selectLatestGradingJobForSubmission(current.id);
+        return (
+          idsEqual(currentJob.id, grading_job.id) &&
+          currentJob.graded_at === null &&
+          currentJob.grading_request_canceled_at === null &&
+          currentJob.grading_submitted_at === null &&
+          currentJob.grading_received_at === null
+        );
+      });
+      if (!canDispatch) return;
+      await externalGrader.beginGradingJob(grading_job.id, { waitForSubmission: true });
+    });
   } else {
-    // For Internal grading we call the grading code. For Manual grading, if the question
-    // reached this point, it has auto points, so it should be treated like Internal.
-    const questionModule = questionServers.getModule(question.type);
-    const { courseIssues, data } = await questionModule.grade(
+    const assessment_instance_id = await gradeInternalSubmission({
       submission,
+      grading_job,
       variant,
       question,
       question_course,
-      {
-        userId: variant.user_id,
-        groupId: variant.team_id,
-        variantCourse: variant_course,
-      },
-    );
-    const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
-
-    const studentMessage = 'Error grading submission';
-    const courseData = { variant, question, submission, course: variant_course };
-    await writeCourseIssues(
-      courseIssues,
-      variant,
+      variant_course,
       user_id,
-      submission.auth_user_id,
-      studentMessage,
-      courseData,
-    );
-
-    const grading_job_post_update = await updateGradingJobAfterGrading({
-      grading_job_id: grading_job.id,
-      // `received_time` and `start_time` were already set when the
-      // grading job was inserted, so they'll remain unchanged.
-      // `finish_time` will be set to `now()` by this function.
-      submitted_answer: data.submitted_answer,
-      format_errors: data.format_errors,
-      gradable: !!data.gradable && !hasFatalIssue,
-      broken: hasFatalIssue,
-      params: data.params,
-      true_answer: data.true_answer,
-      feedback: data.feedback,
-      partial_scores: data.partial_scores,
-      score: data.score,
-      v2_score: data.v2_score,
     });
-
-    // If the submission was marked invalid during grading the grading
-    // job will be marked ungradable and we should bail here to prevent
-    // LTI updates.
-    if (!grading_job_post_update.gradable) return;
-
-    const assessment_instance_id = await sqldb.queryOptionalScalar(
-      sql.select_assessment_for_submission,
-      { submission_id: submission.id },
-      IdSchema.nullable(),
-    );
-    if (assessment_instance_id != null) {
+    if (assessment_instance_id !== null) {
       await ltiOutcomes.updateScore(assessment_instance_id);
     }
   }

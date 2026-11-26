@@ -41,10 +41,26 @@ FROM
 WHERE
   s.variant_id = $variant_id
 ORDER BY
-  s.date DESC,
   s.id DESC
 LIMIT
   1;
+
+-- BLOCK has_newer_submission_for_instance_question
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      submissions AS s
+      JOIN variants AS v ON (v.id = s.variant_id)
+      JOIN variants AS newer_variant ON (
+        newer_variant.instance_question_id = v.instance_question_id
+      )
+      JOIN submissions AS newer ON (newer.variant_id = newer_variant.id)
+    WHERE
+      s.id = $submission_id
+      AND newer.id > s.id
+  );
 
 -- BLOCK update_variant_true_answer
 WITH
@@ -126,14 +142,24 @@ WITH
     -- grading job will not affect the overall instance question grade and
     -- status. For instructor preview and public preview variants, this is done
     -- for consistency.
+    -- Also cancel recovered jobs on other variants of the same question so an
+    -- interrupted dispatch cannot leave superseded work in the requested state.
     UPDATE grading_jobs AS gj
     SET
       grading_request_canceled_at = now(),
       grading_request_canceled_by = $auth_user_id
     FROM
       submissions AS s
+      JOIN variants AS v ON (v.id = s.variant_id)
     WHERE
-      s.variant_id = $variant_id
+      (
+        v.id = $variant_id
+        OR v.instance_question_id = $instance_question_id
+      )
+      AND (
+        v.id = $variant_id
+        OR s.recovered_from_user_id IS NOT NULL
+      )
       AND gj.submission_id = s.id
       AND gj.graded_at IS NULL
       AND gj.grading_requested_at IS NOT NULL
@@ -155,6 +181,7 @@ INSERT INTO
   submissions (
     variant_id,
     auth_user_id,
+    recovered_from_user_id,
     raw_submitted_answer,
     submitted_answer,
     format_errors,
@@ -172,6 +199,7 @@ VALUES
   (
     $variant_id,
     $auth_user_id,
+    $recovered_from_user_id,
     $raw_submitted_answer,
     $submitted_answer,
     $format_errors,

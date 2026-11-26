@@ -5,15 +5,20 @@ import {
   loadSqlEquiv,
   queryOptionalRow,
   queryOptionalScalar,
+  queryRows,
   queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
+  InstanceQuestionSchema,
+  QuestionSchema,
   type UnsavedSubmission,
   UnsavedSubmissionSchema,
   UnsavedSubmissionStateSchema,
+  UserSchema,
+  VariantSchema,
 } from '../lib/db-types.js';
 
 import { lockVariant } from './variant.js';
@@ -160,5 +165,76 @@ export async function selectOptionalUnsavedSubmissionUpdatedAt({
     sql.select_optional_unsaved_submission_updated_at,
     { instance_question_id, user_id, variant_id },
     UnsavedSubmissionSchema.shape.updated_at,
+  );
+}
+
+const UnsavedSubmissionMetadataSchema = z.object({
+  unsaved_submission: UnsavedSubmissionSchema.pick({
+    id: true,
+    updated_at: true,
+    instance_question_id: true,
+    variant_id: true,
+    user_id: true,
+    credit: true,
+  }),
+  user: UserSchema,
+  variant_invalidated: z.boolean(),
+  assessment_instance_id: IdSchema,
+  revision: z.string(),
+});
+
+export type UnsavedSubmissionMetadata = z.infer<typeof UnsavedSubmissionMetadataSchema>;
+
+export async function selectUnsavedSubmissionsForAssessmentInstance({
+  assessment_instance_id,
+  assessment_id,
+}: {
+  assessment_instance_id: string;
+  assessment_id: string;
+}): Promise<UnsavedSubmissionMetadata[]> {
+  return await queryRows(
+    sql.select_unsaved_submissions_for_assessment_instance,
+    { assessment_instance_id, assessment_id },
+    UnsavedSubmissionMetadataSchema,
+  );
+}
+
+export async function selectOptionalUnsavedSubmissionMetadataForAssessment({
+  unsaved_submission_id,
+  assessment_id,
+}: {
+  unsaved_submission_id: string;
+  assessment_id: string;
+}): Promise<UnsavedSubmissionMetadata | null> {
+  return await queryOptionalRow(
+    sql.select_optional_unsaved_submission_metadata_for_assessment,
+    { unsaved_submission_id, assessment_id },
+    UnsavedSubmissionMetadataSchema,
+  );
+}
+
+const UnsavedSubmissionForAssessmentSchema = z.object({
+  unsaved_submission: UnsavedSubmissionSchema,
+  user: UserSchema,
+  variant: VariantSchema,
+  question: QuestionSchema,
+  instance_question: InstanceQuestionSchema,
+  assessment_instance_id: IdSchema,
+  revision: z.string(),
+});
+
+export type UnsavedSubmissionForAssessment = z.infer<typeof UnsavedSubmissionForAssessmentSchema>;
+
+export async function selectOptionalUnsavedSubmissionForAssessment({
+  unsaved_submission_id,
+  assessment_id,
+}: {
+  unsaved_submission_id: string;
+  assessment_id: string;
+}): Promise<UnsavedSubmissionForAssessment | null> {
+  return await queryOptionalRow(
+    sql.select_optional_unsaved_submission_for_assessment,
+    { unsaved_submission_id, assessment_id },
+    UnsavedSubmissionForAssessmentSchema,
   );
 }

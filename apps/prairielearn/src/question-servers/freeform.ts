@@ -1022,7 +1022,7 @@ async function renderPanel({
 
   // This URL may be submission-specific, so it is overridden here if there is a submission.
   const generatedFilesUrl =
-    panel === 'submission' && submission
+    submission && (panel === 'submission' || submission.recovered_from_user_id !== null)
       ? `${locals.questionUrl}generatedFilesQuestion/submission/${submission.id}`
       : locals.clientFilesQuestionGeneratedFileUrl;
 
@@ -1237,6 +1237,17 @@ export async function render({
         htmls.submissionHtmls = await async.mapSeries(
           submissions,
           async (submission: Submission) => {
+            const submissionUserContext =
+              submission.recovered_from_user_id === (caller.unsavedSubmissionUserId ?? null)
+                ? userContext
+                : await buildQuestionUserContext({
+                    question,
+                    course,
+                    caller: {
+                      ...caller,
+                      unsavedSubmissionUserId: submission.recovered_from_user_id ?? undefined,
+                    },
+                  });
             const {
               courseIssues: newCourseIssues,
               html,
@@ -1250,7 +1261,7 @@ export async function render({
               course,
               locals,
               context,
-              userContext,
+              userContext: submissionUserContext,
             });
 
             courseIssues.push(...newCourseIssues);
@@ -1603,14 +1614,23 @@ export async function render({
   });
 }
 
-export async function file(
-  filename: string,
-  variant: Variant,
-  submission: Submission | null,
-  question: Question,
-  course: Course,
-  caller: QuestionCaller,
-): QuestionServerReturnValue<Buffer> {
+export async function file({
+  filename,
+  variant,
+  submission,
+  question,
+  course,
+  caller,
+  cache: useCache = true,
+}: {
+  filename: string;
+  variant: Variant;
+  submission: Submission | null;
+  question: Question;
+  course: Course;
+  caller: QuestionCaller;
+  cache?: boolean;
+}): QuestionServerReturnValue<Buffer> {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
     if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
@@ -1640,6 +1660,7 @@ export async function file(
         submission, // May be null for question/answer panel files.
         data,
         context,
+        skipCache: !useCache,
       },
       async () => {
         return withCodeCaller(course, async (codeCaller) => {
@@ -1924,8 +1945,8 @@ async function getCacheKey(
         //   2. a user is renamed (uid/uin/name)
         //   3. group membership or a member's name changes
         //
-        // `options.user` is the variant owner (not the viewer); on group variants
-        // it is null and `group.members` is ordered deterministically.
+        // `options.user` is the variant owner or recovered submission's author,
+        // not the viewer; `group.members` is ordered deterministically.
         omit(data, [
           'params',
           'correct_answers',
@@ -1957,12 +1978,14 @@ async function getCachedDataOrCompute(
     submission,
     data,
     context,
+    skipCache = false,
   }: {
     course: Course;
     variant: Variant;
     submission: Submission | null;
     data: ExecutionData;
     context: QuestionProcessingContext;
+    skipCache?: boolean;
   },
   computeFcn: () => Promise<any>,
 ) {
@@ -2019,7 +2042,7 @@ async function getCachedDataOrCompute(
     return doCompute(cacheKey);
   };
 
-  if (config.devMode) {
+  if (config.devMode || skipCache) {
     // In dev mode, we should skip caching so that we'll immediately
     // pick up new changes from disk
     return doCompute(null);

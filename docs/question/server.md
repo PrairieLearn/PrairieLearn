@@ -451,7 +451,7 @@ Courses can opt in so that `server.py` receives user and group identity. A cours
 
 ```python
 def generate(data):
-    user = data["options"]["user"]  # Variant owner; None on group assessments
+    user = data["options"]["user"]  # Variant owner; usually None on group assessments
     # { "uid": "student@example.com", "uin": "123456", "name": "John Doe" }
     group = data["options"]["group"]  # None on individual assessments
     # { "name": "Group 1", "members": [ { "uid": "student@example.com", "uin": "123456", "name": "John Doe" } ] }
@@ -464,12 +464,12 @@ def generate(data):
         data["params"]["group_member_uids"] = [m["uid"] for m in group["members"]]
 ```
 
-The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is `None` on group assessments.
+The `user` dict has the keys `uid` (always present), `uin`, and `name` (the latter two may be `None`). It is normally `None` on group assessments. When an instructor previews or recovers an unsaved submission, it identifies the student who created that draft, including on group assessments.
 The `group` dict has `name` and `members` (a list with the same shape as `user`). It is `None` if the assessment is individual work.
 
 ??? info "Whose identity is provided"
 
-    When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member or current viewer. Group assessments receive `None` because the shared variant has no single owner.
+    When a staff member opens a student variant (e.g., in manual grading or opening student view), the `user` corresponds to the student that owns the variant, not the staff member or current viewer. Group assessments normally receive `None` because the shared variant has no single owner. Instructor previews and recovery of unsaved submissions use the original draft author instead of the instructor, while preserving the group information.
 
     A group's members can change over time: the members when a question was generated may be different than when a question is graded. Similarly, a user's name, UID, and UIN may also change over time. The value of `options["user"]` and `options["group"]` will always reflect the latest information.
 

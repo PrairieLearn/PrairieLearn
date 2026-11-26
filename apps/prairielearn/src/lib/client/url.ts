@@ -175,6 +175,20 @@ export function getAssessmentInstanceUrl({
   return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${assessmentInstanceId}`;
 }
 
+export function getInstructorUnsavedSubmissionPreviewUrl({
+  courseInstanceId,
+  assessmentInstanceId,
+  unsavedSubmissionId,
+  revision,
+}: {
+  courseInstanceId: string;
+  assessmentInstanceId: string;
+  unsavedSubmissionId: string;
+  revision: string;
+}) {
+  return `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId })}/unsaved_submission/${unsavedSubmissionId}?${new URLSearchParams({ revision })}`;
+}
+
 export function getInstanceQuestionUrl({
   courseInstanceId,
   instanceQuestionId,

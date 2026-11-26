@@ -14,6 +14,7 @@ import { assessmentUploadsRouter } from './assessment-uploads.js';
 import { createContext, t } from './init.js';
 import { printExportsRouter } from './print-exports.js';
 import { printFormsRouter } from './print-forms.js';
+import { unsavedSubmissionsRouter } from './unsaved-submissions.js';
 
 const assessmentRouter = t.router({
   accessControl: accessControlRouter,
@@ -24,6 +25,7 @@ const assessmentRouter = t.router({
   assessmentUploads: assessmentUploadsRouter,
   printForms: printFormsRouter,
   printExports: printExportsRouter,
+  unsavedSubmissions: unsavedSubmissionsRouter,
 });
 
 export type AssessmentRouter = typeof assessmentRouter;

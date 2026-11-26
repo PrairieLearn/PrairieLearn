@@ -29,6 +29,8 @@ export interface QuestionCaller {
    * The user the variant belongs to (its owner), or `null` on group variants.
    */
   userId: string | null;
+  /** The author of a draft being recovered, including drafts of group variants. */
+  unsavedSubmissionUserId?: string;
   /** The group owning the variant, or `null` for individual variants. */
   groupId: string | null;
   /** The course in which the variant lives. Differs from the question's course for shared questions. */
@@ -63,9 +65,9 @@ function toQuestionUser({
  *      This excludes sharing-set imports and instructor preview of foreign questions,
  *      which are shared to specific courses without setting the public-share flags.
  *
- * On group variants the individual viewing user's identity is never exposed
- * (`user` is `null`); only the stable group roster (`group.members`) is provided,
- * since the variant's state and rendered output are shared across all members.
+ * On group variants only the stable group roster is normally provided, since
+ * rendered output is shared across all members. Recovering a draft also provides
+ * its original author's identity.
  */
 export async function buildQuestionUserContext({
   question,
@@ -81,13 +83,8 @@ export async function buildQuestionUserContext({
   if (!course.questions_receive_user_data) return EMPTY_USER_CONTEXT;
   if (!idsEqual(question.course_id, caller.variantCourse.id)) return EMPTY_USER_CONTEXT;
 
-  // On group variants the question's state and rendered output are shared across
-  // every member, so we never expose a single member's identity. The group
-  // roster (`group.members`, below) is still provided.
-  const user =
-    caller.groupId == null && caller.userId != null
-      ? await selectOptionalUserById(caller.userId)
-      : null;
+  const userId = caller.unsavedSubmissionUserId ?? (caller.groupId == null ? caller.userId : null);
+  const user = userId != null ? await selectOptionalUserById(userId) : null;
 
   const group = caller.groupId != null ? await selectActiveQuestionGroup(caller.groupId) : null;
 

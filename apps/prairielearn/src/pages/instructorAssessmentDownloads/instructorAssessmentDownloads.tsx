@@ -113,6 +113,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   group_name: GroupSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
   submission_user: UserSchema.shape.uid.nullable(),
+  recovered_by: UserSchema.shape.uid.nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
   last_grader: UserSchema.shape.uid.nullable(),
   ai_grading_model: AiGradingJobSchema.shape.model.nullable(),
@@ -706,6 +707,7 @@ router.get(
         submissionColumn = identityColumn.concat([['SubmitStudent', 'submission_user']]);
       }
       const columns = submissionColumn.concat([
+        ['Recovered by', 'recovered_by'],
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
         ['Zone number', 'zone_number'],

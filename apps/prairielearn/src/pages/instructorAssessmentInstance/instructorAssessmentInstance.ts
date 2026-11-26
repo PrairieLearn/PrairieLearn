@@ -1,12 +1,14 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { IdSchema, parseRequest } from '@prairielearn/zod';
 
 import {
   type InstanceLogEntry,
@@ -16,13 +18,20 @@ import {
   setAssessmentInstanceScore,
 } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { StaffUnsavedSubmissionMetadataSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { features } from '../../lib/features/index.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
+import { renderUnsavedSubmissionPreview } from '../../lib/unsaved-submission-preview.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import {
+  selectOptionalUnsavedSubmissionForAssessment,
+  selectUnsavedSubmissionsForAssessmentInstance,
+} from '../../models/unsaved-submission.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
 import { getAssessmentInstanceTimeFields } from '../../trpc/assessment/assessment-instances.js';
 import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances/instructorAssessmentInstances.types.js';
@@ -35,6 +44,10 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const PreviewRequestSchemas = {
+  params: z.object({ unsaved_submission_id: IdSchema }),
+  query: z.object({ revision: z.string().min(1) }),
+};
 
 function makeLogCsvFilename(locals: ResLocalsForPage<'assessment-instance'>) {
   return (
@@ -64,20 +77,37 @@ router.get(
       accessType: 'instructor',
     });
     const logCsvFilename = makeLogCsvFilename(res.locals);
-    const [assessment_instance_stats, instance_questions, assessmentInstanceLog] =
-      await Promise.all([
-        sqldb.queryRows(
-          sql.assessment_instance_stats,
-          { assessment_instance_id: res.locals.assessment_instance.id },
-          AssessmentInstanceStatsSchema,
-        ),
-        sqldb.queryRows(
-          sql.select_instance_questions,
-          { assessment_instance_id: res.locals.assessment_instance.id },
-          InstanceQuestionRowSchema,
-        ),
-        selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
-      ]);
+    const recoveryEnabled = await features.enabledFromLocals('unsaved-submissions-ui', res.locals);
+    const canPromoteUnsavedSubmissions =
+      recoveryEnabled &&
+      res.locals.authz_data.has_course_instance_permission_edit &&
+      (await features.enabledFromLocals('unsaved-submissions-instructor-promotion', res.locals));
+    const [
+      assessment_instance_stats,
+      instance_questions,
+      assessmentInstanceLog,
+      unsavedSubmissions,
+    ] = await Promise.all([
+      sqldb.queryRows(
+        sql.assessment_instance_stats,
+        { assessment_instance_id: res.locals.assessment_instance.id },
+        AssessmentInstanceStatsSchema,
+      ),
+      sqldb.queryRows(
+        sql.select_instance_questions,
+        { assessment_instance_id: res.locals.assessment_instance.id },
+        InstanceQuestionRowSchema,
+      ),
+      selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
+      recoveryEnabled
+        ? selectUnsavedSubmissionsForAssessmentInstance({
+            assessment_instance_id: res.locals.assessment_instance.id,
+            assessment_id: assessment.id,
+          }).then((drafts) =>
+            drafts.map((draft) => StaffUnsavedSubmissionMetadataSchema.parse(draft)),
+          )
+        : null,
+    ]);
 
     const actionRow: AssessmentInstanceActionRow = {
       assessment_instance: {
@@ -107,8 +137,44 @@ router.get(
         assessmentInstanceLog,
         actionRow,
         trpcCsrfToken,
+        unsavedSubmissions,
+        canPromoteUnsavedSubmissions,
       }),
     );
+  }),
+);
+
+router.get(
+  '/unsaved_submission/:unsaved_submission_id',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+    const { params, query } = parseRequest(req, PreviewRequestSchemas);
+    if (!(await features.enabledFromLocals('unsaved-submissions-ui', res.locals))) {
+      throw new HttpStatusError(403, 'Unsaved submissions are not available');
+    }
+    const draftData = await selectOptionalUnsavedSubmissionForAssessment({
+      unsaved_submission_id: params.unsaved_submission_id,
+      assessment_id: res.locals.assessment.id,
+    });
+    if (!draftData || draftData.assessment_instance_id !== res.locals.assessment_instance.id) {
+      throw new HttpStatusError(404, 'Unsaved submission is no longer available');
+    }
+    if (draftData.revision !== query.revision) {
+      throw new HttpStatusError(
+        409,
+        'Unsaved work has changed. Reload drafts to review the latest work.',
+      );
+    }
+    // Isolate question content even when this document is opened outside its preview frame.
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors 'self'; sandbox allow-scripts allow-downloads;",
+    );
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.send((await renderUnsavedSubmissionPreview({ draftData, locals: res.locals })).toString());
   }),
 );
 

@@ -11,7 +11,7 @@ import { publicFetch } from '@prairielearn/public-fetch';
 
 import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from '../../../lib/chunks.js';
 import { config } from '../../../lib/config.js';
-import type { Course, Question, Variant } from '../../../lib/db-types.js';
+import type { Course, Question, Submission, Variant } from '../../../lib/db-types.js';
 import type { QuestionUrls } from '../../../lib/question-render.types.js';
 import { getDynamicFile } from '../../../lib/question-variant.js';
 
@@ -25,6 +25,7 @@ export interface QuestionImageContext {
   questionCourse: Course;
   variantCourse: Course;
   variant: Variant;
+  submission: Submission | null;
   userId: string;
   authnUserId: string;
 }
@@ -119,7 +120,7 @@ export async function loadQuestionImage(src: string, context: QuestionImageConte
       image = await getDynamicFile({
         filename: generatedFilename,
         variant: context.variant,
-        submission: null,
+        submission: context.submission,
         question: context.question,
         variant_course: context.variantCourse,
         user_id: context.userId,

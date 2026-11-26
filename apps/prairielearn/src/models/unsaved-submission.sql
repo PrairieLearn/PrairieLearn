@@ -171,3 +171,128 @@ WHERE
   instance_question_id = $instance_question_id
   AND user_id = $user_id
   AND variant_id = $variant_id;
+
+-- BLOCK select_unsaved_submissions_for_assessment_instance
+SELECT
+  jsonb_build_object(
+    'id',
+    us.id,
+    'updated_at',
+    us.updated_at,
+    'instance_question_id',
+    us.instance_question_id,
+    'variant_id',
+    us.variant_id,
+    'user_id',
+    us.user_id,
+    'credit',
+    us.credit
+  ) AS unsaved_submission,
+  to_jsonb(u.*) AS user,
+  v.broken_at IS NOT NULL AS variant_invalidated,
+  iq.assessment_instance_id,
+  to_char(
+    us.updated_at AT TIME ZONE 'UTC',
+    'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+  ) AS revision
+FROM
+  unsaved_submissions AS us
+  JOIN users AS u ON (u.id = us.user_id)
+  JOIN variants AS v ON (
+    v.id = us.variant_id
+    AND v.instance_question_id = us.instance_question_id
+  )
+  JOIN questions AS q ON (q.id = v.question_id)
+  JOIN instance_questions AS iq ON (iq.id = us.instance_question_id)
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
+WHERE
+  ai.assessment_id = $assessment_id
+  AND ai.id = $assessment_instance_id
+  AND q.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL
+  AND c.deleted_at IS NULL
+ORDER BY
+  us.instance_question_id ASC,
+  us.updated_at DESC,
+  us.id ASC;
+
+-- BLOCK select_optional_unsaved_submission_metadata_for_assessment
+SELECT
+  jsonb_build_object(
+    'id',
+    us.id,
+    'updated_at',
+    us.updated_at,
+    'instance_question_id',
+    us.instance_question_id,
+    'variant_id',
+    us.variant_id,
+    'user_id',
+    us.user_id,
+    'credit',
+    us.credit
+  ) AS unsaved_submission,
+  to_jsonb(u.*) AS user,
+  v.broken_at IS NOT NULL AS variant_invalidated,
+  iq.assessment_instance_id,
+  to_char(
+    us.updated_at AT TIME ZONE 'UTC',
+    'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+  ) AS revision
+FROM
+  unsaved_submissions AS us
+  JOIN users AS u ON (u.id = us.user_id)
+  JOIN variants AS v ON (
+    v.id = us.variant_id
+    AND v.instance_question_id = us.instance_question_id
+  )
+  JOIN questions AS q ON (q.id = v.question_id)
+  JOIN instance_questions AS iq ON (iq.id = us.instance_question_id)
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
+WHERE
+  us.id = $unsaved_submission_id
+  AND ai.assessment_id = $assessment_id
+  AND q.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL
+  AND c.deleted_at IS NULL;
+
+-- BLOCK select_optional_unsaved_submission_for_assessment
+SELECT
+  to_jsonb(us.*) AS unsaved_submission,
+  to_jsonb(u.*) AS user,
+  to_jsonb(v.*) AS variant,
+  to_jsonb(q.*) AS question,
+  to_jsonb(iq.*) AS instance_question,
+  iq.assessment_instance_id,
+  to_char(
+    us.updated_at AT TIME ZONE 'UTC',
+    'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+  ) AS revision
+FROM
+  unsaved_submissions AS us
+  JOIN users AS u ON (u.id = us.user_id)
+  JOIN variants AS v ON (
+    v.id = us.variant_id
+    AND v.instance_question_id = us.instance_question_id
+  )
+  JOIN questions AS q ON (q.id = v.question_id)
+  JOIN instance_questions AS iq ON (iq.id = us.instance_question_id)
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
+WHERE
+  us.id = $unsaved_submission_id
+  AND ai.assessment_id = $assessment_id
+  AND q.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL
+  AND c.deleted_at IS NULL;

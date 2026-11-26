@@ -14,6 +14,15 @@ FROM
 WHERE
   gj.id = $grading_job_id;
 
+-- BLOCK try_lock_recovered_grading_job
+-- Shared with grader-host so a retry also skips jobs that are already executing.
+SELECT
+  pg_try_advisory_xact_lock($grading_job_id::bigint);
+
+-- BLOCK keep_lock_alive
+SELECT
+  1;
+
 -- BLOCK update_grading_submitted_time
 UPDATE grading_jobs AS gj
 SET
