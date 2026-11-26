@@ -39,6 +39,9 @@
     "@fortawesome/fontawesome-free": "^7.3.1",
     "@js-temporal/polyfill": "^0.5.1",
     "@mathjax/mathjax-newcm-font": "^4.1.3",
+    "@modelcontextprotocol/express": "^2.0.2",
+    "@modelcontextprotocol/node": "^2.1.2",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@node-saml/passport-saml": "^5.1.0",
     "@octokit/rest": "^22.0.1",
     "@panzoom/panzoom": "^4.6.2",
@@ -283,6 +286,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.4.0",
     "@playwright/test": "^1.63.0",
     "@prairielearn/express-list-endpoints": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",

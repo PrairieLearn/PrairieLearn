@@ -1,0 +1,23 @@
+columns
+    created_at: timestamp with time zone not null default now()
+    expires_at: timestamp with time zone not null
+    id: bigint not null default nextval('oauth_grants_id_seq'::regclass)
+    last_used_at: timestamp with time zone
+    oauth_client_id: bigint not null
+    resource: text not null
+    revoked_at: timestamp with time zone
+    scopes: text[] not null
+    user_id: bigint not null
+
+indexes
+    oauth_grants_pkey: PRIMARY KEY (id) USING btree (id)
+    oauth_grants_oauth_client_id_idx: USING btree (oauth_client_id)
+    oauth_grants_user_id_idx: USING btree (user_id)
+
+foreign-key constraints
+    oauth_grants_oauth_client_id_fkey: FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id) ON UPDATE CASCADE ON DELETE CASCADE
+    oauth_grants_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    oauth_grant_courses: FOREIGN KEY (oauth_grant_id) REFERENCES oauth_grants(id) ON UPDATE CASCADE ON DELETE CASCADE
+    oauth_tokens: FOREIGN KEY (oauth_grant_id) REFERENCES oauth_grants(id) ON UPDATE CASCADE ON DELETE CASCADE

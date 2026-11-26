@@ -522,6 +522,11 @@ export async function initExpress(): Promise<Express> {
   if (isEnterprise()) {
     // Service authentication is handled by this router, independently of browser sessions.
     app.use('/pl/api/course-agent', (await import('./ee/routers/courseAgentUsage.js')).default);
+
+    // The MCP server and the OAuth endpoints its clients call directly. Requests carry an access
+    // token or nothing, never a session, so these come before session authentication and CSRF.
+    app.use((await import('./ee/mcp/router.js')).default);
+    app.use('/pl/oauth', (await import('./ee/routers/oauth.js')).default);
   }
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
@@ -586,6 +591,13 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl', (await import('./pages/home/home.js')).default);
   app.use('/pl/user/trpc', userTrpcRouter);
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
+  // Where a signed-in user approves an agent that wants to connect to the MCP server.
+  app.use(
+    '/pl/oauth/authorize',
+    await enterpriseOnly(
+      async () => (await import('./ee/pages/oauthAuthorize/oauthAuthorize.js')).default,
+    ),
+  );
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);

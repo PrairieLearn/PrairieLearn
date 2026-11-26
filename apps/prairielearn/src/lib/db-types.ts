@@ -1431,6 +1431,47 @@ export const NewsItemSchema = z.object({
 });
 export type NewsItem = z.infer<typeof NewsItemSchema>;
 
+export const OauthClientSchema = z.object({
+  client_id: z.string(),
+  client_name: z.string(),
+  created_at: DateFromISOString,
+  id: IdSchema,
+  redirect_uris: z.array(z.string()),
+});
+export type OauthClient = z.infer<typeof OauthClientSchema>;
+
+export const OauthGrantCourseSchema = z.object({
+  course_id: IdSchema,
+  oauth_grant_id: IdSchema,
+});
+export type OauthGrantCourse = z.infer<typeof OauthGrantCourseSchema>;
+
+export const OauthGrantSchema = z.object({
+  created_at: DateFromISOString,
+  expires_at: DateFromISOString,
+  id: IdSchema,
+  last_used_at: DateFromISOString.nullable(),
+  oauth_client_id: IdSchema,
+  resource: z.string(),
+  revoked_at: DateFromISOString.nullable(),
+  scopes: z.array(z.string()),
+  user_id: IdSchema,
+});
+export type OauthGrant = z.infer<typeof OauthGrantSchema>;
+
+export const OauthTokenSchema = z.object({
+  code_challenge: z.string().nullable(),
+  created_at: DateFromISOString,
+  expires_at: DateFromISOString,
+  id: IdSchema,
+  oauth_grant_id: IdSchema,
+  redirect_uri: z.string().nullable(),
+  token_hash: z.string(),
+  type: z.enum(['code', 'access', 'refresh']),
+  used_at: DateFromISOString.nullable(),
+});
+export type OauthToken = z.infer<typeof OauthTokenSchema>;
+
 export const PageViewLogSchema = null;
 
 export const PlanGrantSchema = z.object({
@@ -1961,6 +2002,10 @@ export const TableNames = [
   'named_locks',
   'news_item_read_states',
   'news_items',
+  'oauth_clients',
+  'oauth_grant_courses',
+  'oauth_grants',
+  'oauth_tokens',
   'page_view_logs',
   'courses',
   'plan_grants',

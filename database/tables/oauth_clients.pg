@@ -1,0 +1,13 @@
+columns
+    client_id: uuid not null default gen_random_uuid()
+    client_name: text not null
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('oauth_clients_id_seq'::regclass)
+    redirect_uris: text[] not null
+
+indexes
+    oauth_clients_pkey: PRIMARY KEY (id) USING btree (id)
+    oauth_clients_client_id_key: UNIQUE (client_id) USING btree (client_id)
+
+referenced by
+    oauth_grants: FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients(id) ON UPDATE CASCADE ON DELETE CASCADE

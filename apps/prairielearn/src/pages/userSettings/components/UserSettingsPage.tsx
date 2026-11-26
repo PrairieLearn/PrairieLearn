@@ -11,6 +11,7 @@ import { createUserTrpcClient } from '../../../trpc/user/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/user/context.js';
 import type { UserSettingsError } from '../../../trpc/user/user-settings.js';
 
+import { type AgentConnections, AgentConnectionsCard } from './AgentConnectionsCard.js';
 import { DeleteTokenModal } from './DeleteTokenModal.js';
 import { GenerateTokenModal } from './GenerateTokenModal.js';
 
@@ -29,6 +30,8 @@ interface UserSettingsPageProps {
   ipAddress: string | undefined;
   accessTokens: UserAccessToken[];
   newAccessTokens: string[];
+  /** Null when the user has no course they could connect an agent to. */
+  agentConnections: AgentConnections | null;
   isExamMode: boolean;
   csrfToken: string;
   trpcCsrfToken: string;
@@ -42,6 +45,7 @@ export function UserSettingsPage({
   ipAddress,
   accessTokens,
   newAccessTokens,
+  agentConnections,
   isExamMode,
   csrfToken,
   trpcCsrfToken,
@@ -70,6 +74,10 @@ export function UserSettingsPage({
           isExamMode={isExamMode}
           csrfToken={csrfToken}
         />
+
+        {agentConnections && (
+          <AgentConnectionsCard agentConnections={agentConnections} csrfToken={csrfToken} />
+        )}
 
         <BrowserConfigurationCard />
       </TRPCProvider>
