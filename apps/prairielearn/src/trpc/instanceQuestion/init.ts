@@ -6,9 +6,11 @@ import { appErrorFormatter } from '@prairielearn/trpc/server';
 
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
+export function createContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'instance-question'>;
   return {
+    req,
+    res,
     user: locals.user,
     authn_user: locals.authn_user,
     course: locals.course,

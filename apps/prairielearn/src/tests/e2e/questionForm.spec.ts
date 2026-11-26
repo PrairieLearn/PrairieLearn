@@ -82,8 +82,6 @@ test('tracks element form data through deferred initialization and submission', 
   expect(await navigationIsBlocked(page)).toBe(true);
 
   await form.dispatchEvent('submit');
-  expect(await navigationIsBlocked(page)).toBe(false);
-  await page.getByLabel('Second answer').fill('another edit');
   expect(await navigationIsBlocked(page)).toBe(true);
   await form.evaluate((element) => element.remove());
   await expect(form).toHaveCount(0);

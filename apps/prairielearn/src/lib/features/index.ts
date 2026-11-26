@@ -21,6 +21,7 @@ const featureNames = [
   'rich-text-editor',
   'question-hosting-update',
   'unsaved-submissions-collection',
+  'unsaved-submissions-ui',
 
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.
   'lti11',

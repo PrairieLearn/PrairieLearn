@@ -76,11 +76,41 @@ WHERE
 
 -- BLOCK delete_unsaved_submissions
 WITH
+  affected_users AS (
+    SELECT
+      $user_id::bigint AS user_id
+    WHERE
+      $user_id::bigint IS NOT NULL
+    UNION
+    SELECT
+      tu.user_id
+    FROM
+      instance_questions AS iq
+      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+      JOIN team_users AS tu ON (tu.team_id = ai.team_id)
+    WHERE
+      iq.id = $instance_question_id
+      AND $user_id::bigint IS NULL
+    UNION
+    SELECT
+      uss.user_id
+    FROM
+      unsaved_submission_states AS uss
+    WHERE
+      uss.instance_question_id = $instance_question_id
+      AND $user_id::bigint IS NULL
+  ),
   advanced AS (
     INSERT INTO
       unsaved_submission_states (instance_question_id, user_id, generation)
-    VALUES
-      ($instance_question_id, $user_id, 1)
+    SELECT
+      $instance_question_id,
+      user_id,
+      1
+    FROM
+      affected_users
+    ORDER BY
+      user_id
     ON CONFLICT (instance_question_id, user_id) DO UPDATE
     SET
       generation = unsaved_submission_states.generation + 1,
@@ -121,3 +151,23 @@ SELECT
       AND user_id = $user_id
       AND variant_id = $variant_id
   );
+
+-- BLOCK select_optional_unsaved_submission
+SELECT
+  us.*
+FROM
+  unsaved_submissions AS us
+WHERE
+  us.instance_question_id = $instance_question_id
+  AND us.user_id = $user_id
+  AND us.variant_id = $variant_id;
+
+-- BLOCK select_optional_unsaved_submission_updated_at
+SELECT
+  updated_at
+FROM
+  unsaved_submissions
+WHERE
+  instance_question_id = $instance_question_id
+  AND user_id = $user_id
+  AND variant_id = $variant_id;

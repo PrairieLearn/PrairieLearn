@@ -3,6 +3,7 @@ import assert from 'assert';
 import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { formatDate } from '@prairielearn/formatter';
 import { getCounter, metrics } from '@prairielearn/opentelemetry';
 import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -29,7 +30,10 @@ import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.js';
-import { hasUnsavedSubmission } from '../../models/unsaved-submission.js';
+import {
+  hasUnsavedSubmission,
+  selectOptionalUnsavedSubmissionUpdatedAt,
+} from '../../models/unsaved-submission.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -368,31 +372,53 @@ router.get(
     const renderState = await getAndRenderVariant(variant_id, null, res.locals);
 
     let unsavedSubmissionConfig;
+    let unsavedSubmissionRecovery;
     if (
       renderState.variant.open &&
       renderState.variant.broken_at === null &&
-      canCollectUnsavedSubmissions(res.locals) &&
-      (await features.enabledFromLocals('unsaved-submissions-collection', res.locals))
+      canCollectUnsavedSubmissions(res.locals)
     ) {
-      const hasDraft = await hasUnsavedSubmission({
-        instance_question_id: res.locals.instance_question.id,
-        user_id: res.locals.user.id,
-        variant_id: renderState.variant.id,
-      });
-      getCounter(metrics.getMeter('prairielearn'), 'unsaved_submissions.page_loads').add(1, {
-        has_draft: hasDraft,
-      });
-      const urlParts = {
-        courseInstanceId: res.locals.course_instance.id,
-        instanceQuestionId: res.locals.instance_question.id,
-      };
-      unsavedSubmissionConfig = {
-        ...urlParts,
-        csrfToken: generatePrefixCsrfToken(
-          { url: getInstanceQuestionUrl(urlParts), authn_user_id: res.locals.authn_user.id },
-          config.secretKey,
-        ),
-      };
+      const [collectionEnabled, recoveryEnabled] = await Promise.all([
+        features.enabledFromLocals('unsaved-submissions-collection', res.locals),
+        features.enabledFromLocals('unsaved-submissions-ui', res.locals),
+      ]);
+      if (collectionEnabled || recoveryEnabled) {
+        const draftContext = {
+          instance_question_id: res.locals.instance_question.id,
+          user_id: res.locals.user.id,
+          variant_id: renderState.variant.id,
+        };
+        const updatedAt = recoveryEnabled
+          ? await selectOptionalUnsavedSubmissionUpdatedAt(draftContext)
+          : null;
+        if (collectionEnabled) {
+          const hasDraft = recoveryEnabled
+            ? updatedAt !== null
+            : await hasUnsavedSubmission(draftContext);
+          getCounter(metrics.getMeter('prairielearn'), 'unsaved_submissions.page_loads').add(1, {
+            has_draft: hasDraft,
+          });
+        }
+        const urlParts = {
+          courseInstanceId: res.locals.course_instance.id,
+          instanceQuestionId: res.locals.instance_question.id,
+        };
+        const clientOptions = {
+          ...urlParts,
+          csrfToken: generatePrefixCsrfToken(
+            { url: getInstanceQuestionUrl(urlParts), authn_user_id: res.locals.authn_user.id },
+            config.secretKey,
+          ),
+        };
+        if (collectionEnabled) unsavedSubmissionConfig = clientOptions;
+        if (updatedAt !== null) {
+          unsavedSubmissionRecovery = {
+            clientOptions,
+            variantId: renderState.variant.id,
+            savedAtText: formatDate(updatedAt, res.locals.course_instance.display_timezone),
+          };
+        }
+      }
     }
 
     await logPageView('studentInstanceQuestion', req, res);
@@ -449,6 +475,7 @@ router.get(
         questionCopyTargets,
         enabledTools,
         unsavedSubmissionConfig,
+        unsavedSubmissionRecovery,
       }),
     );
   }),

@@ -71,9 +71,6 @@ export function initializeQuestionFormState(form: HTMLFormElement): () => void {
   // Capture after elements have run their synchronous initialization code.
   const initialTimeoutId = setTimeout(() => saveQuestionFormData(form), 0);
 
-  const handleSubmit = () => saveQuestionFormData(form);
-  form.addEventListener('submit', handleSubmit);
-
   // Deferred elements signal initialization by setting the value attribute.
   // Update only that field's baseline, so edits to other fields remain dirty.
   const observers: MutationObserver[] = [];
@@ -89,7 +86,6 @@ export function initializeQuestionFormState(form: HTMLFormElement): () => void {
 
   return () => {
     clearTimeout(initialTimeoutId);
-    form.removeEventListener('submit', handleSubmit);
     observers.forEach((observer) => observer.disconnect());
   };
 }
