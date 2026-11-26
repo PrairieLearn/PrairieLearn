@@ -161,6 +161,16 @@ export function RubricSettings({
       : (assessmentQuestion.max_manual_points ?? 0)) + (maxExtraPoints ?? 0),
   );
 
+  // The value the negative-grading option starts from. When it is zero both
+  // options set starting points to zero, so the choice carries no meaning and
+  // the radios are indistinguishable.
+  //
+  // Deliberately not `maxPoints` above: that adds `maxExtraPoints`, which can
+  // be non-zero while both options still mean zero.
+  const negativeGradingStart = replaceAutoPoints
+    ? (assessmentQuestion.max_points ?? 0)
+    : (assessmentQuestion.max_manual_points ?? 0);
+
   const minRubricScore = roundPoints(minPoints ?? 0);
   const maxPointsShortfall = roundPoints(maxPoints - totalPositive);
   const minPointsShortfall = roundPoints(totalNegative - minRubricScore);
@@ -628,52 +638,44 @@ export function RubricSettings({
               )}
 
             <div className="row">
-              <div className="col-12 col-xl-4">
-                <div className="form-check">
-                  <label className="form-check-label">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      checked={startingPoints === 0}
-                      disabled={!hasCourseInstancePermissionEdit}
-                      onChange={() => setStartingPoints(0)}
-                    />
-                    Positive grading (start at zero, add points)
-                  </label>
+              {negativeGradingStart > 0 && (
+                <div className="col-12 col-xl-4">
+                  <div className="form-check">
+                    <label className="form-check-label">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        checked={startingPoints === 0}
+                        disabled={!hasCourseInstancePermissionEdit}
+                        onChange={() => setStartingPoints(0)}
+                      />
+                      Positive grading (start at zero, add points)
+                    </label>
+                  </div>
+                  <div className="form-check">
+                    <label className="form-check-label">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        checked={startingPoints !== 0}
+                        disabled={!hasCourseInstancePermissionEdit}
+                        onChange={() => setStartingPoints(negativeGradingStart)}
+                      />
+                      Negative grading (start at {negativeGradingStart}, subtract penalties)
+                    </label>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      data-bs-title="This setting only affects starting points. Rubric items may always be added with positive or negative points."
+                      aria-label="More information about grading mode"
+                    >
+                      <i className="fas fa-circle-info" aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
-                <div className="form-check">
-                  <label className="form-check-label">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      checked={startingPoints !== 0}
-                      disabled={!hasCourseInstancePermissionEdit}
-                      onChange={() =>
-                        setStartingPoints(
-                          replaceAutoPoints
-                            ? (assessmentQuestion.max_points ?? 0)
-                            : (assessmentQuestion.max_manual_points ?? 0),
-                        )
-                      }
-                    />
-                    Negative grading (start at{' '}
-                    {replaceAutoPoints
-                      ? assessmentQuestion.max_points
-                      : assessmentQuestion.max_manual_points}
-                    , subtract penalties)
-                  </label>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="bottom"
-                    data-bs-title="This setting only affects starting points. Rubric items may always be added with positive or negative points."
-                    aria-label="More information about grading mode"
-                  >
-                    <i className="fas fa-circle-info" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
+              )}
 
               <div className="mb-3 col-12 col-md-6 col-xl-3">
                 <div className="row">
