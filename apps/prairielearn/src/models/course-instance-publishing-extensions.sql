@@ -38,6 +38,15 @@ FROM
 WHERE
   id = $id;
 
+-- BLOCK select_publishing_extension_by_id_in_course_instance
+SELECT
+  *
+FROM
+  course_instance_publishing_extensions
+WHERE
+  id = $id
+  AND course_instance_id = $course_instance_id;
+
 -- BLOCK select_publishing_extension_by_name
 SELECT
   *

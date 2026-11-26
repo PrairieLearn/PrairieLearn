@@ -58,6 +58,23 @@ export async function selectPublishingExtensionById({
   return extension;
 }
 /**
+ * Finds a publishing extension by ID, or null when the course instance has no such extension.
+ */
+export async function selectOptionalPublishingExtensionById({
+  id,
+  courseInstance,
+}: {
+  id: string;
+  courseInstance: CourseInstance;
+}) {
+  return await queryOptionalRow(
+    sql.select_publishing_extension_by_id_in_course_instance,
+    { id, course_instance_id: courseInstance.id },
+    CourseInstancePublishingExtensionSchema,
+  );
+}
+
+/**
  * Finds the latest publishing extension that applies to a specific enrollment.
  */
 export async function selectLatestPublishingExtensionByEnrollment({

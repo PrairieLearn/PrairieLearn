@@ -81,11 +81,6 @@ interface CourseActionDefinition<Schema extends z.ZodObject, Context extends Cou
 export interface CourseAction {
   description: string;
   input: z.ZodObject;
-  /**
-   * Validates the input and the instructor's permissions, and finds where the action happens. A
-   * later approval step can check a request when it is made and run it once approved.
-   */
-  check: (ctx: CourseActionContext, input: unknown) => Promise<unknown>;
   run: (ctx: CourseActionContext, input: unknown) => Promise<{ summary: string }>;
 }
 
@@ -115,7 +110,6 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
   return {
     description: definition.description,
     input: definition.input,
-    check,
     // A run that fails partway is rolled back, so a failed action never leaves a partial change.
     run: async (ctx, raw) =>
       await runInTransactionAsync(async () => await definition.run(await check(ctx, raw))),

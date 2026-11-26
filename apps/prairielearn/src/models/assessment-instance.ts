@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 
 import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
 
@@ -54,6 +54,21 @@ export async function selectAssessmentInstanceById(
   return await queryRow(
     sql.select_assessment_instance_by_id,
     { assessment_instance_id },
+    AssessmentInstanceSchema,
+  );
+}
+
+/** The assessment's instances with the given IDs. IDs of other assessments' instances are left out. */
+export async function selectAssessmentInstancesByIdsForAssessment({
+  assessment_id,
+  assessment_instance_ids,
+}: {
+  assessment_id: string;
+  assessment_instance_ids: string[];
+}): Promise<AssessmentInstance[]> {
+  return await queryRows(
+    sql.select_assessment_instances_by_ids_for_assessment,
+    { assessment_id, assessment_instance_ids },
     AssessmentInstanceSchema,
   );
 }

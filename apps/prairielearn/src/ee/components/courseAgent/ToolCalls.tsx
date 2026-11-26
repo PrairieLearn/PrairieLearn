@@ -62,6 +62,10 @@ function Code({ children, title }: { children: ReactNode; title?: string }) {
 const toolName = (call: Extract<ToolCall, { kind: 'tool' }>) =>
   call.server ? `${call.server}.${call.tool}` : call.tool;
 
+/** A course action changes PrairieLearn itself, so it is labeled by what it did. */
+const isCourseAction = (call: ToolCall) =>
+  call.kind === 'tool' && call.server === null && call.tool === 'run_course_action';
+
 /**
  * What a call does, for grouping consecutive calls of one kind into a row like "Read 3 files".
  * Groups count calls, so a command that reads two files counts once.
@@ -92,6 +96,13 @@ function category(call: ToolCall): {
       if (call.server === 'web') {
         return { key: 'web', icon: 'bi-globe', group: (n) => `Browsed the web ${n} times` };
       }
+      if (isCourseAction(call)) {
+        return {
+          key: 'action',
+          icon: 'bi-lightning-charge',
+          group: (n) => `Made ${n} changes in PrairieLearn`,
+        };
+      }
       return {
         key: `call:${toolName(call)}`,
         icon: 'bi-plug',
@@ -106,8 +117,16 @@ function category(call: ToolCall): {
   }
 }
 
-/** A label built only from the call's own fields, so new tools need no copy of their own. */
-function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: string } {
+/**
+ * A label built only from the call's own fields, so new tools need no copy of their own. `done`
+ * replaces the verb and subject once the call has succeeded.
+ */
+function describe(call: ToolCall): {
+  verb: Verb;
+  subject: ReactNode;
+  meta?: string;
+  done?: string;
+} {
   switch (call.kind) {
     case 'command': {
       const { actions } = call;
@@ -157,6 +176,17 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
     }
     case 'tool':
       if (call.server === 'web') return describeWeb(call.tool, call.arguments.text);
+      if (isCourseAction(call)) {
+        // The arguments can be clipped, so the action's name is matched rather than parsed.
+        const action = /"action"\s*:\s*"([^"]+)"/.exec(call.arguments.text)?.[1];
+        // PrairieLearn replies with one sentence saying what changed, such as "Closed 2 issues."
+        const summary = call.status === 'completed' ? call.output?.text.trim() : undefined;
+        return {
+          verb: 'run',
+          subject: <Code>{action ?? 'an action'}</Code>,
+          done: summary || undefined,
+        };
+      }
       return { verb: 'call', subject: <Code>{toolName(call)}</Code> };
     case 'compaction':
       return { verb: 'summarize', subject: 'earlier conversation' };
@@ -278,7 +308,7 @@ function ToolCallRow({
   onExpand?: () => void;
 }) {
   const running = statusOf(call, live) === 'running';
-  const { verb, subject, meta } = describe(call);
+  const { verb, subject, meta, done } = describe(call);
   const editedPaths =
     call.kind === 'fileChange' ? call.changes.map((change) => change.path).join('\n') : '';
   // An edit's changes stay hidden until the row is expanded. Loading their language's highlighting
@@ -296,9 +326,11 @@ function ToolCallRow({
           icon={category(call).icon}
           running={running}
           label={
-            <>
-              {VERBS[verb][running ? 0 : 1]} {subject}
-            </>
+            done ?? (
+              <>
+                {VERBS[verb][running ? 0 : 1]} {subject}
+              </>
+            )
           }
           meta={meta}
           note={statusNote(call, live)}
