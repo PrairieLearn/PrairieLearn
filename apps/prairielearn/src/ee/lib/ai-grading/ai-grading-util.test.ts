@@ -522,6 +522,7 @@ describe('correctImagesOrientation', () => {
         'solution.webp': webp.toString('base64'),
       },
       model,
+      onResponse: async () => {},
     });
 
     const mediaTypes = model.doGenerateCalls.map(({ prompt }) =>

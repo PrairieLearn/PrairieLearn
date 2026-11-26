@@ -845,10 +845,8 @@ export async function aiGrade({
             submittedAnswer: submission.submitted_answer,
             submittedImages,
             model,
+            onResponse: recordUsage,
           });
-          for (const { response } of Object.values(rotationCorrections)) {
-            await recordUsage(response);
-          }
 
           const rotationCorrected = Object.values(rotationCorrections).some(
             (correction) => correction.degreesRotated !== 0,
@@ -1039,10 +1037,8 @@ export async function aiGrade({
             submittedAnswer: submission.submitted_answer,
             submittedImages,
             model,
+            onResponse: recordUsage,
           });
-          for (const { response } of Object.values(rotationCorrections)) {
-            await recordUsage(response);
-          }
 
           // Regenerate the prompt with the rotation-corrected images.
           gradingPrompt = await generatePrompt({

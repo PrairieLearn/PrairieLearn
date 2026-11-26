@@ -984,15 +984,18 @@ async function rotateBase64Image(
  * @param params.image - The base64-encoded image to correct.
  * @param params.mediaType - The media type of the image.
  * @param params.model - The LLM to use for determining the correct orientation.
+ * @param params.onResponse - Called with the LLM response before its output is checked.
  */
 async function correctImageOrientation({
   image,
   mediaType,
   model,
+  onResponse,
 }: {
   image: string;
   mediaType: string;
   model: LanguageModel;
+  onResponse: (response: GenerateTextResult<any, any, any>) => Promise<void>;
 }): Promise<{
   correctedImage: string;
   degreesRotated: CounterClockwiseRotationDegrees;
@@ -1032,19 +1035,19 @@ async function correctImageOrientation({
     text: 'Select the image that is closest to being upright.',
   });
 
-  const response = requireAiGradingOutput(
-    await generateText({
-      model,
-      abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-      instructions: formatPrompt([
-        'Of the four labeled images provided, select the one that is closest to being upright.',
-        'Upright (0 degrees): The handwriting is in a standard reading position already.',
-        "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
-      ]),
-      output: Output.object({ schema: RotationCorrectionOutputSchema }),
-      messages: [{ role: 'user', content }],
-    }),
-  );
+  const response = await generateText({
+    model,
+    abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
+    instructions: formatPrompt([
+      'Of the four labeled images provided, select the one that is closest to being upright.',
+      'Upright (0 degrees): The handwriting is in a standard reading position already.',
+      "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
+    ]),
+    output: Output.object({ schema: RotationCorrectionOutputSchema }),
+    messages: [{ role: 'user', content }],
+  });
+  await onResponse(response);
+  requireAiGradingOutput(response);
 
   const index = Number.parseInt(response.output.upright_image) - 1;
 
@@ -1062,6 +1065,8 @@ async function correctImageOrientation({
  * @param param.submittedAnswer - The student's submitted answer object.
  * @param param.submittedImages - A mapping from filenames to base64-encoded images.
  * @param param.model - The LLM to use for determining the correct orientations.
+ * @param param.onResponse - Called with each LLM response before its output is checked, so usage
+ * can be recorded even if a later image fails.
  *
  * @returns An updated submitted answer with corrected images, rotations correction amounts, and LLM responses.
  */
@@ -1070,10 +1075,12 @@ export async function correctImagesOrientation({
   /** The key is the filename, and the value is the base64-encoded image */
   submittedImages,
   model,
+  onResponse,
 }: {
   submittedAnswer: Record<string, any>;
   submittedImages: Record<string, string>;
   model: LanguageModel;
+  onResponse: (response: GenerateTextResult<any, any, any>) => Promise<void>;
 }) {
   if (!submittedAnswer._files) {
     return {
@@ -1102,6 +1109,7 @@ export async function correctImagesOrientation({
       image,
       mediaType,
       model,
+      onResponse,
     });
 
     const existingIndex = submittedAnswer._files.findIndex(
