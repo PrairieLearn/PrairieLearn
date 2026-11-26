@@ -135,3 +135,32 @@ FROM
     NULL::question_version_settings,
     versions.settings || JSONB_BUILD_OBJECT('question_version_id', inserted_versions.id)
   ) AS settings;
+
+-- BLOCK select_question_version_at_date
+SELECT
+  to_jsonb(qv.*) AS question_version,
+  to_jsonb(s.*) AS settings,
+  to_jsonb(c.*) AS chunk,
+  qv.created_at::text AS version_date
+FROM
+  question_versions AS qv
+  JOIN questions AS q ON q.id = qv.question_id
+  LEFT JOIN question_version_settings AS s ON s.question_version_id = qv.id
+  -- An archive refresh can replace a chunk without publishing a new question version.
+  LEFT JOIN chunks AS c ON qv.uses_chunks
+  AND c.course_id = q.course_id
+  AND c.question_id = qv.question_id
+  AND c.type = 'question'
+  AND NOT c.deleted
+  AND c.created_at <= qv.created_at
+  AND (
+    c.superseded_at IS NULL
+    OR c.superseded_at > qv.created_at
+  )
+WHERE
+  qv.question_id = $question_id
+  AND qv.created_at <= $at_date
+  AND (
+    qv.superseded_at IS NULL
+    OR qv.superseded_at > $at_date
+  );

@@ -8,13 +8,19 @@ import { z } from 'zod';
 import {
   execute,
   loadSqlEquiv,
+  queryOptionalRow,
   queryRows,
   queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { QuestionVersionSchema, type QuestionVersionSetting } from '../lib/db-types.js';
+import {
+  ChunkSchema,
+  QuestionVersionSchema,
+  type QuestionVersionSetting,
+  QuestionVersionSettingSchema,
+} from '../lib/db-types.js';
 import { computeStableHash } from '../lib/json.js';
 import type { CourseData } from '../sync/course-db.js';
 import { getQuestionVersionSettings } from '../sync/fromDisk/questions.js';
@@ -210,4 +216,43 @@ export async function publishQuestionVersionsFromDisk(options: {
     const publishedAt = await beginQuestionVersionPublication(options.courseId);
     await writeQuestionVersions({ publication, publishedAt, commitHash: options.commitHash });
   });
+}
+
+const QuestionVersionAtDateSchema = z.object({
+  question_version: QuestionVersionSchema,
+  settings: QuestionVersionSettingSchema.nullable(),
+  chunk: ChunkSchema.nullable(),
+  version_date: z.string(),
+});
+
+class QuestionHistoryUnavailableError extends Error {
+  constructor(questionId: string, atDate: string) {
+    super(`Question history is unavailable for question ${questionId} at ${atDate}.`);
+    this.name = 'QuestionHistoryUnavailableError';
+  }
+}
+
+/**
+ * Returns null outside recorded validity intervals and throws for incomplete history.
+ * Pass the database timestamp string for `at_date` to retain microseconds. The returned
+ * `version_date` is also a database timestamp string for use in dependency lookups.
+ */
+export async function selectOptionalQuestionVersionAtDate({
+  question_id,
+  at_date,
+}: {
+  question_id: string;
+  at_date: string;
+}) {
+  const result = await queryOptionalRow(
+    sql.select_question_version_at_date,
+    { question_id, at_date },
+    QuestionVersionAtDateSchema,
+  );
+  if (!result) return null;
+  const { question_version, settings, chunk, version_date } = result;
+  if (settings === null || (question_version.uses_chunks && chunk === null)) {
+    throw new QuestionHistoryUnavailableError(question_id, at_date);
+  }
+  return { question_version, settings, chunk, version_date };
 }

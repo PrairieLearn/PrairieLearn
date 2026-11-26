@@ -12,6 +12,7 @@ import {
   QuestionVersionSchema,
   QuestionVersionSettingSchema,
 } from '../../lib/db-types.js';
+import { selectOptionalQuestionVersionAtDate } from '../../models/question-version.js';
 import { selectQuestionByQid } from '../../models/question.js';
 import * as helperDb from '../helperDb.js';
 
@@ -22,6 +23,7 @@ const VersionSchema = z.object({
   question_version: QuestionVersionSchema,
   settings: QuestionVersionSettingSchema.nullable(),
   created_at: z.string(),
+  before_date: z.string(),
   superseded_at: z.string().nullable(),
 });
 
@@ -192,5 +194,41 @@ describe('Question version sync without chunks', () => {
     const deleted = await selectVersions(question.id);
     expect(deleted).toHaveLength(3);
     expect(deleted[2].superseded_at).not.toBeNull();
+
+    const lookup = (at_date: string) =>
+      selectOptionalQuestionVersionAtDate({ question_id: question.id, at_date });
+    const [first, restored, last] = deleted;
+    await expect(lookup(first.before_date)).resolves.toBeNull();
+    await expect(lookup(first.superseded_at!)).resolves.toBeNull();
+    await expect(lookup(last.before_date)).resolves.toMatchObject({
+      question_version: { id: restored.question_version.id },
+      settings: { directory: util.QUESTION_ID },
+    });
+    await expect(lookup(last.created_at)).resolves.toMatchObject({
+      settings: { directory: 'renamed' },
+      version_date: last.created_at,
+      chunk: null,
+    });
+    await expect(lookup(last.superseded_at!)).resolves.toBeNull();
+  });
+
+  it('reports missing settings and creates a fresh baseline without repairing old history', async () => {
+    const { courseDir, syncResults } = await util.createAndSyncCourseData();
+    const question = await selectQuestion(syncResults.courseId);
+    const [initial] = await selectVersions(question.id);
+    await sqldb.execute(sql.delete_settings, { question_version_id: initial.question_version.id });
+
+    await util.syncCourseData(courseDir);
+    const versions = await selectVersions(question.id);
+    expect(versions).toHaveLength(2);
+    const [old, current] = versions;
+    const lookup = (at_date: string) =>
+      selectOptionalQuestionVersionAtDate({ question_id: question.id, at_date });
+    await expect(lookup(old.created_at)).rejects.toMatchObject({
+      name: 'QuestionHistoryUnavailableError',
+    });
+    await expect(lookup(current.created_at)).resolves.toMatchObject({
+      settings: { ...initial.settings, question_version_id: current.question_version.id },
+    });
   });
 });

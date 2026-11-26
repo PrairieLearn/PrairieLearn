@@ -15,6 +15,7 @@ import { type Course, CourseSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
+import { selectOptionalQuestionVersionAtDate } from '../models/question-version.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
 import { syncDiskToSql, syncOrCreateDiskToSql } from '../sync/syncFromDisk.js';
@@ -421,8 +422,50 @@ describe('chunks', () => {
         const dependency = chunks.find((chunk) => chunk.type === 'serverFilesCourse')!;
         expect(chunks).toContainEqual(questionChunk);
         expect(dependency.id).not.toBe(initialDependency.id);
-        expect(await publicationDate()).toBe(await chunkDate(dependency.id));
+        const version = await selectOptionalQuestionVersionAtDate({
+          question_id: questionId,
+          at_date: 'infinity',
+        });
+        assert(version);
+        expect(version.version_date).toBe(await chunkDate(dependency.id));
+        const historicalChunks = await chunksLib.selectChunksForCourse(
+          course.id,
+          version.version_date,
+        );
+        expect(historicalChunks).toContainEqual(dependency);
+        expect(historicalChunks).not.toContainEqual(initialDependency);
       });
+    });
+
+    it('keeps the original archive across a refresh and reports its removal', async () => {
+      const coursePath = tempTestCourseDir.path;
+      const options = {
+        coursePath,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, coursePath),
+      };
+      const latest = () =>
+        selectOptionalQuestionVersionAtDate({ question_id: questionId, at_date: 'infinity' });
+      await chunksLib.updateChunksForCourse(options);
+      const original = await latest();
+      assert(original?.chunk);
+
+      // Force a new archive of the same files while the version remains current.
+      await chunksLib.updateChunksForCourse({
+        ...options,
+        changedFiles: ['questions/addNumbers/server.py'],
+      });
+      const currentChunks = await chunksLib.selectChunksForCourse(course.id);
+      const current = currentChunks.find((chunk) => chunk.question_id === questionId);
+      assert.isDefined(current);
+      expect(current.id).not.toBe(original.chunk.id);
+      await expect(latest()).resolves.toMatchObject({
+        question_version: { id: original.question_version.id },
+        chunk: { id: original.chunk.id },
+      });
+
+      await sqldb.execute(sql.delete_chunk, { chunk_id: original.chunk.id });
+      await expect(latest()).rejects.toMatchObject({ name: 'QuestionHistoryUnavailableError' });
     });
 
     it('updates existing instance and assessment asset chunks from the last Load From Disk sync', async () => {

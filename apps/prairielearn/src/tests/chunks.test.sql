@@ -69,3 +69,8 @@ ADD CONSTRAINT reject_settings CHECK (FALSE) NOT VALID;
 -- BLOCK allow_settings
 ALTER TABLE question_version_settings
 DROP CONSTRAINT reject_settings;
+
+-- BLOCK delete_chunk
+DELETE FROM chunks
+WHERE
+  id = $chunk_id;
