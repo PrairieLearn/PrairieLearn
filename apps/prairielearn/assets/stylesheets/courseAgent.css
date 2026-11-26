@@ -132,11 +132,11 @@
 }
 
 /*
- * `anywhere` lets a table column shrink until every word breaks, so short
- * columns like counts and percentages split mid-word. In cells, break a word
- * only when it can't fit; a table that is still too wide scrolls.
+ * Keep words whole and give every column some room, so no column squeezes to
+ * one word per line. A table that still doesn't fit scrolls sideways.
  */
 .course-agent-panel .markdown-body :is(th, td) {
+  min-width: 5rem;
   overflow-wrap: break-word;
 }
 
