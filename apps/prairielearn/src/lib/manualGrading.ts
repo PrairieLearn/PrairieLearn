@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import { setImmediate } from 'node:timers/promises';
 
 import * as async from 'async';
@@ -35,6 +36,7 @@ import {
   SubmissionForScoreUpdateSchema,
 } from './manualGrading.types.js';
 import { safeMustacheRender } from './mustache.js';
+import { type ResolvedRubricTree, resolveRubricTree } from './rubric-tree.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -278,14 +280,24 @@ export async function updateAssessmentQuestionRubric({
   grader_guidelines: string | null;
   authn_user_id: string;
 }): Promise<void> {
+  // Rows arrive in display order, which is depth-first (pre-order): every
+  // group is immediately followed by its descendants.
+  rubric_items.sort((a, b) => a.order - b.order);
+  let rubric_tree: ResolvedRubricTree | null = null;
+
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
     if (rubric_items.length === 0) {
       throw new Error('No rubric items were provided.');
     }
 
+    rubric_tree = resolveRubricTree(rubric_items);
+    if (rubric_tree.leafCount === 0) {
+      throw new Error('The rubric must contain at least one item that is not a group.');
+    }
+
     rubric_items.forEach((item) => {
-      if (item.points == null) {
+      if (item.points == null && !item.is_group) {
         throw new Error('Rubric item provided without a points value.');
       }
       if (item.description == null || item.description === '') {
@@ -361,27 +373,40 @@ export async function updateAssessmentQuestionRubric({
         active_rubric_items: rubric_items.map((item) => item.id).filter(Boolean),
       });
 
-      rubric_items.sort((a, b) => a.order - b.order);
-      await async.eachOfSeries(
-        rubric_items.map((item, number) => ({
+      assert(rubric_tree != null);
+      const { parentIndex, leafIndex } = rubric_tree;
+      // IDs of the saved rows, by position. Pre-order guarantees that a parent
+      // is saved before its children, so its ID is always known here.
+      const saved_ids: string[] = [];
+      for (const [number, input] of rubric_items.entries()) {
+        const parent = parentIndex[number];
+        const is_group = Boolean(input.is_group);
+        const item = {
           // Set default values to ensure fields exist, will be overridden by the spread
           id: null,
           explanation: null,
           grader_note: null,
-          ...item,
+          ...omit(input, ['order', 'depth']),
           number,
           rubric_id: new_rubric_id,
-        })),
-        async (item) => {
-          // Attempt to update the rubric item based on the ID. If the ID is not set or does not
-          // exist, insert a new rubric item.
-          if (item.id == null) {
-            await sqldb.execute(sql.insert_rubric_item, omit(item, ['order', 'id']));
-          } else {
-            await sqldb.queryScalar(sql.update_rubric_item, omit(item, ['order']), IdSchema);
-          }
-        },
-      );
+          points: is_group ? 0 : input.points,
+          is_group,
+          parent_id: parent == null ? null : saved_ids[parent],
+          // Key bindings follow leaf order, so groups don't use up a key.
+          leaf_number: leafIndex[number],
+          min_selections: is_group ? (input.min_selections ?? null) : null,
+          max_selections: is_group ? (input.max_selections ?? null) : null,
+        };
+        // Attempt to update the rubric item based on the ID. If the ID is not set or does not
+        // exist, insert a new rubric item.
+        if (item.id == null) {
+          saved_ids.push(
+            await sqldb.queryScalar(sql.insert_rubric_item, omit(item, ['id']), IdSchema),
+          );
+        } else {
+          saved_ids.push(await sqldb.queryScalar(sql.update_rubric_item, item, IdSchema));
+        }
+      }
 
       await recomputeInstanceQuestions(assessment, assessment_question_id, authn_user_id);
     }

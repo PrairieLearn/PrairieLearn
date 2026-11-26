@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { gradeAllAssessmentInstances } from '../lib/assessment.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
-import { InstanceQuestionSchema } from '../lib/db-types.js';
+import { InstanceQuestionSchema, RubricItemSchema } from '../lib/db-types.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
 import { updateAssessmentInstancesTimeLimit } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -58,6 +58,10 @@ interface RubricItem {
   explanation?: string;
   grader_note?: string;
   always_show_to_students: boolean;
+  depth?: number;
+  is_group?: boolean;
+  min_selections?: number;
+  max_selections?: number;
   description_render?: string;
   explanation_render?: string;
   grader_note_render?: string;
@@ -1132,6 +1136,211 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
         });
 
         checkGradingResults(mockStaff[0], mockStaff[0]);
+      });
+
+      describe('Nested rubric groups', () => {
+        let manualPointsBefore: number | null;
+
+        async function saveRubricItems(items: RubricItem[]) {
+          setUser(mockStaff[0]);
+          const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+          return await fetch(manualGradingIQUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(
+              buildRubricSettingsPayload({
+                manualGradingIQPage,
+                replace_auto_points: false,
+                starting_points: 6,
+                min_points: -0.6,
+                max_extra_points: 0.6,
+                rubric_items: items,
+              }),
+            ),
+          });
+        }
+
+        async function selectRubricRows() {
+          const rows = await sqldb.queryRows(sql.select_rubric_items, { iqId }, RubricItemSchema);
+          return rows.map((row) => ({
+            id: row.id,
+            description: row.description,
+            number: row.number,
+            is_group: row.is_group,
+            parent: rows.find((other) => other.id === row.parent_id)?.description ?? null,
+            key_binding: row.key_binding,
+            max_selections: row.max_selections,
+          }));
+        }
+
+        async function selectManualPoints() {
+          const iq = await sqldb.queryRow(
+            sql.get_instance_question,
+            { iqId },
+            InstanceQuestionSchema,
+          );
+          return iq.manual_points;
+        }
+
+        const group = (description: string, extra: Partial<RubricItem> = {}): RubricItem => ({
+          points: 0,
+          description,
+          always_show_to_students: true,
+          is_group: true,
+          ...extra,
+        });
+
+        test('save the existing items nested into groups', async () => {
+          assert.isDefined(rubric_items);
+          manualPointsBefore = await selectManualPoints();
+          const [first, second, third, fourth, fifth] = rubric_items;
+          // Keeping the existing items (and their IDs) means the current
+          // grading's applied items survive the re-score.
+          const response = await saveRubricItems([
+            first,
+            group('Select one', { max_selections: 1 }),
+            { ...second, depth: 1 },
+            { ...third, depth: 1 },
+            group('Outer'),
+            group('Inner', { depth: 1 }),
+            { ...fourth, depth: 2 },
+            { ...fifth, depth: 1 },
+          ]);
+          assert.isTrue(response.ok);
+        });
+
+        test('rows are stored in depth-first order with parents and leaf key bindings', async () => {
+          assert.isDefined(rubric_items);
+          const [first, second, third, fourth, fifth] = rubric_items;
+          const leaf = (item: RubricItem, parent: string | null, key_binding: string) => ({
+            description: item.description,
+            is_group: false,
+            parent,
+            key_binding,
+            max_selections: null,
+          });
+          const groupRow = (
+            description: string,
+            parent: string | null,
+            max_selections: number | null = null,
+          ) => ({ description, is_group: true, parent, key_binding: null, max_selections });
+
+          const rows = await selectRubricRows();
+          assert.deepEqual(
+            rows.map(({ id: _id, ...row }) => row),
+            [
+              leaf(first, null, '1'),
+              groupRow('Select one', null, 1),
+              leaf(second, 'Select one', '2'),
+              leaf(third, 'Select one', '3'),
+              groupRow('Outer', null),
+              groupRow('Inner', 'Outer'),
+              leaf(fourth, 'Inner', '4'),
+              leaf(fifth, 'Outer', '5'),
+            ].map((row, number) => ({ ...row, number })),
+          );
+          assert.deepEqual(
+            rows.filter((row) => !row.is_group).map((row) => row.id),
+            rubric_items.map((item) => item.id),
+          );
+        });
+
+        test('nesting does not change the existing grade', async () => {
+          assert.equal(await selectManualPoints(), manualPointsBefore);
+        });
+
+        test.each([
+          {
+            case: 'an item indented under another item',
+            items: [
+              { points: 1, description: 'Leaf', always_show_to_students: true },
+              { points: 1, description: 'Child of leaf', always_show_to_students: true, depth: 1 },
+            ],
+          },
+          {
+            case: 'a group with points',
+            items: [
+              group('Group', { points: 2 }),
+              { points: 1, description: 'Leaf', always_show_to_students: true, depth: 1 },
+            ],
+          },
+          {
+            case: 'a selection rule on a group that contains groups',
+            items: [
+              group('Outer', { max_selections: 1 }),
+              group('Inner', { depth: 1 }),
+              { points: 1, description: 'Leaf', always_show_to_students: true, depth: 2 },
+            ],
+          },
+          {
+            case: 'more than three levels of nesting',
+            items: [
+              group('Level 1'),
+              group('Level 2', { depth: 1 }),
+              group('Level 3', { depth: 2 }),
+              { points: 1, description: 'Leaf', always_show_to_students: true, depth: 3 },
+            ],
+          },
+          {
+            case: 'a rubric with only groups',
+            items: [group('Empty group')],
+          },
+        ])('rejects $case', async ({ items }) => {
+          const rowsBefore = await selectRubricRows();
+          const response = await saveRubricItems(items);
+          assert.isFalse(response.ok);
+          assert.deepEqual(await selectRubricRows(), rowsBefore);
+        });
+
+        test('flattening the rubric again removes the groups', async () => {
+          assert.isDefined(rubric_items);
+          const response = await saveRubricItems(rubric_items);
+          assert.isTrue(response.ok);
+
+          const rows = await selectRubricRows();
+          assert.deepEqual(
+            rows.map((row) => [row.id, row.number, row.parent, row.key_binding]),
+            rubric_items.map((item, number) => [item.id, number, null, `${number + 1}`]),
+          );
+          assert.equal(await selectManualPoints(), manualPointsBefore);
+        });
+
+        test('the assessment question page validates rubric items', async () => {
+          assert.isDefined(rubric_items);
+          setUser(mockStaff[0]);
+          const manualGradingAQPage = await (
+            await fetch(manualGradingAssessmentQuestionUrl)
+          ).text();
+          const payload = buildRubricSettingsPayload({
+            manualGradingIQPage: manualGradingAQPage,
+            replace_auto_points: false,
+            starting_points: 6,
+            min_points: -0.6,
+            max_extra_points: 0.6,
+            rubric_items,
+          });
+          const rowsBefore = await selectRubricRows();
+          const response = await fetch(manualGradingAssessmentQuestionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              ...payload,
+              rubric_items: payload.rubric_items.map((item) => ({ ...item, depth: -1 })),
+            }),
+          });
+          assert.equal(response.status, 400);
+          assert.deepEqual(await selectRubricRows(), rowsBefore);
+
+          const validResponse = await fetch(manualGradingAssessmentQuestionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          assert.equal(validResponse.status, 200);
+          assert.deepEqual(await selectRubricRows(), rowsBefore);
+        });
+
+        checkSettingsResults(6, -0.6, 0.6, '');
       });
     });
 

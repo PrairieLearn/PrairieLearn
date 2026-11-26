@@ -1,0 +1,1 @@
+ALTER TABLE rubric_items VALIDATE CONSTRAINT rubric_items_parent_id_fkey;

@@ -272,9 +272,14 @@ SET
   explanation = COALESCE($explanation, explanation),
   grader_note = COALESCE($grader_note, grader_note),
   key_binding = CASE
-    WHEN $number >= 10 THEN NULL
-    ELSE MOD($number + 1, 10)
+    WHEN $leaf_number::integer IS NULL
+    OR $leaf_number::integer >= 10 THEN NULL
+    ELSE MOD($leaf_number::integer + 1, 10)
   END,
+  is_group = $is_group,
+  parent_id = $parent_id,
+  min_selections = $min_selections,
+  max_selections = $max_selections,
   always_show_to_students = COALESCE($always_show_to_students, always_show_to_students),
   show_to_students = CASE
     WHEN COALESCE($always_show_to_students, always_show_to_students) THEN 'always'::enum_rubric_item_show_to_students
@@ -298,7 +303,11 @@ INSERT INTO
     grader_note,
     key_binding,
     always_show_to_students,
-    show_to_students
+    show_to_students,
+    is_group,
+    parent_id,
+    min_selections,
+    max_selections
   )
 VALUES
   (
@@ -309,15 +318,22 @@ VALUES
     $explanation,
     $grader_note,
     CASE
-      WHEN $number >= 10 THEN NULL
-      ELSE MOD($number + 1, 10)
+      WHEN $leaf_number::integer IS NULL
+      OR $leaf_number::integer >= 10 THEN NULL
+      ELSE MOD($leaf_number::integer + 1, 10)
     END,
     $always_show_to_students,
     CASE
       WHEN $always_show_to_students THEN 'always'::enum_rubric_item_show_to_students
       ELSE 'when_selected'::enum_rubric_item_show_to_students
-    END
-  );
+    END,
+    $is_group,
+    $parent_id,
+    $min_selections,
+    $max_selections
+  )
+RETURNING
+  id;
 
 -- BLOCK select_instance_questions_to_update
 WITH

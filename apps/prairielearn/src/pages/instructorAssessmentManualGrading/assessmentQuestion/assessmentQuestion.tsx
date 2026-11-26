@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -29,6 +30,7 @@ import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { RubricSettingsBodySchema } from '../../../lib/manualGrading.types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getOngoingJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
@@ -305,18 +307,19 @@ router.post(
         res.sendStatus(204);
       }
     } else if (req.body.__action === 'modify_rubric_settings') {
+      const body = parseRequestBody(req, RubricSettingsBodySchema);
       try {
         await manualGrading.updateAssessmentQuestionRubric({
           assessment: res.locals.assessment,
           assessment_question_id: res.locals.assessment_question.id,
-          use_rubric: req.body.use_rubric,
-          replace_auto_points: req.body.replace_auto_points,
-          starting_points: req.body.starting_points,
-          min_points: req.body.min_points,
-          max_extra_points: req.body.max_extra_points,
-          rubric_items: req.body.rubric_items,
-          tag_for_manual_grading: req.body.tag_for_manual_grading,
-          grader_guidelines: req.body.grader_guidelines,
+          use_rubric: body.use_rubric,
+          replace_auto_points: body.replace_auto_points,
+          starting_points: body.starting_points,
+          min_points: body.min_points,
+          max_extra_points: body.max_extra_points,
+          rubric_items: body.rubric_items,
+          tag_for_manual_grading: body.tag_for_manual_grading,
+          grader_guidelines: body.grader_guidelines,
           authn_user_id: res.locals.authn_user.id,
         });
         const updatedAssessmentQuestion = await selectAssessmentQuestionById(

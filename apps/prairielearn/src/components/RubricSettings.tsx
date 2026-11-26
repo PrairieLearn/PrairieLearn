@@ -14,7 +14,19 @@ import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
-  rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number' | 'points' | 'show_to_students'> & {
+  // Hierarchy fields (#6861) are omitted until the editor supports groups.
+  rubric_item: Omit<
+    RubricItem,
+    | 'rubric_id'
+    | 'id'
+    | 'number'
+    | 'points'
+    | 'show_to_students'
+    | 'is_group'
+    | 'parent_id'
+    | 'min_selections'
+    | 'max_selections'
+  > & {
     id?: string;
     points: number | null;
   };

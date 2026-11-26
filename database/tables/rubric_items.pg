@@ -5,18 +5,28 @@ columns
     explanation: character varying(10000)
     grader_note: character varying(10000)
     id: bigint not null default nextval('rubric_items_id_seq'::regclass)
+    is_group: boolean not null default false
     key_binding: character varying(30)
+    max_selections: integer
+    min_selections: integer
     number: integer not null
+    parent_id: bigint
     points: double precision not null
     rubric_id: bigint not null
     show_to_students: enum_rubric_item_show_to_students not null default 'always'::enum_rubric_item_show_to_students
 
 indexes
     rubric_items_pkey: PRIMARY KEY (id) USING btree (id)
+    rubric_items_parent_id_idx: USING btree (parent_id) WHERE parent_id IS NOT NULL
     rubric_items_rubric_id: USING btree (rubric_id)
 
+check constraints
+    rubric_items_group_fields_check: CHECK ((is_group AND points = 0::double precision AND key_binding IS NULL OR NOT is_group AND min_selections IS NULL AND max_selections IS NULL) AND (min_selections IS NULL OR min_selections >= 0) AND (max_selections IS NULL OR max_selections >= 1) AND (min_selections IS NULL OR max_selections IS NULL OR min_selections <= max_selections) AND (parent_id IS NULL OR parent_id <> id))
+
 foreign-key constraints
+    rubric_items_parent_id_fkey: FOREIGN KEY (parent_id) REFERENCES rubric_items(id) ON UPDATE CASCADE ON DELETE CASCADE
     rubric_items_rubric_id_fkey: FOREIGN KEY (rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     rubric_grading_items: FOREIGN KEY (rubric_item_id) REFERENCES rubric_items(id) ON UPDATE CASCADE ON DELETE CASCADE
+    rubric_items: FOREIGN KEY (parent_id) REFERENCES rubric_items(id) ON UPDATE CASCADE ON DELETE CASCADE
