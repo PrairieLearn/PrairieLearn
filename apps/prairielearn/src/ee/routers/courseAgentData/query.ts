@@ -16,10 +16,14 @@ const OPERATORS = {
  * cannot take a column name as a parameter. `query` must already be validated against the
  * dataset's request schema, so every column is one of the dataset's own; operators and directions
  * come from fixed lists, and every value, `in` list, and the limit are parameters.
+ *
+ * `courseInstanceIds`, when given, keeps only rows from those course instances. The request's
+ * filters are joined to it with AND, so no filter can reach the other course instances.
  */
 export function selectCourseDatasetRowsQuery(
   datasetQuery: string,
   query: CourseDataQuery,
+  { courseInstanceIds }: { courseInstanceIds: string[] | null },
 ): { rawSqlQuery: string; params: Record<string, unknown> } {
   const params: Record<string, unknown> = { limit: query.limit ?? null };
   const conditions = (query.filters ?? []).map((filter, i) => {
@@ -29,6 +33,10 @@ export function selectCourseDatasetRowsQuery(
     if (filter.op === 'in') return `${column} = ANY($filter_${i})`;
     return `${column} ${OPERATORS[filter.op]} $filter_${i}`;
   });
+  if (courseInstanceIds) {
+    params.readable_course_instance_ids = courseInstanceIds;
+    conditions.unshift('course_instance_id = ANY($readable_course_instance_ids::bigint[])');
+  }
   const ordering = (query.order ?? []).map(
     (term) => `${escapeIdentifier(term.column)} ${term.direction === 'desc' ? 'DESC' : 'ASC'}`,
   );

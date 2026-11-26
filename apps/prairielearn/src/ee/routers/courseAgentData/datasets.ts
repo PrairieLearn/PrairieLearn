@@ -4,6 +4,7 @@ import { CourseDataQuerySchema, courseDataQuerySchema } from '@prairielearn/cour
 import { loadSqlEquiv } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import type { CourseRole } from '../../../lib/authz-data-lib.js';
 import {
   EnumAssessmentTypeSchema,
   EnumGradingMethodSchema,
@@ -37,18 +38,34 @@ const JsonObjectSchema = z.record(z.string(), z.unknown());
 
 function dataset<Shape extends Record<string, z.ZodType>>({
   description,
+  requiredRole,
   query,
   schema,
   largeColumns = [],
 }: {
   description: string;
+  /**
+   * The role the user needs, as the PrairieLearn page that shows these rows requires. A course
+   * role is checked once. Student Data Viewer is checked in each course instance, and rows from
+   * course instances where the user does not have it are left out.
+   */
+  requiredRole: CourseRole[] | ['Student Data Viewer'];
   query: string;
   schema: z.ZodObject<Shape>;
   /** Columns whose values can be large, so rows that include them are read a few at a time. */
   largeColumns?: (keyof Shape & string)[];
 }) {
+  const studentData = requiredRole[0] === 'Student Data Viewer';
+  // Rows are left out by course instance, so every row needs one. The shape's type allows any
+  // column name, so the column may be missing.
+  const courseInstanceId = schema.shape.course_instance_id as z.ZodType | undefined;
+  if (studentData && (!courseInstanceId || courseInstanceId.safeParse(null).success)) {
+    throw new Error('A student data dataset needs a non-null course_instance_id column.');
+  }
   return {
     description,
+    requiredRole,
+    studentData,
     query,
     schema,
     largeColumns: new Set<string>(largeColumns),
@@ -66,6 +83,7 @@ function dataset<Shape extends Record<string, z.ZodType>>({
 export const COURSE_DATA_DATASETS = {
   course_instances: dataset({
     description: 'Offerings of the course, each with its own students and assessments.',
+    requiredRole: ['Previewer'],
     query: sql.select_course_instances_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -86,6 +104,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   assessments: dataset({
     description: 'Assessments in each course instance.',
+    requiredRole: ['Previewer'],
     query: sql.select_assessments_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -124,6 +143,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   questions: dataset({
     description: 'Questions in the course question bank.',
+    requiredRole: ['Previewer'],
     query: sql.select_questions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -143,6 +163,7 @@ export const COURSE_DATA_DATASETS = {
   assessment_questions: dataset({
     description:
       'Questions as placed on an assessment, with their points and statistics. The statistics cover attempts that count in statistics and are recalculated every few minutes, so the latest activity may be missing.',
+    requiredRole: ['Previewer'],
     query: sql.select_assessment_questions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -176,6 +197,7 @@ export const COURSE_DATA_DATASETS = {
   assessment_instances: dataset({
     description:
       'Attempts at assessments by students or teams, with totals. An assessment with multiple_instance can have several attempts per student.',
+    requiredRole: ['Student Data Viewer'],
     query: sql.select_assessment_instances_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -215,6 +237,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   instance_questions: dataset({
     description: "Questions in a student's assessment attempt, with their scores.",
+    requiredRole: ['Student Data Viewer'],
     query: sql.select_instance_questions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -261,6 +284,7 @@ export const COURSE_DATA_DATASETS = {
   variants: dataset({
     description:
       'Generated versions of a question that students saw. Instructor previews are excluded.',
+    requiredRole: ['Student Data Viewer'],
     query: sql.select_variants_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -299,6 +323,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   submissions: dataset({
     description: 'Student answer submissions. Instructor previews are excluded.',
+    requiredRole: ['Student Data Viewer'],
     query: sql.select_submissions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -394,7 +419,11 @@ export function courseDataSchema() {
     datasets: Object.fromEntries(
       Object.entries(COURSE_DATA_DATASETS).map(([name, dataset]) => [
         name,
-        { description: dataset.description, schema: toJsonSchema(dataset.schema) },
+        {
+          description: dataset.description,
+          student_data: dataset.studentData,
+          schema: toJsonSchema(dataset.schema),
+        },
       ]),
     ),
   };

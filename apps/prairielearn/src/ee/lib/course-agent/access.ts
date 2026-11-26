@@ -1,3 +1,4 @@
+import type { CourseRole } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import type { Course, Institution, User } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -32,4 +33,16 @@ export async function courseAgentEnabled(context: CourseAgentAccessContext): Pro
     course_id: context.course.id,
     user_id: context.authn_user.id,
   });
+}
+
+/**
+ * Why the course agent was refused for lacking a role, in words it can pass on to the instructor.
+ * Student data roles are granted per course instance, so a read of student data is refused only
+ * when the instructor has one in no course instance.
+ */
+export function missingRoleMessage(requiredRole: (CourseRole | 'Student Data Viewer')[]) {
+  const access = requiredRole.includes('Student Data Viewer')
+    ? 'Student Data Viewer access in at least one course instance'
+    : `${requiredRole.join(' or ')} access to the course`;
+  return `The instructor needs ${access} for this, which they do not have. Tell them, and do not retry. A course Owner can grant it on the Staff page.`;
 }

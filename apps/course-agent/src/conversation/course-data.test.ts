@@ -68,6 +68,29 @@ describe('course data tools', () => {
     );
   });
 
+  it('tells the model which course instances student data covers', async () => {
+    const listWith = async (courseInstances: string[]) => {
+      const schema = JSON.parse(SCHEMA);
+      schema.student_data_course_instances = courseInstances;
+      schema.datasets.submissions.student_data = true;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(JSON.stringify(schema))),
+      );
+      return (await listCourseDatasets(context)).text;
+    };
+
+    const someAccess = await listWith(['Sp26', 'Fa25']);
+    expect(someAccess).toContain('the instructor can see student data: Sp26, Fa25.');
+    expect(someAccess.split('\n')).toContain(
+      'submissions (student data): Student answer submissions. Instructor previews are excluded.',
+    );
+
+    expect(await listWith([])).toContain(
+      "The instructor can't see student data in any course instance",
+    );
+  });
+
   it('saves downloaded rows in the sandbox and tells the model how they were filtered', async () => {
     const fetch = vi.fn(
       async () => new Response('{"id":"1","score":0.25}\n{"id":"2","score":0}\n'),

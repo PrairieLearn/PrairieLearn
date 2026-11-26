@@ -8,8 +8,10 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { courseAgentEnabled } from '../../lib/course-agent/access.js';
+import { CoursePageAuthzDataSchema, hasRole } from '../../../lib/authz-data-lib.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
+import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
+import { courseAgentEnabled, missingRoleMessage } from '../../lib/course-agent/access.js';
 
 import { COURSE_DATA_DATASETS, courseDataSchema, isCourseDataset } from './datasets.js';
 import { selectCourseDatasetRowsQuery } from './query.js';
@@ -39,9 +41,28 @@ router.use(
   }),
 );
 
-router.get('/', (req, res) => {
-  res.send(SCHEMA);
-});
+/**
+ * The course instances whose student data the user can see, as on the Issues page. Checked on
+ * every request, so a role removed during a conversation applies to its next read.
+ */
+async function selectStudentDataCourseInstances(locals: ResLocalsForPage<'course'>) {
+  const courseInstances = await selectCourseInstancesWithStaffAccess({
+    course: locals.course,
+    authzData: CoursePageAuthzDataSchema.parse(locals.authz_data),
+  });
+  return courseInstances.filter((ci) => ci.has_course_instance_permission_view);
+}
+
+router.get(
+  '/',
+  typedAsyncHandler<'course'>(async (req, res) => {
+    const courseInstances = await selectStudentDataCourseInstances(res.locals);
+    res.send({
+      ...SCHEMA,
+      student_data_course_instances: courseInstances.map((ci) => ci.short_name),
+    });
+  }),
+);
 
 // A POST because the request is a JSON document; it only reads data.
 router.post(
@@ -60,7 +81,19 @@ router.post(
     const body = dataset.querySchema.safeParse(req.body);
     if (!body.success) throw new HttpStatusError(400, z.prettifyError(body.error));
 
-    const { rawSqlQuery, params } = selectCourseDatasetRowsQuery(dataset.query, body.data);
+    let courseInstanceIds: string[] | null = null;
+    if (dataset.studentData) {
+      courseInstanceIds = (await selectStudentDataCourseInstances(res.locals)).map((ci) => ci.id);
+      if (courseInstanceIds.length === 0) {
+        throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
+      }
+    } else if (!hasRole(res.locals.authz_data, dataset.requiredRole)) {
+      throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
+    }
+
+    const { rawSqlQuery, params } = selectCourseDatasetRowsQuery(dataset.query, body.data, {
+      courseInstanceIds,
+    });
     const timeout = AbortSignal.timeout(QUERY_TIMEOUT_MS);
     const cursor = await sqldb.queryCursor(
       rawSqlQuery,

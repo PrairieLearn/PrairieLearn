@@ -5,7 +5,12 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { COURSE_DATA_DATASETS } from '../ee/routers/courseAgentData/datasets.js';
 import { config } from '../lib/config.js';
-import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import { selectOptionalCourseInstanceByShortName } from '../models/course-instances.js';
+import {
+  deleteCourseInstancePermissions,
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
 
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
@@ -69,19 +74,54 @@ async function conversationHeaders(user_id: string) {
   };
 }
 
-async function staffHeaders(uid: string, course_role: 'Owner' | 'Editor') {
+async function insertStaff(
+  uid: string,
+  course_role: 'Owner' | 'Editor',
+  /** Course instances where the user gets Student Data Viewer. */
+  studentDataCourseInstanceIds: string[] = [],
+) {
   const user = await insertCoursePermissionsByUserUid({
     course_id: '1',
     uid,
     course_role,
     authn_user_id: '1',
   });
+  for (const course_instance_id of studentDataCourseInstanceIds) {
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      course_instance_id,
+      user_id: user.id,
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: '1',
+    });
+  }
+  return user;
+}
+
+async function staffHeaders(...args: Parameters<typeof insertStaff>) {
+  const user = await insertStaff(...args);
   return await conversationHeaders(user.id);
 }
+
+async function courseInstanceId(shortName: string) {
+  const courseInstance = await selectOptionalCourseInstanceByShortName({
+    course: { id: '1' },
+    shortName,
+  });
+  assert.isNotNull(courseInstance);
+  return courseInstance.id;
+}
+
+const STUDENT_DATA_DATASETS = Object.entries(COURSE_DATA_DATASETS)
+  .filter(([, dataset]) => dataset.studentData)
+  .map(([name]) => name);
 
 describe('course agent course data', { timeout: 60_000, concurrent: false }, function () {
   let dataUrl: string;
   let owner: Record<string, string>;
+  // The test course's course instances. The exam attempt below is in Sp15.
+  let sp15Id: string;
+  let publicId: string;
 
   const originalConfig = {
     isEnterprise: config.isEnterprise,
@@ -99,6 +139,8 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
       features: { ...config.features, 'course-agent': true },
     });
     await helperServer.before()();
+    sp15Id = await courseInstanceId('Sp15');
+    publicId = await courseInstanceId('public');
   });
 
   afterAll(helperServer.after);
@@ -130,7 +172,7 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
 
   test('every dataset returns rows that match its schema exactly', async function () {
     dataUrl = `${locals.baseUrl}/course/1/course_agent/data`;
-    owner = await staffHeaders('owner@example.com', 'Owner');
+    owner = await staffHeaders('owner@example.com', 'Owner', [sp15Id]);
     for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${dataUrl}/${name}`, owner, {
         select: Object.keys(dataset.schema.shape),
@@ -234,6 +276,7 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
 
     assert.isNotEmpty(await getRows(`${dataUrl}/questions`, owner, body));
     assert.isNotEmpty(await getRows(`${dataUrl}/questions`, admin, body));
+    assert.isNotEmpty(await getRows(`${dataUrl}/submissions`, admin, body));
     assert.equal(
       await status(owner, `${locals.baseUrl}/course/2/course_agent/data/questions`),
       403,
@@ -247,5 +290,63 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
     await withConfig({ features: { 'course-agent': false } }, async () => {
       assert.equal(await status(owner), 403);
     });
+  });
+
+  test('student data comes only from course instances where the user can see it', async function () {
+    const publicOnly = await staffHeaders('public-only@example.com', 'Owner', [publicId]);
+    const noStudentData = await staffHeaders('no-student-data@example.com', 'Owner');
+    const select = ['course_instance_id'];
+
+    for (const name of STUDENT_DATA_DATASETS) {
+      const url = `${dataUrl}/${name}`;
+      const rows = await getRows(url, owner, { select });
+      assert.isNotEmpty(rows, name);
+      for (const row of rows) assert.equal(row.course_instance_id, sp15Id, name);
+
+      assert.isEmpty(await getRows(url, publicOnly, { select }), name);
+      const sp15Filter = [{ column: 'course_instance_id', op: 'eq', value: sp15Id }];
+      assert.isEmpty(await getRows(url, publicOnly, { select, filters: sp15Filter }), name);
+
+      const refused = await post(url, noStudentData, { select });
+      assert.equal(refused.status, 403, name);
+      assert.include((await refused.json()).message, 'Student Data Viewer');
+    }
+
+    assert.isNotEmpty(await getRows(`${dataUrl}/questions`, noStudentData, { select: ['id'] }));
+  });
+
+  test('a removed student data role applies to the next read', async function () {
+    const user = await insertStaff('removed@example.com', 'Owner', [sp15Id]);
+    const headers = await conversationHeaders(user.id);
+    const body = { select: ['id'] };
+
+    assert.isNotEmpty(await getRows(`${dataUrl}/submissions`, headers, body));
+    await deleteCourseInstancePermissions({
+      course_id: '1',
+      course_instance_id: sp15Id,
+      user_id: user.id,
+      authn_user_id: '1',
+    });
+    assert.equal((await post(`${dataUrl}/submissions`, headers, body)).status, 403);
+  });
+
+  test('the dataset list names the course instances whose student data the user can see', async function () {
+    const list = async (headers: Record<string, string>) => {
+      const res = await fetch(dataUrl, { headers });
+      assert.equal(res.status, 200);
+      return (await res.json()) as {
+        student_data_course_instances: string[];
+        datasets: Record<string, { student_data: boolean }>;
+      };
+    };
+
+    const listed = await list(owner);
+    assert.deepEqual(listed.student_data_course_instances, ['Sp15']);
+    assert.sameMembers(
+      Object.keys(listed.datasets).filter((name) => listed.datasets[name].student_data),
+      ['assessment_instances', 'instance_questions', 'variants', 'submissions'],
+    );
+    const noStudentData = await staffHeaders('no-student-data@example.com', 'Owner');
+    assert.deepEqual((await list(noStudentData)).student_data_course_instances, []);
   });
 });
