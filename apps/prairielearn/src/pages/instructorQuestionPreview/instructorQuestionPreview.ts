@@ -139,7 +139,7 @@ router.get(
 
     res.send(
       InstructorQuestionPreview({
-        independentScrolling: await features.enabledFromLocals(
+        questionHostingUpdate: await features.enabledFromLocals(
           'question-hosting-update',
           res.locals,
         ),

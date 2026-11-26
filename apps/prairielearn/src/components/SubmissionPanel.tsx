@@ -80,6 +80,37 @@ export type SubmissionSummary = z.infer<typeof SubmissionBasicSchema> & {
  */
 export type SubmissionWithDetails = SubmissionSummary & z.infer<typeof SubmissionDetailedSchema>;
 
+export function getSubmissionRenderUrl({
+  questionContext,
+  urlPrefix,
+  question,
+  assessment_question,
+  instance_question,
+  variant_id,
+  submissionId,
+  renderSubmissionSearchParams,
+}: {
+  questionContext: QuestionContext;
+  urlPrefix: string;
+  question: Question;
+  assessment_question?: AssessmentQuestion | null;
+  instance_question?: InstanceQuestion | null;
+  variant_id: string;
+  submissionId: string;
+  renderSubmissionSearchParams?: URLSearchParams;
+}): string {
+  const renderUrlPrefix =
+    questionContext === 'instructor' || questionContext === 'public'
+      ? `${urlPrefix}/question/${question.id}/preview`
+      : questionContext === 'manual_grading'
+        ? `${urlPrefix}/assessment/${assessment_question?.assessment_id}/manual_grading/instance_question/${instance_question?.id}`
+        : `${urlPrefix}/instance_question/${instance_question?.id}`;
+  return url.format({
+    pathname: `${renderUrlPrefix}/variant/${variant_id}/submission/${submissionId}`,
+    search: renderSubmissionSearchParams?.toString(),
+  });
+}
+
 export function SubmissionPanel({
   questionContext,
   questionRenderContext,
@@ -120,15 +151,15 @@ export function SubmissionPanel({
   const isLatestSubmission = submission.submission_number === submissionCount;
   expanded = expanded || isLatestSubmission;
 
-  const renderUrlPrefix =
-    questionContext === 'instructor' || questionContext === 'public'
-      ? `${urlPrefix}/question/${question.id}/preview`
-      : questionContext === 'manual_grading'
-        ? `${urlPrefix}/assessment/${assessment_question?.assessment_id}/manual_grading/instance_question/${instance_question?.id}`
-        : `${urlPrefix}/instance_question/${instance_question?.id}`;
-  const renderUrl = url.format({
-    pathname: `${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}`,
-    search: renderSubmissionSearchParams?.toString(),
+  const renderUrl = getSubmissionRenderUrl({
+    questionContext,
+    urlPrefix,
+    question,
+    assessment_question,
+    instance_question,
+    variant_id,
+    submissionId: submission.id,
+    renderSubmissionSearchParams,
   });
 
   return html`

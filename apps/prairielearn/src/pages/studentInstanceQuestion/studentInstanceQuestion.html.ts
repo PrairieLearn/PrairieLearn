@@ -16,6 +16,7 @@ import {
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
+import { QuestionBrowserServicesData } from '../../components/QuestionBrowserServicesData.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.js';
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.js';
@@ -29,7 +30,7 @@ import { CalculatorSettingsSchema } from '../../schemas/infoAssessment.js';
 
 export function StudentInstanceQuestion({
   resLocals,
-  independentScrolling,
+  questionHostingUpdate,
   renderState,
   userCanDeleteAssessmentInstance,
   assignedGrader,
@@ -37,7 +38,7 @@ export function StudentInstanceQuestion({
   questionCopyTargets,
   enabledTools = [],
 }: {
-  independentScrolling: boolean;
+  questionHostingUpdate: boolean;
   resLocals: ResLocalsForPage<'instance-question'>;
   renderState: ResLocalsInstanceQuestionRender | null;
   userCanDeleteAssessmentInstance: boolean;
@@ -61,10 +62,10 @@ export function StudentInstanceQuestion({
       page: 'assessment_instance',
     },
     options: {
-      contentContainerClassName: independentScrolling ? 'question-page-layout' : '',
+      contentContainerClassName: questionHostingUpdate ? 'question-page-layout' : '',
     },
     headContent: html`
-      ${independentScrolling ? compiledStylesheetTag('questionLayout.css') : ''}
+      ${questionHostingUpdate ? compiledStylesheetTag('questionLayout.css') : ''}
       <meta
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
@@ -128,13 +129,14 @@ export function StudentInstanceQuestion({
         })
       : '',
     content: html`
-      ${independentScrolling ? '' : regenerateAlert}
+      ${questionHostingUpdate && renderState?.variant != null ? QuestionBrowserServicesData({ resLocals, questionContext }) : ''}
+      ${questionHostingUpdate ? '' : regenerateAlert}
       <div class="row question-page-row">
         <div
           class="col-lg-9 col-sm-12 question-page-question"
-          ${independentScrolling ? html`role="region" aria-label="Question" tabindex="0"` : ''}
+          ${questionHostingUpdate ? html`role="region" aria-label="Question" tabindex="0"` : ''}
         >
-          ${independentScrolling ? regenerateAlert : ''}
+          ${questionHostingUpdate ? regenerateAlert : ''}
           ${
             resLocals.instance_question_info.question_access_mode === 'read_only_lockpoint'
               ? html`
@@ -166,6 +168,7 @@ export function StudentInstanceQuestion({
                   </div>
                 `
               : QuestionContainer({
+                  questionHostingUpdate,
                   resLocals,
                   questionContext,
                   questionCopyTargets,
@@ -176,7 +179,7 @@ export function StudentInstanceQuestion({
 
         <div
           class="col-lg-3 col-sm-12 question-page-sidebar"
-          ${independentScrolling ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
+          ${questionHostingUpdate ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
         >
           ${
             resLocals.assessment.type === 'Exam'

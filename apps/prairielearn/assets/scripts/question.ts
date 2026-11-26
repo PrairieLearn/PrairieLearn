@@ -1,11 +1,18 @@
 import './behaviors/bootstrap-compat.js';
 
 import { observe } from 'selector-observer';
-import { type Socket, io } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
+import { createLocalQuestionBrowserServices } from '../../src/lib/client/question-browser-services.js';
+import type {
+  QuestionBrowserServices,
+  QuestionBrowserServicesData,
+  QuestionContentPanels,
+} from '../../src/lib/client/question-browser-services.types.js';
+import { updateQuestionPagePanels } from '../../src/lib/client/question-page-panels.js';
 import type {
   StatusMessage,
   StatusMessageSubmission,
@@ -16,6 +23,15 @@ import type { GradingJobStatus } from '../../src/models/grading-job.js';
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
+
+const browserServices = new WeakMap<HTMLElement, QuestionBrowserServices>();
+
+function getQuestionBrowserServicesData() {
+  const { submissionRenderUrls, ...data } = decodeData<QuestionBrowserServicesData>(
+    'question-browser-services-data',
+  );
+  return { ...data, submissionRenderUrls: new Map(submissionRenderUrls) };
+}
 
 // We use `selector-observer` throughout this file to handle the case of
 // updating the page's contents without reloading the whole page. At the
@@ -42,10 +58,27 @@ onDocumentReady(() => {
       void mathjaxTypeset([container]);
       setupDisableOnSubmit(container);
 
-      if (container.dataset.gradingMethod === 'External') {
-        const externalGrading = initializeExternalGrading({ container });
-        return { remove: () => externalGrading?.close() };
-      }
+      const localServices =
+        container.dataset.questionHostingUpdate === 'true'
+          ? createLocalQuestionBrowserServices({
+              document: container.ownerDocument,
+              ...getQuestionBrowserServicesData(),
+              isCurrent: () => container.isConnected,
+            })
+          : undefined;
+      if (localServices) browserServices.set(container, localServices.services);
+
+      const externalGrading =
+        container.dataset.gradingMethod === 'External'
+          ? initializeExternalGrading({ container })
+          : undefined;
+      return {
+        remove: () => {
+          externalGrading?.close();
+          localServices?.dispose();
+          browserServices.delete(container);
+        },
+      };
     },
   });
 
@@ -161,17 +194,47 @@ function initializeExternalGrading({ container }: { container: HTMLElement }) {
   // If everything has been graded or was canceled, don't even open a socket
   if (!gradingPending) return;
 
+  const services = browserServices.get(container);
+  if (services) {
+    const unsubscribe = services.subscribeToGradingStatus((submissions) =>
+      handleStatusChange({
+        container,
+        close: unsubscribe,
+        submissions,
+        signal: abortController.signal,
+      }),
+    );
+    return {
+      close: () => {
+        unsubscribe();
+        abortController.abort();
+      },
+    };
+  }
+
   const socket = io('/external-grading');
   socket.on('connect', () => {
     socket.emit(
       'init',
       { variant_id: variantId, variant_token: variantToken },
-      (msg: StatusMessage) =>
-        handleStatusChange({ container, socket, msg, signal: abortController.signal }),
+      (msg: StatusMessage | null) => {
+        if (msg == null) return;
+        handleStatusChange({
+          container,
+          close: () => socket.close(),
+          submissions: msg.submissions,
+          signal: abortController.signal,
+        });
+      },
     );
   });
   socket.on('change:status', (msg: StatusMessage) =>
-    handleStatusChange({ container, socket, msg, signal: abortController.signal }),
+    handleStatusChange({
+      container,
+      close: () => socket.close(),
+      submissions: msg.submissions,
+      signal: abortController.signal,
+    }),
   );
 
   return {
@@ -209,16 +272,16 @@ function initializeReadmeExpansion(container: HTMLElement): void {
 
 function handleStatusChange({
   container,
-  socket,
-  msg,
+  close,
+  submissions,
   signal,
 }: {
   container: HTMLElement;
-  socket: Socket;
-  msg: StatusMessage;
+  close: () => void;
+  submissions: StatusMessageSubmission[];
   signal: AbortSignal;
 }): void {
-  msg.submissions.forEach((submission) => {
+  submissions.forEach((submission) => {
     // Always update results
     updateStatus(container, submission);
 
@@ -240,7 +303,7 @@ function handleStatusChange({
         fetchResults({ container, submissionId: submission.id, signal });
 
         // We don't need the socket anymore.
-        socket.close();
+        close();
       }
     }
   });
@@ -277,7 +340,7 @@ function updateDynamicPanels({
   submissionId,
 }: {
   container: HTMLElement;
-  msg: SubmissionPanels;
+  msg: QuestionContentPanels;
   submissionId: string;
 }): void {
   if (msg.extraHeadersHtml) {
@@ -365,30 +428,6 @@ function updateDynamicPanels({
     }
   }
 
-  if (msg.questionScorePanel) {
-    const parsedHTML = parseHTMLElement(document, msg.questionScorePanel);
-
-    // We might be getting new markup for just the content, or legacy markup
-    // for the whole panel.
-    //
-    // TODO: switch back to using a specific ID once we drop the legacy markup.
-    // Using a specific ID ensures we can find things easily via grep.
-    //
-    // Note: we use `document` and not `container` here because the question
-    // score panel is outside the question container.
-    const targetElement = document.getElementById(parsedHTML.id);
-    targetElement?.replaceWith(parsedHTML);
-  }
-
-  if (msg.assessmentScorePanel) {
-    // Note: we use `document` and not `container` here because the assessment
-    // score panel is outside the question container.
-    const assessmentScorePanel = document.getElementById('assessment-score-panel');
-    if (assessmentScorePanel) {
-      assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
-    }
-  }
-
   if (msg.questionPanelFooter) {
     const parsedHTML = parseHTMLElement(document, msg.questionPanelFooter);
 
@@ -399,15 +438,6 @@ function updateDynamicPanels({
     // Using a specific ID ensures we can find things easily via grep.
     const targetElement = container.querySelector(`#${parsedHTML.id}`);
     targetElement?.replaceWith(parsedHTML);
-  }
-
-  if (msg.questionNavNextButton) {
-    // Note: we use `document` and not `container` here because this button
-    // is outside the question container.
-    const questionNavNextButtonContainer = document.getElementById('question-nav-next-container');
-    if (questionNavNextButtonContainer) {
-      questionNavNextButtonContainer.outerHTML = msg.questionNavNextButton;
-    }
   }
 }
 
@@ -453,6 +483,25 @@ function loadPendingSubmissionPanel({
   const { submissionId, dynamicRenderUrl } = panel.dataset;
   if (submissionId == null || dynamicRenderUrl == null) return;
 
+  const services = browserServices.get(container);
+  if (services) {
+    services
+      .renderSubmission(
+        {
+          submissionId,
+          purpose: includeScorePanels ? 'grading-result' : 'history',
+        },
+        { signal },
+      )
+      .then((msg) => updateDynamicPanels({ container, msg, submissionId }))
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        panel.innerHTML =
+          '<div class="card-body submission-body">Error retrieving submission</div>';
+      });
+    return;
+  }
+
   const url = new URL(dynamicRenderUrl, window.location.origin);
 
   if (includeScorePanels) {
@@ -463,7 +512,8 @@ function loadPendingSubmissionPanel({
     .then(async (response) => {
       // If the response is not a 200, delegate to the error handler (catch block)
       if (!response.ok) throw new Error('Failed to fetch submission');
-      const msg = await response.json();
+      const msg: SubmissionPanels = await response.json();
+      updateQuestionPagePanels(document, msg);
       updateDynamicPanels({ container, msg, submissionId });
     })
     .catch((err) => {
