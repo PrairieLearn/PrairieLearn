@@ -7,10 +7,10 @@
         <pl-rod x1="{{params.x1}}" y1="{{params.y1}}" x2="{{params.x4}}" y2="{{params.y4}}"></pl-rod>
         <pl-rectangle x1="{{params.x2}}" y1="{{params.y2}}" width="40" height="60" color="green1"></pl-rectangle>
         <pl-rectangle x1="{{params.x3}}" y1="{{params.y3}}" width="{{params.wbox}}" height="{{params.hbox}}" color="green1" angle="{{params.angle_plane}}"></pl-rectangle>
-        <pl-point x1="{{params.x2}}" y1="{{params.y2}}" label="B" offsetx="-10" offsety="10"></pl-point>
+        <pl-point x1="{{params.x2}}" y1="{{params.y2}}" label="B" label-pos="below" label-sep="10"></pl-point>
         <pl-point x1="{{params.x3}}" y1="{{params.y3}}" label="C"></pl-point>
 
-        <pl-coordinates x1="{{params.xcoord}}" y1="{{params.ycoord}}" width="60" angle="{{params.angle_plane}}"></pl-coordinates>
+        <pl-coordinates x1="{{params.xcoord}}" y1="{{params.ycoord}}" width="60" angle="{{params.angle_plane}}" relpos-active="true"></pl-coordinates>
         <pl-arc-dimensions x1="{{params.x6}}" y1="{{params.y6}}" radius="80" start-angle="180" end-angle="{{params.end_angle}}" label="\\theta" offsety="-10" offsetx="-15"></pl-arc-dimensions>
 
     </pl-drawing-initial>
@@ -29,7 +29,7 @@
     </pl-drawing-answer>
 
     <pl-drawing-initial>
-      <pl-coordinates x1="{{params.xcoord}}" y1="{{params.ycoord}}" width="60" angle="{{params.angle_plane}}"></pl-coordinates>
+      <pl-coordinates x1="{{params.xcoord}}" y1="{{params.ycoord}}" width="60" angle="{{params.angle_plane}}" relpos-active="true"></pl-coordinates>
       <pl-rectangle x1="{{params.x3}}" y1="{{params.y3}}" width="{{params.wbox}}" height="{{params.hbox}}" color="green1" angle="{{params.angle_plane}}"></pl-rectangle>
       <pl-point x1="{{params.x3}}" y1="{{params.y3}}"></pl-point>
     </pl-drawing-initial>
