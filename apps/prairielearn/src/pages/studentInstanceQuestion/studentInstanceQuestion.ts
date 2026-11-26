@@ -23,6 +23,7 @@ import { getCanonicalHost } from '../../lib/url.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import { selectAssessmentInstanceGradingPending } from '../../models/assessment-instance.js';
 import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
@@ -330,6 +331,12 @@ router.get(
       assessment_id: res.locals.assessment.id,
     });
 
+    // Only homework question pages show the assessment score.
+    const gradingPending =
+      res.locals.assessment.type === 'Homework'
+        ? await selectAssessmentInstanceGradingPending(res.locals.assessment_instance.id)
+        : null;
+
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we
       // fetch and display the most recent non-broken variant.
@@ -348,6 +355,7 @@ router.get(
             renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
             enabledTools,
+            gradingPending,
           }),
         );
         return;
@@ -414,6 +422,7 @@ router.get(
         lastGrader,
         questionCopyTargets,
         enabledTools,
+        gradingPending,
       }),
     );
   }),

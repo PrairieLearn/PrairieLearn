@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
+import {
+  type Assessment,
+  type AssessmentInstance,
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+} from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -76,4 +82,54 @@ export async function insertGroupAssessmentInstance({
     { assessment_id, team_id, authn_user_id },
     AssessmentInstanceSchema,
   );
+}
+
+/** Why an assessment instance's score may not yet reflect all submitted work. */
+export interface GradingPending {
+  /** At least one question is waiting for manual grading. */
+  manual: boolean;
+  /** At least one saved answer has not been submitted for grading. */
+  saved: boolean;
+  /** At least one answer has a grading job that is queued or running. */
+  grading: boolean;
+  /** Saved answers only count while the instance is open, and how they get graded depends on the type. */
+  assessment_type: Assessment['type'];
+  open: boolean;
+}
+
+/**
+ * Returns the grading status of each assessment instance that has ungraded
+ * work. Instances with nothing pending are absent from the result.
+ */
+export async function selectGradingPending(
+  assessment_instance_ids: string[],
+): Promise<Map<string, GradingPending>> {
+  if (assessment_instance_ids.length === 0) return new Map();
+  const rows = await queryRows(
+    sql.select_grading_pending,
+    { assessment_instance_ids },
+    z.object({
+      assessment_instance_id: IdSchema,
+      manual: z.boolean(),
+      saved: z.boolean(),
+      grading: z.boolean(),
+      assessment_type: AssessmentSchema.shape.type,
+      open: AssessmentInstanceSchema.shape.open,
+    }),
+  );
+  return new Map(
+    rows
+      .filter((row) => row.manual || row.saved || row.grading)
+      .map(({ assessment_instance_id, ...gradingPending }) => [
+        assessment_instance_id,
+        gradingPending,
+      ]),
+  );
+}
+
+export async function selectAssessmentInstanceGradingPending(
+  assessment_instance_id: string,
+): Promise<GradingPending | null> {
+  const gradingPending = await selectGradingPending([assessment_instance_id]);
+  return gradingPending.get(assessment_instance_id) ?? null;
 }

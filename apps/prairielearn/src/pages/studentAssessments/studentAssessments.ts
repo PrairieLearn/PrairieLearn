@@ -11,6 +11,7 @@ import { formatLegacyAssessmentAccess } from '../../lib/assessment-access-contro
 import { SprocAuthzAssessmentSchema } from '../../lib/db-types.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
+import { selectGradingPending } from '../../models/assessment-instance.js';
 
 import {
   StudentAssessments,
@@ -87,7 +88,14 @@ router.get(
         return row.authz_result.authorized;
       });
 
-    res.send(StudentAssessments({ resLocals: res.locals, rows: resolvedRows }));
+    const gradingPending = await selectGradingPending(
+      resolvedRows.flatMap((row) =>
+        row.assessment_instance_id != null && row.authz_result.show_closed_assessment_score
+          ? [row.assessment_instance_id]
+          : [],
+      ),
+    );
+    res.send(StudentAssessments({ resLocals: res.locals, rows: resolvedRows, gradingPending }));
   }),
 );
 

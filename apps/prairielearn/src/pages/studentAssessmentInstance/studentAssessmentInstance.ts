@@ -28,7 +28,10 @@ import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
-import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
+import {
+  selectAssessmentInstanceById,
+  selectAssessmentInstanceGradingPending,
+} from '../../models/assessment-instance.js';
 import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -271,11 +274,15 @@ router.get(
     res.locals.assessment_text_templated = assessment_text_templated;
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
+    const gradingPending = await selectAssessmentInstanceGradingPending(
+      res.locals.assessment_instance.id,
+    );
 
     if (!res.locals.assessment.team_work) {
       res.send(
         StudentAssessmentInstance({
           instance_question_rows,
+          gradingPending,
           showTimeLimitExpiredModal,
           userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
           resLocals: res.locals,
@@ -309,6 +316,7 @@ router.get(
     res.send(
       StudentAssessmentInstance({
         instance_question_rows,
+        gradingPending,
         showTimeLimitExpiredModal,
         groupConfig,
         groupInfo,

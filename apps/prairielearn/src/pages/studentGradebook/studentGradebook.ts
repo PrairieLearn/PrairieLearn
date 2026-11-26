@@ -14,6 +14,7 @@ import {
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
+import { type GradingPending, selectGradingPending } from '../../models/assessment-instance.js';
 
 import { StudentGradebook, type StudentGradebookTableRow } from './studentGradebook.html.js';
 
@@ -29,6 +30,7 @@ function buildCsvFilename(locals: ResLocalsForPage<'course-instance'>) {
 function mapRow(
   raw: StudentGradebookRow,
   prev: StudentGradebookRow | null,
+  gradingPending: Map<string, GradingPending>,
 ): StudentGradebookTableRow {
   const start_new_set = raw.assessment_set.id !== prev?.assessment_set.id;
   return {
@@ -40,7 +42,9 @@ function mapRow(
     assessment_set_color: raw.assessment_set.color,
     label: computeLabel(raw),
     assessment_instance_score_perc: raw.assessment_instance.score_perc,
+    grading_pending: gradingPending.get(raw.assessment_instance.id) ?? null,
     show_closed_assessment_score: raw.show_closed_assessment_score,
+    active: raw.active,
     start_new_set,
   };
 }
@@ -56,7 +60,12 @@ router.get(
       reqDate: res.locals.req_date,
       auth: 'student',
     });
-    const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1]));
+    const gradingPending = await selectGradingPending(
+      rawRows
+        .filter((row) => row.show_closed_assessment_score)
+        .map((row) => row.assessment_instance.id),
+    );
+    const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1], gradingPending));
     res.send(
       StudentGradebook({
         resLocals: res.locals,

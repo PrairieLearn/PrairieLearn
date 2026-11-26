@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { IdSchema } from '@prairielearn/zod';
 
+import { AssessmentScoreHtml } from '../../components/AssessmentScore.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { ScorebarHtml } from '../../components/Scorebar.js';
 import { StudentAvailableCredit } from '../../components/StudentAvailableCredit.js';
 import type { AssessmentAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import {
@@ -14,6 +14,7 @@ import {
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { type ResLocalsForPage } from '../../lib/res-locals.js';
+import type { GradingPending } from '../../models/assessment-instance.js';
 
 export const StudentAssessmentsRowBaseSchema = z.object({
   assessment_id: AssessmentSchema.shape.id,
@@ -41,9 +42,12 @@ export type StudentAssessmentsRow = z.infer<typeof StudentAssessmentsRowBaseSche
 export function StudentAssessments({
   resLocals,
   rows,
+  gradingPending,
 }: {
   resLocals: ResLocalsForPage<'course-instance'>;
   rows: StudentAssessmentsRow[];
+  /** Keyed by assessment instance ID. */
+  gradingPending: Map<string, GradingPending>;
 }) {
   const { urlPrefix, authz_data } = resLocals;
 
@@ -130,7 +134,7 @@ export function StudentAssessments({
                           ${
                             row.multiple_instance_header
                               ? NewInstanceButton({ urlPrefix, row })
-                              : AssessmentScore(row)
+                              : AssessmentScore(row, gradingPending)
                           }
                         </td>
                       </tr>
@@ -157,10 +161,15 @@ export function StudentAssessments({
   });
 }
 
-function AssessmentScore(row: StudentAssessmentsRow) {
+function AssessmentScore(row: StudentAssessmentsRow, gradingPending: Map<string, GradingPending>) {
   if (row.assessment_instance_id == null) return 'Not started';
   if (!row.authz_result.show_closed_assessment_score) return 'Score not shown';
-  return ScorebarHtml(row.assessment_instance_score_perc, { classes: 'mx-auto' });
+  return AssessmentScoreHtml({
+    score: row.assessment_instance_score_perc,
+    gradingPending: gradingPending.get(row.assessment_instance_id) ?? null,
+    active: row.authz_result.active,
+    className: 'mx-auto',
+  });
 }
 
 function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {

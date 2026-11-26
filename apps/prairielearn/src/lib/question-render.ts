@@ -23,6 +23,7 @@ import {
   type SubmissionSummary,
   type SubmissionWithDetails,
 } from '../components/SubmissionPanel.js';
+import { selectAssessmentInstanceGradingPending } from '../models/assessment-instance.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -947,11 +948,16 @@ export async function renderPanelsForSubmission({
       // As usual, only render if this variant is part of an assessment
       if (assessment == null || assessment_set == null || assessment_instance == null) return;
 
+      // Only homework question pages show the assessment score.
+      if (assessment.type !== 'Homework') return;
+
       panels.assessmentScorePanel = AssessmentScorePanel({
         urlPrefix,
         assessment,
         assessment_set,
         assessment_instance,
+        gradingPending: await selectAssessmentInstanceGradingPending(assessment_instance.id),
+        active: authz_result?.active ?? false,
       }).toString();
     },
     async () => {
