@@ -12,7 +12,7 @@ import type {
   StaffGroupConfig,
 } from '../../lib/client/safe-db-types.js';
 import { type GroupSettingsFormValues } from '../../lib/group-config.js';
-import type { GroupUsersRow } from '../../models/group.js';
+import type { GroupWithAssessmentInstance } from '../../models/group.js';
 import type { AssessmentGroupsError } from '../../trpc/assessment/assessment-groups.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
@@ -109,7 +109,7 @@ interface InstructorAssessmentGroupsProps {
   csrfToken: string;
   groupsCsvFilename: string;
   groupConfigInfo?: StaffGroupConfig;
-  groups?: GroupUsersRow[];
+  groups?: GroupWithAssessmentInstance[];
   notAssigned?: string[];
   trpcCsrfToken: string;
   origHash: string | null;

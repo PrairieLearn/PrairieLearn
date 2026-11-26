@@ -7,6 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { getAssessmentTrpcUrl, getAssessmentUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type User } from '../lib/db-types.js';
+import { insertGroupAssessmentInstance } from '../models/assessment-instance.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -292,5 +293,23 @@ describe('Instructor group controls', { concurrent: false }, () => {
     for (const user of users) {
       assert.notInclude(membership.notAssigned, user.uid);
     }
+  });
+
+  test('membership includes the assessment instance for started groups', async () => {
+    assert.isDefined(group1RowId);
+    assert.isDefined(group2RowId);
+
+    const assessmentInstance = await insertGroupAssessmentInstance({
+      assessment_id,
+      team_id: group1RowId,
+      authn_user_id: '1',
+    });
+    const membership = await trpcClient.assessmentGroups.membership.query();
+    const startedGroup = membership.groups.find((group) => group.group_id === group1RowId);
+    const unstartedGroup = membership.groups.find((group) => group.group_id === group2RowId);
+    assert.isDefined(startedGroup);
+    assert.isDefined(unstartedGroup);
+    assert.equal(startedGroup.assessment_instance_id, assessmentInstance.id);
+    assert.isNull(unstartedGroup.assessment_instance_id);
   });
 });

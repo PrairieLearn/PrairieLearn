@@ -12,9 +12,11 @@ WITH
   assessment_groups AS (
     SELECT
       g.id,
-      g.name
+      g.name,
+      tc.assessment_id
     FROM
       teams AS g
+      JOIN team_configs AS tc ON (tc.id = g.team_config_id)
     WHERE
       g.deleted_at IS NULL
       AND g.team_config_id = $group_config_id
@@ -34,11 +36,25 @@ WITH
 SELECT
   ag.id AS group_id,
   ag.name,
+  ai.id AS assessment_instance_id,
   COALESCE(agu.size, 0) AS size,
   COALESCE(agu.users, '[]'::jsonb) AS users
 FROM
   assessment_groups AS ag
   LEFT JOIN assessment_group_users AS agu ON (agu.team_id = ag.id)
+  LEFT JOIN LATERAL (
+    SELECT
+      id
+    FROM
+      assessment_instances
+    WHERE
+      assessment_id = ag.assessment_id
+      AND team_id = ag.id
+    ORDER BY
+      number DESC
+    LIMIT
+      1
+  ) AS ai ON TRUE
 ORDER BY
   ag.id;
 
