@@ -11,6 +11,7 @@ import { updateCourseInstanceUsagesForSubmission } from '../models/course-instan
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { insertSharedQuestionUsagesForSubmission } from '../models/shared-question-usages.js';
+import { deleteUnsavedSubmissions } from '../models/unsaved-submission.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -27,6 +28,7 @@ import {
   VariantSchema,
 } from './db-types.js';
 import * as externalGrader from './externalGrader.js';
+import { features } from './features/index.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -74,6 +76,7 @@ async function insertSubmission({
   user_id,
   auth_user_id,
   client_fingerprint_id,
+  clearUnsavedSubmissions,
   question,
 }: {
   submitted_answer: Record<string, any> | null;
@@ -90,6 +93,7 @@ async function insertSubmission({
   user_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
+  clearUnsavedSubmissions: boolean;
   question: Question;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
@@ -165,6 +169,12 @@ async function insertSubmission({
     });
 
     if (variant.instance_question_id != null) {
+      if (clearUnsavedSubmissions) {
+        await deleteUnsavedSubmissions({
+          instance_question_id: variant.instance_question_id,
+          user_id,
+        });
+      }
       const instanceQuestion = await sqldb.queryRow(
         sql.update_instance_question_post_submission,
         {
@@ -198,6 +208,14 @@ export async function saveSubmission(
   question: Question,
   variant_course: Course,
 ): Promise<{ submission_id: string; variant: Variant }> {
+  const clearUnsavedSubmissions =
+    variant.instance_question_id !== null &&
+    (await features.enabled('unsaved-submissions-collection', {
+      institution_id: variant_course.institution_id,
+      course_id: variant_course.id,
+      course_instance_id: variant.course_instance_id,
+      user_id: submissionData.auth_user_id ?? undefined,
+    }));
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
     raw_submitted_answer: submissionData.submitted_answer,
@@ -281,6 +299,7 @@ export async function saveSubmission(
     ...data,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
+    clearUnsavedSubmissions,
     question,
   });
 }

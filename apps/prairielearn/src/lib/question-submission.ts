@@ -5,7 +5,29 @@ import { HttpStatusError } from '@prairielearn/error';
 
 import { selectAndAuthzVariant } from '../models/variant.js';
 
+import type { Question } from './db-types.js';
 import { saveAndGradeSubmission, saveSubmission } from './grading.js';
+
+export function parseSubmissionBody(body: Record<string, any>, questionType: Question['type']) {
+  let variant_id: string, submitted_answer: Record<string, any>;
+  if (questionType === 'Freeform') {
+    variant_id = body.__variant_id;
+    submitted_answer = omit(body, ['__action', '__csrf_token', '__variant_id']);
+  } else {
+    if (!body.postData) {
+      throw new HttpStatusError(400, 'No postData');
+    }
+    let postData;
+    try {
+      postData = JSON.parse(body.postData);
+    } catch {
+      throw new HttpStatusError(400, 'JSON parse failed on body.postData');
+    }
+    variant_id = postData.variant ? postData.variant.id : null;
+    submitted_answer = postData.submittedAnswer;
+  }
+  return { variant_id, submitted_answer };
+}
 
 export async function processSubmission(
   req: Request,
@@ -17,23 +39,7 @@ export async function processSubmission(
     publicQuestionPreview?: boolean;
   } = {},
 ): Promise<string> {
-  let variant_id: string, submitted_answer: Record<string, any>;
-  if (res.locals.question.type === 'Freeform') {
-    variant_id = req.body.__variant_id;
-    submitted_answer = omit(req.body, ['__action', '__csrf_token', '__variant_id']);
-  } else {
-    if (!req.body.postData) {
-      throw new HttpStatusError(400, 'No postData');
-    }
-    let postData;
-    try {
-      postData = JSON.parse(req.body.postData);
-    } catch {
-      throw new HttpStatusError(400, 'JSON parse failed on body.postData');
-    }
-    variant_id = postData.variant ? postData.variant.id : null;
-    submitted_answer = postData.submittedAnswer;
-  }
+  const { variant_id, submitted_answer } = parseSubmissionBody(req.body, res.locals.question.type);
   const submission = {
     variant_id,
     user_id: res.locals.user.id,

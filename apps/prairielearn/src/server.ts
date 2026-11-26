@@ -104,6 +104,8 @@ import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
 import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
 import { courseTrpcRouter } from './trpc/course/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
+import { instanceQuestionTrpcRouter } from './trpc/instanceQuestion/trpc.js';
+import { unsavedSubmissionDiscardRouter } from './trpc/instanceQuestion/unsaved-submissions.js';
 import { userTrpcRouter } from './trpc/user/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
@@ -398,8 +400,14 @@ export async function initExpress(): Promise<Express> {
     // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
     if (isMultipartRequest(req)) return next();
 
-    // Limit to 5MB of JSON
-    bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
+    // Captured forms need the same allowance for base64 uploads as regular question submissions.
+    const limit =
+      /^\/pl\/course_instance\/\d+\/instance_question\/\d+\/trpc\/unsavedSubmissions\.upsert\/?$/.test(
+        req.path,
+      )
+        ? 5 * 1536 * 1024
+        : 5 * 1024 * 1024;
+    bodyParser.json({ limit })(req, res, next);
   });
   app.use((req, res, next) => {
     if (isMultipartRequest(req)) return next();
@@ -1613,6 +1621,15 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
     (await import('./middlewares/studentAssessmentAccess.js')).default,
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/trpc',
+    instanceQuestionTrpcRouter,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/unsaved_submission/discard',
+    unsavedSubmissionDiscardRouter,
   );
 
   app.use(

@@ -8,6 +8,20 @@ export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
 
+export function getInstanceQuestionTrpcUrl(options: {
+  courseInstanceId: string;
+  instanceQuestionId: string;
+}): string {
+  return `${getInstanceQuestionUrl(options)}trpc`;
+}
+
+export function getInstanceQuestionUnsavedSubmissionDiscardUrl(options: {
+  courseInstanceId: string;
+  instanceQuestionId: string;
+}): string {
+  return `${getInstanceQuestionUrl(options)}unsaved_submission/discard`;
+}
+
 export type AssessmentUrlParts =
   | { urlPrefix: string; courseInstanceId?: undefined }
   // If urlPrefix is not provided, then course_instance_id
