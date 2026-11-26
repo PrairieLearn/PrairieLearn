@@ -197,11 +197,19 @@ export function RequestChangesCard({
 
 const AUTO_APPROVAL_WAIT_MS = 60_000;
 
+/** Measured to the last fetch, successful or not, so failing fetches still end the wait. */
 function autoApproving(
-  { data, dataUpdatedAt }: { data: { status: string } | undefined; dataUpdatedAt: number },
+  {
+    data,
+    dataUpdatedAt,
+    errorUpdatedAt,
+  }: { data: { status: string } | undefined; dataUpdatedAt: number; errorUpdatedAt: number },
   shownAt: number,
 ) {
-  return data?.status === 'pending' && dataUpdatedAt - shownAt < AUTO_APPROVAL_WAIT_MS;
+  return (
+    data?.status === 'pending' &&
+    Math.max(dataUpdatedAt, errorUpdatedAt) - shownAt < AUTO_APPROVAL_WAIT_MS
+  );
 }
 
 function ReviewActions({

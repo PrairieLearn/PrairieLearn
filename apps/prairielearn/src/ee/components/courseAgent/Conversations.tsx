@@ -352,14 +352,16 @@ function Chat({
   const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
-  // The conversation keeps its own mode. A choice made here shows at once instead of waiting for
-  // the agent service to report it back.
+  // The conversation keeps its own mode. A choice made here shows at once, until the agent service
+  // reports it back; after that the reported mode shows, including a change from another tab.
   const [chosenApprovalMode, setChosenApprovalMode] = useState(initialApprovalMode);
+  if (chosenApprovalMode && lifecycle?.approvalMode === chosenApprovalMode) {
+    setChosenApprovalMode(undefined);
+  }
   // Undefined until the agent service reports the conversation's state.
   const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode;
   // The service takes a moment to report, so the message box shows the mode this browser last
-  // saw for the conversation instead of flipping from the default. Only a reported mode approves
-  // a review or goes out with a message.
+  // saw for the conversation instead of flipping from the default.
   const approvalModeKey = `course-agent:approval-mode:${conversationId}`;
   const [lastSeenApprovalMode] = useState(
     () => ApprovalModeSchema.safeParse(localStorage.getItem(approvalModeKey)).data,
@@ -369,8 +371,15 @@ function Chat({
   useEffect(() => {
     if (approvalMode) localStorage.setItem(approvalModeKey, approvalMode);
   }, [approvalMode, approvalModeKey]);
-  const { mutate: saveApprovalMode } = useMutation(
-    trpc.courseAgent.setApprovalMode.mutationOptions(),
+  const saveApprovalMode = useMutation({
+    ...trpc.courseAgent.setApprovalMode.mutationOptions(),
+    // Saves run one at a time, so the last choice is the one the conversation keeps.
+    scope: { id: `course-agent-approval-mode:${conversationId}` },
+    // Show the mode the conversation still has rather than one that was not saved.
+    onError: () => setChosenApprovalMode(undefined),
+  });
+  const saveApprovalModeError = getAppError<CourseAgentError['SetApprovalMode']>(
+    saveApprovalMode.error,
   );
   // Approving one review is when auto-approve is worth offering, once per course.
   const [autoApproveOffered, setAutoApproveOffered] = useState(false);
@@ -383,7 +392,7 @@ function Chat({
   const changeApprovalMode = (mode: ApprovalMode) => {
     setAutoApproveOffered(false);
     setChosenApprovalMode(mode);
-    saveApprovalMode({ conversationId, approvalMode: mode });
+    saveApprovalMode.mutate({ conversationId, approvalMode: mode });
     onApprovalModeChosen(mode);
   };
   const [connectionFailed, setConnectionFailed] = useState(false);
@@ -700,6 +709,14 @@ function Chat({
           )}
           {deny.isError && (
             <AppErrorAlert error={denyError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
+          {saveApprovalModeError && (
+            <AppErrorAlert
+              error={saveApprovalModeError}
+              render={{
+                UNKNOWN: () => 'Could not change the approval mode. Choose it again to retry.',
+              }}
+            />
           )}
           {(connectionError || connectionFailed) && (
             <Alert variant="danger">

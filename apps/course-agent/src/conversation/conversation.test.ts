@@ -481,7 +481,7 @@ it('refuses messages while limited, and Resume after the reset sends them', asyn
   );
 });
 
-it('marks reviews for automatic approval from the latest message that chose a mode', async () => {
+it("marks reviews for automatic approval from the conversation's mode", async () => {
   stubFetch({ usage: async () => decision() });
   vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
   const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
@@ -533,14 +533,19 @@ it('marks reviews for automatic approval from the latest message that chose a mo
   const reviewId = always.state.reviewId!;
   expect(always.schedule).toHaveBeenCalledWith(0, 'approveReview', { reviewId, attempt: 0 });
 
-  // The instructor can also change the mode between messages.
+  // A message that waited for admission while the instructor switched back carries the older mode,
+  // which must not replace the newer choice.
   emit.mockClear();
   const switched = fixture().conversation;
   await switched.onStart();
-  const turn = await startTurn(switched);
-  switched.setApprovalMode('always_approve');
-  expect(switched.state.approvalMode).toBe('always_approve');
-  expect((await submitReview(turn.options)).part).toHaveProperty('data.autoApprove', true);
+  const earlier = await startTurn(switched, { approvalMode: 'always_approve' });
+  sdk.finishTurn();
+  await sdk.completeResponse(earlier.requestId);
+  await vi.waitFor(() => expect(switched.state.status).toBe('waiting_for_user'));
+  switched.setApprovalMode('approval_required');
+  const stale = await startTurn(switched, { approvalMode: 'always_approve' });
+  expect(switched.state.approvalMode).toBe('approval_required');
+  expect((await submitReview(stale.options)).part).not.toHaveProperty('data.autoApprove');
 });
 
 it('sends an approved review to PrairieLearn, retrying only while it is unreachable', async () => {

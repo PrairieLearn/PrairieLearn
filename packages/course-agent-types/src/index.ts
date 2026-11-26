@@ -333,8 +333,8 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 
 /**
  * Whether the instructor decides each `request_changes` review or it is approved for them. The
- * browser sets it on the conversation and repeats it in each user message's metadata; it applies
- * to reviews the agent submits from then on.
+ * browser sets it on the conversation, and a new conversation's first message carries the mode
+ * chosen before it existed. It applies to reviews the agent submits from then on.
  */
 export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
 
@@ -349,7 +349,7 @@ export const UserMessageMetadataSchema = z.object({
 
 /**
  * A `data-review` part, which shows a review in chat history by ID. `autoApprove` records that the
- * review was submitted under `always_approve`; the instructor's browser then approves it.
+ * review was submitted under `always_approve`, so the agent service is approving it.
  */
 export const ReviewPartSchema = z.object({
   reviewId: z.string(),

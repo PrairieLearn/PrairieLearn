@@ -227,7 +227,12 @@ interface RecordData {
    * the denial with that message, which the browser sends once PrairieLearn records the denial.
    */
   deniedByMessage?: string | null;
-  /** Set by the browser, directly or with a user message; absent means `approval_required`. */
+  /**
+   * Set by the browser. A user message's mode applies only while this is absent, which is how a
+   * mode chosen before the conversation existed arrives; later the browser sets it directly, so a
+   * message that waited for admission cannot restore an older choice. Absent means
+   * `approval_required`.
+   */
   approvalMode?: ApprovalMode;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
@@ -1064,7 +1069,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
-      approvalMode: metadata?.approvalMode ?? this.record.approvalMode,
+      approvalMode: this.record.approvalMode ?? metadata?.approvalMode,
       // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
       unsentMessageIds: [],
