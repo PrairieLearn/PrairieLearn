@@ -140,6 +140,15 @@ textarea.course-agent-composer-input {
   overflow-wrap: anywhere;
 }
 
+/*
+ * Keep words whole and give every column some room, so no column squeezes to
+ * one word per line. A table that still doesn't fit scrolls sideways.
+ */
+.course-agent-panel .markdown-body :is(th, td) {
+  min-width: 5rem;
+  overflow-wrap: break-word;
+}
+
 .course-agent-panel .markdown-body p:last-child {
   margin-bottom: 0;
 }
