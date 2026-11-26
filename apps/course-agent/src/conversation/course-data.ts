@@ -55,11 +55,11 @@ function describeStudentDataAccess(courseInstances: string[] | undefined) {
   if (courseInstances === undefined) return [];
   if (courseInstances.length === 0) {
     return [
-      "The instructor can't see student data, such as attempts and submissions, in any course instance, so PrairieLearn refuses those reads. If they ask for student data, tell them a course Owner can grant access on the Staff page.",
+      "The instructor can't see student data, such as attempts and submissions, in any course instance, so PrairieLearn refuses those reads. If they ask for student data, tell them a course Owner can grant access on the Staff page. Course content, including the statistics in assessment_questions, covers every course instance.",
     ];
   }
   return [
-    `Student data, such as attempts and submissions, only includes the course instances where the instructor can see it: ${courseInstances.join(', ')}. If they ask about another course instance, tell them they don't have student data access there; a course Owner can grant it on the Staff page.`,
+    `Student data, such as attempts and submissions, only includes the course instances where the instructor can see it: ${courseInstances.join(', ')}. If they ask about another course instance, tell them they don't have student data access there; a course Owner can grant it on the Staff page. Course content, including the statistics in assessment_questions, covers every course instance.`,
   ];
 }
 
