@@ -202,7 +202,7 @@ function Fold({
   meta?: string;
   /** The turn ended before this finished. */
   stopped?: boolean;
-  /** Shown under the closed line; the details replace it when the line opens. */
+  /** Shown under the closed line; the details take its place while the line is open. */
   tail?: ReactNode;
   className?: string;
   onExpand?: () => void;
@@ -235,7 +235,9 @@ function Fold({
           aria-hidden="true"
         />
       </button>
-      {expanded ? <div id={detailsId}>{children}</div> : tail}
+      {expanded && <div id={detailsId}>{children}</div>}
+      {/* Hidden, not removed, while the line is open: putting it back would fade it in again. */}
+      {tail && <div hidden={expanded}>{tail}</div>}
     </div>
   );
 }
@@ -407,9 +409,11 @@ export function ToolCalls({
   // With no steps to fold away, the updates stay in view; hiding them until the turn ended would
   // have them pop back in above the reply.
   if (calls.length === 0) {
-    // Updates only ever append to a streaming message, so their positions identify them.
-    // oxlint-disable-next-line react/no-array-index-key
-    return updates.map((part, i) => <Update key={i} part={part} urlTransform={urlTransform} />);
+    return updates.map((part, i) => (
+      // Updates only ever append to a streaming message, so their positions identify them.
+      // oxlint-disable-next-line react/no-array-index-key
+      <Update key={i} part={part} urlTransform={urlTransform} fadeIn={live} />
+    ));
   }
   return (
     <Fold
@@ -422,7 +426,9 @@ export function ToolCalls({
       stopped={calls.some((call) => statusOf(call, live) === 'interrupted')}
       // While it works, the agent's latest update says where it has got to.
       tail={
-        !settled && showUpdate && update && <Update part={update} urlTransform={urlTransform} />
+        !settled &&
+        showUpdate &&
+        update && <Update part={update} urlTransform={urlTransform} fadeIn={live} />
       }
       onExpand={onExpand}
     >
@@ -438,8 +444,9 @@ export function ToolCalls({
               ))}
             </div>
           ) : (
+            // These exist only while the line is open, so opening it must not fade them all in.
             // oxlint-disable-next-line react/no-array-index-key
-            <Update key={i} part={block} urlTransform={urlTransform} />
+            <Update key={i} part={block} urlTransform={urlTransform} fadeIn={false} />
           ),
         )}
       </div>
@@ -448,7 +455,16 @@ export function ToolCalls({
 }
 
 /** Something the agent wrote along the way, which is not part of its reply. */
-function Update({ part, urlTransform }: { part: TextUIPart; urlTransform: UrlTransform }) {
+function Update({
+  part,
+  urlTransform,
+  fadeIn,
+}: {
+  part: TextUIPart;
+  urlTransform: UrlTransform;
+  /** Whether the update is arriving in view, so its words fade in. */
+  fadeIn: boolean;
+}) {
   return (
     <ChatMarkdown
       className="markdown-body small text-body-secondary mt-1"
@@ -456,6 +472,8 @@ function Update({ part, urlTransform }: { part: TextUIPart; urlTransform: UrlTra
       streaming={part.state === 'streaming'}
       urlTransform={urlTransform}
       codeBlock={ChatCodeBlock}
+      animated={fadeIn}
+      arriving={fadeIn}
       math
     />
   );

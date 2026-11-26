@@ -1,8 +1,17 @@
 import clsx from 'clsx';
-import { createElement, useMemo } from 'react';
+import {
+  type CSSProperties,
+  type ReactElement,
+  createElement,
+  isValidElement,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import type { UrlTransform } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import {
+  type AnimateOptions,
   type Components,
   type MathPlugin,
   Streamdown,
@@ -42,7 +51,19 @@ const PLAIN_TAGS = [
 
 const components: Components = {
   ...Object.fromEntries(PLAIN_TAGS.map((tag) => [tag, tag])),
-  inlineCode: ({ node: _node, className: _className, ...props }) => <code {...props} />,
+  // Streamdown fades in the words inside a code span but not the span's own background, which
+  // would show as an empty chip before its words. The chip fades in with its first word.
+  inlineCode: ({ node: _node, className: _className, ...props }) => {
+    const word = [props.children]
+      .flat()
+      .find(
+        (child): child is ReactElement<{ style?: CSSProperties; 'data-sd-animate'?: boolean }> =>
+          isValidElement<{ 'data-sd-animate'?: boolean }>(child) &&
+          !!child.props['data-sd-animate'],
+      );
+    if (!word) return <code {...props} />;
+    return <code {...props} style={word.props.style} data-sd-animate />;
+  },
   // `pre` is left to Streamdown: it only marks its child as a block, and
   // `code` then renders the whole code block.
   code: ({ className, children }) => (
@@ -84,25 +105,64 @@ const mathPlugins = {
 };
 
 /**
+ * Words fade in one after another as they arrive, so a streaming reply reads as flowing in, not
+ * jumping.
+ */
+const STREAM_ANIMATION = {
+  animation: 'fadeIn',
+  duration: 400,
+  easing: 'ease-out',
+  sep: 'word',
+} satisfies AnimateOptions;
+
+/** The longest Streamdown makes a word wait to start fading in, plus the fade itself. */
+const FADE_TAIL_MS = 320 + STREAM_ANIMATION.duration;
+
+/**
+ * Keeps words fading for a moment after the text stops streaming. Streamdown drops the fade as
+ * soon as it is told the text is done, which would show a short reply's half-faded words at once.
+ * Text that first shows while its reply is arriving fades in too, even if it came in one piece.
+ */
+function useFading(streaming: boolean, arriving: boolean) {
+  const [fading, setFading] = useState(streaming || arriving);
+  if (streaming && !fading) setFading(true);
+  // Ends the fade once the last words have had time to finish.
+  useEffect(() => {
+    if (streaming || !fading) return;
+    const timeout = setTimeout(() => setFading(false), FADE_TAIL_MS);
+    return () => clearTimeout(timeout);
+  }, [streaming, fading]);
+  return fading;
+}
+
+/**
  * Renders a chat reply's markdown. With `math`, TeX is typeset with KaTeX; the
- * page must then include KaTeX's stylesheet (see `courseAgent.css`).
+ * page must then include KaTeX's stylesheet (see `courseAgent.css`). With
+ * `animated`, text fades in as it streams; the page must then include
+ * Streamdown's stylesheet.
  */
 export function ChatMarkdown({
   content,
   streaming,
+  arriving = false,
   math = false,
+  animated = false,
   className,
   urlTransform,
   codeBlock,
 }: {
   content: string;
   streaming: boolean;
+  /** The reply is coming in now, so with `animated`, its text fades in even if it is complete. */
+  arriving?: boolean;
   math?: boolean;
+  animated?: boolean;
   className?: string;
   urlTransform?: UrlTransform;
   /** Renders fenced code blocks, in place of a plain `<pre>`. */
   codeBlock?: Components['code'];
 }) {
+  const fading = useFading(streaming, arriving);
   // Streamdown renders every block again when it is given a new `components` object.
   const allComponents = useMemo(
     () => (codeBlock ? { ...components, code: codeBlock } : components),
@@ -110,12 +170,14 @@ export function ChatMarkdown({
   );
   return (
     <Streamdown
+      animated={animated && STREAM_ANIMATION}
       // Question pages typeset the whole page with MathJax, which would read
       // prices like `$5 and $10` in a message as math.
       className={clsx(math && 'mathjax_ignore', className)}
       components={allComponents}
       // Streamdown's own streaming behavior, such as `useIsCodeFenceIncomplete`, keys off this.
-      isAnimating={streaming}
+      // With `animated`, it also keeps the fade going until the last words have finished.
+      isAnimating={animated ? fading : streaming}
       // Closing unfinished syntax would also rewrite finished messages, e.g.
       // dropping the `[` from a half-open interval like `[0, 1)`.
       parseIncompleteMarkdown={streaming}

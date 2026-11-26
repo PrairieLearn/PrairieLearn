@@ -37,7 +37,7 @@ function StepIcon({ status }: { status: PlanStep['status'] }) {
           style={{ width: '0.875rem', height: '0.875rem', borderWidth: '0.125em' }}
         />
       ) : status === 'completed' ? (
-        <i className="bi bi-check-circle-fill text-success" />
+        <i className="course-agent-pop bi bi-check-circle-fill text-success" />
       ) : (
         <i className="bi bi-circle text-body-tertiary" />
       )}
@@ -60,7 +60,7 @@ export function PlanChecklist({ plan }: { plan: PlanPart }) {
   const position = `${index + 1} of ${plan.steps.length}`;
 
   return (
-    <div className="small border-top">
+    <div className="course-agent-plan small border-top">
       <button
         type="button"
         className="course-agent-plan-toggle btn border-0 rounded-0 w-100 d-flex align-items-start gap-2 text-start"

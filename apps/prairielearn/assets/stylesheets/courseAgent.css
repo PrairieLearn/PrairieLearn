@@ -1,5 +1,7 @@
 /* For math in replies, which `ChatMarkdown` typesets with KaTeX. */
 @import url('katex/dist/katex.min.css');
+/* For text that fades in as a reply streams, which `ChatMarkdown` does when `animated`. */
+@import url('streamdown/styles.css');
 
 .course-agent-launcher {
   --bs-btn-color: var(--bs-navbar-color);
@@ -320,6 +322,33 @@ textarea.course-agent-composer-input {
   border-top: 1px solid var(--bs-border-color);
 }
 
+/* The plan eases in when the agent first shares it, and each tick pops as its step finishes. */
+/* A message that was just sent rises into the chat, and what the agent shows in reply fades in. */
+.course-agent-rise {
+  animation: course-agent-rise 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes course-agent-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+.course-agent-fade {
+  animation: course-agent-fade 300ms ease-out;
+}
+
+@keyframes course-agent-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.course-agent-plan {
+  animation: course-agent-rise 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 /* The plan's one line, inset like the conversation over it and the message box under it. */
 .course-agent-plan-toggle {
   --bs-btn-padding-x: 1rem;
@@ -338,6 +367,23 @@ textarea.course-agent-composer-input {
 .course-agent-plan-steps {
   max-height: 11rem;
   padding: 0 1rem 0.75rem;
+}
+
+/* A tick pops in when a plan step finishes or approved changes are saved. */
+.course-agent-pop {
+  animation: course-agent-pop 250ms ease-out;
+}
+
+@keyframes course-agent-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+/* As tall as the choices it replaces, so the card keeps its size while the changes are saved. */
+.course-agent-review-progress {
+  min-height: 2rem;
 }
 
 /* One column for the plan's icons, each centred on its step's first line. */
@@ -521,7 +567,15 @@ body:has(.course-agent-panel-animate) .app-main {
     animation-duration: 4s;
   }
 
-  .course-agent-composer-pulse {
+  .course-agent-composer-pulse,
+  .course-agent-rise,
+  .course-agent-fade,
+  .course-agent-plan,
+  .course-agent-pop {
+    animation: none;
+  }
+
+  [data-sd-animate] {
     animation: none;
   }
 

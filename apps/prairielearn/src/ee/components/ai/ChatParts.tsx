@@ -78,11 +78,15 @@ export function ReasoningBlock({ part, math = false }: { part: ReasoningUIPart; 
 export function TextPart({
   part,
   math = false,
+  animated = false,
+  arriving = false,
   urlTransform,
   codeBlock,
 }: {
   part: TextUIPart;
   math?: boolean;
+  animated?: boolean;
+  arriving?: boolean;
   urlTransform?: UrlTransform;
   /**
    * The AI question generation chat doesn't pass this. Once it's removed, always use the course
@@ -95,6 +99,8 @@ export function TextPart({
       className="markdown-body"
       content={part.text}
       math={math}
+      animated={animated}
+      arriving={arriving}
       streaming={part.state === 'streaming'}
       urlTransform={urlTransform}
       codeBlock={codeBlock}
