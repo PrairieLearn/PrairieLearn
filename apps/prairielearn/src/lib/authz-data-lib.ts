@@ -160,6 +160,10 @@ export type Role =
   | InstructorCourseInstanceRole
   | CourseRole;
 
+export function isCourseInstanceRole(role: Role): role is InstructorCourseInstanceRole {
+  return role === 'Student Data Viewer' || role === 'Student Data Editor';
+}
+
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
     authn_user: {

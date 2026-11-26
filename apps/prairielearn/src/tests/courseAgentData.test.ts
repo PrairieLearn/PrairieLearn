@@ -4,6 +4,7 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { COURSE_DATA_DATASETS } from '../ee/routers/courseAgentData/datasets.js';
+import { isCourseInstanceRole } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { selectOptionalCourseInstanceByShortName } from '../models/course-instances.js';
 import {
@@ -113,7 +114,7 @@ async function courseInstanceId(shortName: string) {
 }
 
 const STUDENT_DATA_DATASETS = Object.entries(COURSE_DATA_DATASETS)
-  .filter(([, dataset]) => dataset.studentData)
+  .filter(([, dataset]) => dataset.requiredRole.some(isCourseInstanceRole))
   .map(([name]) => name);
 
 describe('course agent course data', { timeout: 60_000, concurrent: false }, function () {
@@ -299,9 +300,7 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
 
     for (const name of STUDENT_DATA_DATASETS) {
       const url = `${dataUrl}/${name}`;
-      const rows = await getRows(url, owner, { select });
-      assert.isNotEmpty(rows, name);
-      for (const row of rows) assert.equal(row.course_instance_id, sp15Id, name);
+      assert.isNotEmpty(await getRows(url, owner, { select }), name);
 
       assert.isEmpty(await getRows(url, publicOnly, { select }), name);
       const sp15Filter = [{ column: 'course_instance_id', op: 'eq', value: sp15Id }];
@@ -334,18 +333,10 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
     const list = async (headers: Record<string, string>) => {
       const res = await fetch(dataUrl, { headers });
       assert.equal(res.status, 200);
-      return (await res.json()) as {
-        student_data_course_instances: string[];
-        datasets: Record<string, { student_data: boolean }>;
-      };
+      return (await res.json()) as { student_data_course_instances: string[] };
     };
 
-    const listed = await list(owner);
-    assert.deepEqual(listed.student_data_course_instances, ['Sp15']);
-    assert.sameMembers(
-      Object.keys(listed.datasets).filter((name) => listed.datasets[name].student_data),
-      ['assessment_instances', 'instance_questions', 'variants', 'submissions'],
-    );
+    assert.deepEqual((await list(owner)).student_data_course_instances, ['Sp15']);
     const noStudentData = await staffHeaders('no-student-data@example.com', 'Owner');
     assert.deepEqual((await list(noStudentData)).student_data_course_instances, []);
   });

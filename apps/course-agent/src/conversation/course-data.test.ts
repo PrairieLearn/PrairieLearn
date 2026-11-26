@@ -72,7 +72,6 @@ describe('course data tools', () => {
     const listWith = async (courseInstances: string[]) => {
       const schema = JSON.parse(SCHEMA);
       schema.student_data_course_instances = courseInstances;
-      schema.datasets.submissions.student_data = true;
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => new Response(JSON.stringify(schema))),
@@ -80,14 +79,12 @@ describe('course data tools', () => {
       return (await listCourseDatasets(context)).text;
     };
 
-    const someAccess = await listWith(['Sp26', 'Fa25']);
-    expect(someAccess).toContain('the instructor can see student data: Sp26, Fa25.');
-    expect(someAccess.split('\n')).toContain(
-      'submissions (student data): Student answer submissions. Instructor previews are excluded.',
+    expect(await listWith(['Sp26', 'Fa25'])).toContain(
+      'where the instructor can see it: Sp26, Fa25.',
     );
 
     expect(await listWith([])).toContain(
-      "The instructor can't see student data in any course instance",
+      "The instructor can't see student data, such as attempts and submissions, in any course instance",
     );
   });
 

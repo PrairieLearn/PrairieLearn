@@ -5,12 +5,16 @@ import { loadSqlEquiv } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
+  type CourseRole,
+  type InstructorCourseInstanceRole,
+  isCourseInstanceRole,
+} from '../../../lib/authz-data-lib.js';
+import {
   EnumAssessmentTypeSchema,
   EnumGradingMethodSchema,
   EnumInstanceQuestionStatusSchema,
   EnumModeSchema,
 } from '../../../lib/db-types.js';
-import { type CourseAgentRole, isCourseInstanceRole } from '../../lib/course-agent/access.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -50,17 +54,19 @@ function dataset<Shape extends Record<string, z.ZodType>>({
    * record's course instance; a dataset spans every course instance, so it checks the role in each
    * one and returns only rows from course instances where it passes.
    */
-  requiredRole: CourseAgentRole[];
+  requiredRole: (CourseRole | InstructorCourseInstanceRole)[];
   query: string;
   schema: z.ZodObject<Shape>;
   /** Columns whose values can be large, so rows that include them are read a few at a time. */
   largeColumns?: (keyof Shape & string)[];
 }) {
-  const studentData = requiredRole.some(isCourseInstanceRole);
   // Rows are limited by course instance, so a dataset without the column, or with nulls in it,
   // would silently lose rows. The shape's type allows any column name, so it may be missing.
   const courseInstanceId = schema.shape.course_instance_id as z.ZodType | undefined;
-  if (studentData && (!courseInstanceId || courseInstanceId.safeParse(null).success)) {
+  if (
+    requiredRole.some(isCourseInstanceRole) &&
+    (!courseInstanceId || courseInstanceId.safeParse(null).success)
+  ) {
     throw new Error(
       'A dataset that requires a course instance role needs a non-null course_instance_id column.',
     );
@@ -68,7 +74,6 @@ function dataset<Shape extends Record<string, z.ZodType>>({
   return {
     description,
     requiredRole,
-    studentData,
     query,
     schema,
     largeColumns: new Set<string>(largeColumns),
@@ -422,11 +427,7 @@ export function courseDataSchema() {
     datasets: Object.fromEntries(
       Object.entries(COURSE_DATA_DATASETS).map(([name, dataset]) => [
         name,
-        {
-          description: dataset.description,
-          student_data: dataset.studentData,
-          schema: toJsonSchema(dataset.schema),
-        },
+        { description: dataset.description, schema: toJsonSchema(dataset.schema) },
       ]),
     ),
   };

@@ -23,16 +23,14 @@ const ColumnSchema = JsonSchemaProperty.extend({
 const SchemaResponse = z.object({
   version: z.number(),
   /**
-   * Short names of the course instances whose student data the instructor can see. This and
-   * `student_data` are absent from an older PrairieLearn.
+   * Short names of the course instances whose student data the instructor can see. Absent from
+   * an older PrairieLearn.
    */
   student_data_course_instances: z.array(z.string()).optional(),
   datasets: z.record(
     z.string(),
     z.object({
       description: z.string(),
-      /** Rows come only from `student_data_course_instances`. */
-      student_data: z.boolean().optional(),
       schema: z.object({ properties: z.record(z.string(), ColumnSchema) }),
     }),
   ),
@@ -60,11 +58,11 @@ function describeStudentDataAccess(courseInstances: string[] | undefined) {
   if (courseInstances === undefined) return [];
   if (courseInstances.length === 0) {
     return [
-      "The instructor can't see student data in any course instance, so PrairieLearn refuses reads of student data datasets. If they ask for student data, tell them a course Owner can grant access on the Staff page.",
+      "The instructor can't see student data, such as attempts and submissions, in any course instance, so PrairieLearn refuses those reads. If they ask for student data, tell them a course Owner can grant access on the Staff page.",
     ];
   }
   return [
-    `Student data datasets only include the course instances where the instructor can see student data: ${courseInstances.join(', ')}. If they ask about another course instance, tell them they don't have student data access there; a course Owner can grant it on the Staff page.`,
+    `Student data, such as attempts and submissions, only includes the course instances where the instructor can see it: ${courseInstances.join(', ')}. If they ask about another course instance, tell them they don't have student data access there; a course Owner can grant it on the Staff page.`,
   ];
 }
 
@@ -74,7 +72,7 @@ function describeSchema(schema: z.infer<typeof SchemaResponse>) {
     ...describeStudentDataAccess(schema.student_data_course_instances),
     ...Object.entries(schema.datasets).flatMap(([name, dataset]) => [
       '',
-      `${name}${dataset.student_data ? ' (student data)' : ''}: ${dataset.description}`,
+      `${name}: ${dataset.description}`,
       ...Object.entries(dataset.schema.properties).map(([column, property]) =>
         describeColumn(column, property),
       ),

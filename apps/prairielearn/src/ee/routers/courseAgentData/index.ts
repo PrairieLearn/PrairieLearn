@@ -8,13 +8,18 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { CoursePageAuthzDataSchema, type Role, hasRole } from '../../../lib/authz-data-lib.js';
+import {
+  CoursePageAuthzDataSchema,
+  type Role,
+  hasRole,
+  isCourseInstanceRole,
+} from '../../../lib/authz-data-lib.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
   type CourseInstanceAuthz,
   selectCourseInstancesWithStaffAccess,
 } from '../../../models/course-instances.js';
-import { courseAgentEnabled, missingRoleMessage } from '../../lib/course-agent/access.js';
+import { courseAgentEnabled } from '../../lib/course-agent/access.js';
 
 import { COURSE_DATA_DATASETS, courseDataSchema, isCourseDataset } from './datasets.js';
 import { selectCourseDatasetRowsQuery } from './query.js';
@@ -77,6 +82,17 @@ function hasRoleInCourseInstance(
   );
 }
 
+/**
+ * Why a read was refused for lacking all of `requiredRole`, in words the course agent can pass on
+ * to the instructor.
+ */
+function missingRoleMessage(requiredRole: Role[]) {
+  const where = requiredRole.some(isCourseInstanceRole)
+    ? 'in at least one course instance'
+    : 'to the course';
+  return `The instructor needs ${requiredRole.join(' or ')} access ${where} for this, which they do not have. Tell them, and do not retry. A course Owner can grant it on the Staff page.`;
+}
+
 router.get(
   '/',
   typedAsyncHandler<'course'>(async (req, res) => {
@@ -108,7 +124,7 @@ router.post(
     if (!body.success) throw new HttpStatusError(400, z.prettifyError(body.error));
 
     let courseInstanceIds: string[] | null = null;
-    if (dataset.studentData) {
+    if (dataset.requiredRole.some(isCourseInstanceRole)) {
       const { authzData, courseInstances } = await selectStaffCourseInstances(res.locals);
       const permitted = courseInstances.filter((ci) =>
         hasRoleInCourseInstance(authzData, ci, dataset.requiredRole),
