@@ -536,6 +536,38 @@ describe('correctImagesOrientation', () => {
       ['image/webp', 'image/webp', 'image/webp', 'image/webp'],
     ]);
   });
+
+  it('passes a blocked response to onResponse before rejecting', async () => {
+    const png = await sharp({
+      create: { width: 2, height: 3, channels: 3, background: '#ff0000' },
+    })
+      .png()
+      .toBuffer();
+    const model = new MockLanguageModelV3({
+      doGenerate: {
+        content: [],
+        finishReason: { unified: 'content-filter', raw: 'OTHER' },
+        usage: {
+          inputTokens: { total: 100, noCache: 100, cacheRead: undefined, cacheWrite: undefined },
+          outputTokens: { total: 0, text: 0, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+    const onResponse = vi.fn(async () => {});
+
+    await expect(
+      correctImagesOrientation({
+        submittedAnswer: { _files: [{ name: 'solution.png', contents: png.toString('base64') }] },
+        submittedImages: { 'solution.png': png.toString('base64') },
+        model,
+        onResponse,
+      }),
+    ).rejects.toThrow("The AI provider's content filter blocked this submission (reason: OTHER)");
+    expect(onResponse).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ usage: expect.objectContaining({ inputTokens: 100 }) }),
+    );
+  });
 });
 
 describe('requireAiGradingOutput', () => {
