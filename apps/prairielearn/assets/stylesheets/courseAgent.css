@@ -139,6 +139,55 @@
   overflow-wrap: break-word;
 }
 
+/* A thin, faint scrollbar shows that a wide table scrolls, as in Claude's chat. */
+.course-agent-panel .markdown-body .table-responsive {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-emphasis-color-rgb), 0.35) transparent;
+}
+
+/* Touch screens hide the scrollbar, so fade the edge that has more table past it. */
+@property --course-agent-table-fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --course-agent-table-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes course-agent-table-fade-start {
+  to {
+    --course-agent-table-fade-start: 28px;
+  }
+}
+
+@keyframes course-agent-table-fade-end {
+  from {
+    --course-agent-table-fade-end: 28px;
+  }
+}
+
+@media (pointer: coarse), (hover: none) {
+  @supports (animation-timeline: scroll()) {
+    .course-agent-panel .markdown-body .table-responsive {
+      animation:
+        course-agent-table-fade-start linear both,
+        course-agent-table-fade-end linear both;
+      animation-timeline: scroll(self inline);
+      mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 var(--course-agent-table-fade-start),
+        #000 calc(100% - var(--course-agent-table-fade-end)),
+        transparent
+      );
+    }
+  }
+}
+
 .course-agent-panel .markdown-body p:last-child {
   margin-bottom: 0;
 }
