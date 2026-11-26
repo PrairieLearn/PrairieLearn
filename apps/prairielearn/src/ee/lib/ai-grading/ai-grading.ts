@@ -19,7 +19,6 @@ import {
   type AiImageGradingResponses,
   calculateResponseCost,
   logResponseUsage,
-  logResponsesUsage,
 } from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import {
@@ -65,6 +64,7 @@ import {
   insertAiGradingJobWithRotationCorrection,
   parseAiRubricItems,
   prepareQuestionPrompt,
+  requireAiGradingOutput,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
   setAiGradingLastSelectedModel,
@@ -737,6 +737,35 @@ export async function aiGrade({
         safetyIdentifier: `course_${course.id}`,
       };
 
+      // Log and count each response toward the hourly usage cap as soon as it
+      // completes, before anything can reject it. Providers bill for rejected
+      // responses too (e.g. a blocked prompt's input tokens), and a later failed
+      // call shouldn't leave earlier calls in the same grading attempt unrecorded.
+      const recordUsage = async (response: GenerateTextResult<any, any, any>) => {
+        logResponseUsage({ response, logger });
+        if (!trackRateLimitAndCost) return;
+        await addAiGradingCostToIntervalUsage({
+          courseInstance: course_instance,
+          model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+          usage: response.usage,
+        });
+      };
+
+      const generateGradingResponse = async <OBJECT>(
+        schema: z.ZodType<OBJECT>,
+        prompt: AiGradingPrompt,
+      ) => {
+        const response = await generateText({
+          model,
+          abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
+          output: Output.object({ schema }),
+          ...prompt,
+          providerOptions: { openai: openaiProviderOptions },
+        });
+        await recordUsage(response);
+        return requireAiGradingOutput(response);
+      };
+
       if (rubric_items.length > 0) {
         // Build the rubric schema with stringified-integer keys ("1".."N"). Each rubric
         // item is identified by its 1-indexed position in the prompt; using numbers
@@ -785,28 +814,18 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateText({
-                model,
-                abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-                output: Output.object({ schema: RubricGradingResultSchema }),
-                ...gradingPrompt,
-                providerOptions: {
-                  openai: openaiProviderOptions,
-                },
-              }),
+              finalGradingResponse: await generateGradingResponse(
+                RubricGradingResultSchema,
+                gradingPrompt,
+              ),
               rotationCorrectionApplied: false,
             };
           }
 
-          const initialResponse = await generateText({
-            model,
-            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-            output: Output.object({ schema: RubricImageGradingResultSchema }),
-            ...gradingPrompt,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
-          });
+          const initialResponse = await generateGradingResponse(
+            RubricImageGradingResultSchema,
+            gradingPrompt,
+          );
 
           if (
             initialResponse.output.handwriting_orientations.every(
@@ -826,6 +845,7 @@ export async function aiGrade({
             submittedAnswer: submission.submitted_answer,
             submittedImages,
             model,
+            onResponse: recordUsage,
           });
 
           const rotationCorrected = Object.values(rotationCorrections).some(
@@ -847,15 +867,10 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateText({
-            model,
-            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-            output: Output.object({ schema: RubricImageGradingResultSchema }),
-            ...gradingPrompt,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
-          });
+          const finalResponse = await generateGradingResponse(
+            RubricImageGradingResultSchema,
+            gradingPrompt,
+          );
 
           return {
             rotationCorrectionApplied: true,
@@ -864,39 +879,6 @@ export async function aiGrade({
             finalGradingResponse: finalResponse,
           };
         })) satisfies AiImageGradingResponses;
-
-        if (rotationCorrectionApplied) {
-          logResponsesUsage({
-            responses: [
-              ...Object.values(rotationCorrections).map((r) => r.response),
-              gradingResponseWithRotationIssue,
-              finalGradingResponse,
-            ],
-            logger,
-          });
-          if (trackRateLimitAndCost) {
-            for (const response of [
-              ...Object.values(rotationCorrections).map((r) => r.response),
-              gradingResponseWithRotationIssue,
-              finalGradingResponse,
-            ]) {
-              await addAiGradingCostToIntervalUsage({
-                courseInstance: course_instance,
-                model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-                usage: response.usage,
-              });
-            }
-          }
-        } else {
-          logResponseUsage({ response: finalGradingResponse, logger });
-          if (trackRateLimitAndCost) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-              usage: finalGradingResponse.usage,
-            });
-          }
-        }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
         const { appliedRubricItems, appliedRubricDescription, unrecognizedKeys } =
@@ -1029,28 +1011,18 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateText({
-                model,
-                abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-                output: Output.object({ schema: GradingResultSchema }),
-                ...gradingPrompt,
-                providerOptions: {
-                  openai: openaiProviderOptions,
-                },
-              }),
+              finalGradingResponse: await generateGradingResponse(
+                GradingResultSchema,
+                gradingPrompt,
+              ),
               rotationCorrectionApplied: false,
             };
           }
 
-          const initialResponse = await generateText({
-            model,
-            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-            output: Output.object({ schema: ImageGradingResultSchema }),
-            ...gradingPrompt,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
-          });
+          const initialResponse = await generateGradingResponse(
+            ImageGradingResultSchema,
+            gradingPrompt,
+          );
 
           if (
             initialResponse.output.handwriting_orientations.every(
@@ -1065,6 +1037,7 @@ export async function aiGrade({
             submittedAnswer: submission.submitted_answer,
             submittedImages,
             model,
+            onResponse: recordUsage,
           });
 
           // Regenerate the prompt with the rotation-corrected images.
@@ -1080,15 +1053,10 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateText({
-            model,
-            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-            output: Output.object({ schema: ImageGradingResultSchema }),
-            ...gradingPrompt,
-            providerOptions: {
-              openai: openaiProviderOptions,
-            },
-          });
+          const finalResponse = await generateGradingResponse(
+            ImageGradingResultSchema,
+            gradingPrompt,
+          );
 
           return {
             rotationCorrectionApplied: true,
@@ -1097,39 +1065,6 @@ export async function aiGrade({
             finalGradingResponse: finalResponse,
           };
         })) satisfies AiImageGradingResponses;
-
-        if (rotationCorrectionApplied) {
-          logResponsesUsage({
-            responses: [
-              ...Object.values(rotationCorrections).map((correction) => correction.response),
-              gradingResponseWithRotationIssue,
-              finalGradingResponse,
-            ],
-            logger,
-          });
-          if (trackRateLimitAndCost) {
-            for (const response of [
-              ...Object.values(rotationCorrections).map((r) => r.response),
-              gradingResponseWithRotationIssue,
-              finalGradingResponse,
-            ]) {
-              await addAiGradingCostToIntervalUsage({
-                courseInstance: course_instance,
-                model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-                usage: response.usage,
-              });
-            }
-          }
-        } else {
-          logResponseUsage({ response: finalGradingResponse, logger });
-          if (trackRateLimitAndCost) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-              usage: finalGradingResponse.usage,
-            });
-          }
-        }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
         const score = finalGradingResponse.output.score;
