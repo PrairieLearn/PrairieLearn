@@ -192,7 +192,6 @@ textarea.course-agent-composer-input {
   --bs-btn-color: var(--bs-warning-text-emphasis);
   --bs-btn-hover-color: var(--bs-warning-text-emphasis);
   --bs-btn-active-color: var(--bs-warning-text-emphasis);
-  background-color: var(--bs-warning-bg-subtle);
 }
 
 .course-agent-attachment {

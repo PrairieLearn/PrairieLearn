@@ -858,7 +858,7 @@ function Composer({
 
 const APPROVAL_MODES: Record<ApprovalMode, { label: string; icon: string }> = {
   approval_required: { label: 'Ask first', icon: 'bi-hand-index-thumb' },
-  always_approve: { label: 'Always approve', icon: 'bi-exclamation-triangle' },
+  always_approve: { label: 'Always approve', icon: 'bi-shield-exclamation' },
 };
 
 function ApprovalModePicker({
