@@ -1,8 +1,9 @@
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test, vi } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
+import * as courseRequestAi from '../lib/course-request-ai.js';
 import {
   insertCourseRequest,
   selectAllCourseRequests,
@@ -106,13 +107,51 @@ describe('Course requests', { timeout: 60_000, concurrent: false }, function () 
     );
 
     const allRequests = await selectAllCourseRequests();
-    for (const { requestId, expectedContactEmail } of requests) {
+    for (const [index, { requestId, expectedContactEmail }] of requests.entries()) {
+      const expectedAccountEmail =
+        cases[index].userId === userWithEmail.id ? userWithEmail.email : null;
       const listedRequest = allRequests.find((request) => request.id === requestId);
       assert.isDefined(listedRequest);
       assert.equal(listedRequest.contact_email, expectedContactEmail);
+      assert.equal(listedRequest.user_email, expectedAccountEmail);
 
       const selectedRequest = await selectCourseRequestById({ courseRequestId: requestId });
       assert.equal(selectedRequest.contact_email, expectedContactEmail);
+      assert.equal(selectedRequest.user_email, expectedAccountEmail);
+    }
+
+    const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
+    assert.isTrue(response.ok);
+    assert.include(response.$('th').text(), 'PrairieLearn UID / email');
+    const explicitRow = response.$('td:contains("CONTACT EXPLICIT")').closest('tr');
+    assert.include(explicitRow.find('td').eq(3).text(), 'explicit-contact@example.com');
+    assert.include(explicitRow.find('td').eq(4).text(), 'UID: contact-test-login');
+    assert.include(explicitRow.find('td').eq(4).text(), 'Email: account-contact@example.com');
+    assert.notInclude(explicitRow.find('td').eq(4).text(), 'explicit-contact@example.com');
+    const missingEmailRow = response.$('td:contains("CONTACT UNAVAILABLE")').closest('tr');
+    assert.include(missingEmailRow.find('td').eq(4).text(), 'UID: legacy-contact-uid@example.com');
+    assert.include(missingEmailRow.find('td').eq(4).text(), 'Not available');
+
+    const legitimacyCheck = vi
+      .spyOn(courseRequestAi, 'checkInstructorLegitimacy')
+      .mockResolvedValue({
+        summary: 'Instructor verified',
+        confidence: 'high',
+        legitimate: true,
+        sources: [],
+      });
+    try {
+      await trpcClient.courseRequests.checkInstructorLegitimacy.query({
+        courseRequestId: requests[0].requestId,
+      });
+      assert.equal(legitimacyCheck.mock.calls.length, 1);
+      assert.deepInclude(legitimacyCheck.mock.calls[0][0], {
+        instructorEmail: 'explicit-contact@example.com',
+        userUid: 'contact-test-login',
+        userEmail: 'account-contact@example.com',
+      });
+    } finally {
+      legitimacyCheck.mockRestore();
     }
   });
 

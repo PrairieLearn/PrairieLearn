@@ -169,6 +169,7 @@ const checkInstructorLegitimacyProcedure = t.procedure
       institution: courseRequest.institution,
       userDisplayName: courseRequest.user_name,
       userUid: courseRequest.user_uid,
+      userEmail: courseRequest.user_email,
     });
   });
 
