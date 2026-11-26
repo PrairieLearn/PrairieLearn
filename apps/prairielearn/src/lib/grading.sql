@@ -143,14 +143,24 @@ WITH
     -- grading job will not affect the overall instance question grade and
     -- status. For instructor preview and public preview variants, this is done
     -- for consistency.
+    -- Also cancel recovered jobs on other variants of the same question so an
+    -- interrupted dispatch cannot leave superseded work in the requested state.
     UPDATE grading_jobs AS gj
     SET
       grading_request_canceled_at = now(),
       grading_request_canceled_by = $auth_user_id
     FROM
       submissions AS s
+      JOIN variants AS v ON (v.id = s.variant_id)
     WHERE
-      s.variant_id = $variant_id
+      (
+        v.id = $variant_id
+        OR v.instance_question_id = $instance_question_id
+      )
+      AND (
+        v.id = $variant_id
+        OR s.recovered_from_user_id IS NOT NULL
+      )
       AND gj.submission_id = s.id
       AND gj.graded_at IS NULL
       AND gj.grading_requested_at IS NOT NULL

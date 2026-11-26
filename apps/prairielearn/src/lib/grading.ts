@@ -163,6 +163,7 @@ async function insertSubmission({
       sql.insert_submission,
       {
         variant_id,
+        instance_question_id: variant.instance_question_id,
         auth_user_id,
         recovered_from_user_id,
         raw_submitted_answer,
