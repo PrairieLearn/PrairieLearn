@@ -123,8 +123,7 @@ SELECT
       JOIN submissions AS snew ON (snew.variant_id = vnew.id)
     WHERE
       vnew.instance_question_id = iq.id
-      AND s.id != snew.id
-      AND snew.date > s.date
+      AND snew.id > s.id
   ) AS has_newer_submission
 FROM
   submissions AS s

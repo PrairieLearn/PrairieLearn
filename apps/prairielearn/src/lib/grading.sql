@@ -41,7 +41,6 @@ FROM
 WHERE
   s.variant_id = $variant_id
 ORDER BY
-  s.date DESC,
   s.id DESC
 LIMIT
   1;
@@ -60,7 +59,7 @@ SELECT
       JOIN submissions AS newer ON (newer.variant_id = newer_variant.id)
     WHERE
       s.id = $submission_id
-      AND (newer.date, newer.id) > (s.date, s.id)
+      AND newer.id > s.id
   );
 
 -- BLOCK update_variant_true_answer

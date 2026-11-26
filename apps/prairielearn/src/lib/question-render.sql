@@ -105,7 +105,7 @@ FROM
 WHERE
   v.id = $variant_id
 ORDER BY
-  s.date DESC;
+  s.id DESC;
 
 -- BLOCK select_detailed_submissions
 SELECT
@@ -205,7 +205,7 @@ SELECT
       submissions AS s2
     WHERE
       s2.variant_id = s.variant_id
-      AND s2.date < s.date
+      AND s2.id < s.id
   ) + 1 AS submission_index,
   (
     SELECT

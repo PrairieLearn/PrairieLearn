@@ -66,7 +66,7 @@ WHERE
       JOIN variants AS newer_variant ON (newer_variant.id = newer.variant_id)
     WHERE
       newer_variant.instance_question_id = v.instance_question_id
-      AND (newer.date, newer.id) > (s.date, s.id)
+      AND newer.id > s.id
   )
 ORDER BY
   s.id;
