@@ -735,16 +735,17 @@ function Chat({
               dismissible
               onClose={() => setAutoApproveOffered(false)}
             >
-              Don't want to approve every request manually?{' '}
-              <Alert.Link
-                as="button"
-                type="button"
-                className="btn btn-link p-0 align-baseline text-decoration-none"
-                onClick={() => setConfirmingAutoApprove(true)}
-              >
-                Turn on auto-approve
-                <i className="bi bi-chevron-right" aria-hidden="true" />
-              </Alert.Link>
+              <div className="d-flex flex-wrap align-items-center gap-2">
+                <span className="flex-grow-1">Don't want to approve every request manually?</span>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="text-nowrap"
+                  onClick={() => setConfirmingAutoApprove(true)}
+                >
+                  Turn on auto-approve
+                </Button>
+              </div>
             </Alert>
           )
         }

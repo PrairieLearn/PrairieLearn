@@ -134,10 +134,6 @@ textarea.course-agent-composer-input {
   --bs-alert-padding-y: 0.5rem;
 }
 
-.course-agent-auto-approve-offer .btn-link {
-  font-size: inherit;
-}
-
 .course-agent-auto-approve-offer .btn-close {
   padding: 0.75rem;
   font-size: 0.625rem;
