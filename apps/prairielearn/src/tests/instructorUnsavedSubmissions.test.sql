@@ -158,7 +158,7 @@ SET
 WHERE
   id = $variant_id;
 
--- BLOCK select_grading_issue_author
+-- BLOCK select_issue_author
 SELECT
   user_id,
   authn_user_id

@@ -450,6 +450,71 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
     );
   });
 
+  test('reports a fatal promotion parse while retaining the draft and diagnostic records', async () => {
+    const draft = await seedDraft();
+    const questionModule = questionServers.getModule('Freeform');
+    const originalParse = questionModule.parse;
+    const issue = Object.assign(new Error('Fatal instructor recovery parsing issue'), {
+      fatal: true,
+    });
+    const parse = vi.spyOn(questionModule, 'parse').mockImplementationOnce(async (...args) => {
+      const result = await originalParse(...args);
+      result.courseIssues.push(issue);
+      return result;
+    });
+    try {
+      await withConfig(
+        {
+          features: {
+            'unsaved-submissions-ui': true,
+            'unsaved-submissions-instructor-promotion': true,
+          },
+        },
+        async () =>
+          withUser(editor, async () => {
+            await expect(
+              createClient(editor).unsavedSubmissions.promote.mutate({
+                unsaved_submission_id: draft.unsaved_submission.id,
+                revision: draft.revision,
+              }),
+            ).rejects.toMatchObject({
+              data: { code: 'BAD_REQUEST' },
+              message: expect.stringContaining('The draft has been kept.'),
+            });
+          }),
+      );
+    } finally {
+      parse.mockRestore();
+    }
+    expect(
+      await selectOptionalUnsavedSubmissionForAssessment({
+        unsaved_submission_id: draft.unsaved_submission.id,
+        assessment_id: assessmentId,
+      }),
+    ).toMatchObject({ unsaved_submission: draft.unsaved_submission });
+    const submission = (await selectLatestSubmission())!;
+    expect(submission).toMatchObject({
+      broken: true,
+      gradable: false,
+      raw_submitted_answer: draft.unsaved_submission.raw_submitted_answer,
+      grading_requested_at: null,
+    });
+    expect(
+      await queryRow(
+        sql.select_issue_author,
+        { variant_id: variantId, instructor_message: issue.toString() },
+        IssueSchema.pick({ user_id: true, authn_user_id: true }),
+      ),
+    ).toEqual({ user_id: student.id, authn_user_id: editor.id });
+    expect(
+      await queryRow(
+        sql.select_recovery_retry_state,
+        { submission_id: submission.id },
+        z.object({ grading_job_count: z.number(), question_status: z.string() }),
+      ),
+    ).toMatchObject({ grading_job_count: 0 });
+  });
+
   test.each([false, true])(
     'promotes a closed attempt (correct: %s) without reopening it, preserving credit and other group drafts',
     async (correct) => {
@@ -559,7 +624,7 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
         if (retry) await autoFinishExams();
         expect(
           await queryRow(
-            sql.select_grading_issue_author,
+            sql.select_issue_author,
             { variant_id: variantId, instructor_message: issue.toString() },
             IssueSchema.pick({ user_id: true, authn_user_id: true }),
           ),

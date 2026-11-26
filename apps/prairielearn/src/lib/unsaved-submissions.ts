@@ -121,6 +121,14 @@ export async function promoteUnsavedSubmission({
     return { ...result, draft };
   });
 
+  // Keep the broken submission and course issue committed for diagnosis.
+  if (saved.broken) {
+    throw new HttpStatusError(
+      400,
+      'A question error prevented saving this draft for grading. The draft has been kept.',
+    );
+  }
+
   // External graders must be able to read the committed submission when their job starts.
   // The persisted recovery author lets the cron retry find a save interrupted before grading.
   await gradeVariant({
