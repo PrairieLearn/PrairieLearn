@@ -1,7 +1,15 @@
-import { Redis } from 'ioredis';
+import { Cluster } from 'ioredis';
+
+import {
+  REDIS_COMMAND_TIMEOUT,
+  type RedisClient,
+  createRedisClient,
+  getRedisPrimaries,
+  onRedisConnectionChange,
+} from './redis.js';
+import type { QueueOptions } from './types.js';
 
 const MINIMUM_REDIS_VERSION = '6.2.0';
-export const REDIS_COMMAND_TIMEOUT = 10_000;
 const FETCH_SESSION_TTL = 24 * 60 * 60 * 1000;
 const DELAYED_SEQUENCE_WIDTH = 20;
 const PRIORITY_SEQUENCE_WIDTH = 20;
@@ -9,7 +17,7 @@ const RETENTION_CLEANUP_BATCH_SIZE = 100;
 
 export class RedisCompatibilityError extends Error {}
 
-function waitForRedisReady(client: Redis): Promise<void> {
+function waitForRedisReady(client: RedisClient): Promise<void> {
   if (client.status === 'ready') return Promise.resolve();
   if (client.status === 'end') return Promise.reject(new Error('Redis connection has closed'));
 
@@ -44,9 +52,7 @@ function waitForRedisReady(client: Redis): Promise<void> {
 
 // Every script receives the queue's tagged base (`<prefix>:{<prefix>:<queueName>}`)
 // as KEYS[1] and derives every key it touches from it. A queue is therefore one
-// atomic Redis slot-affinity domain. This does not add Redis Cluster support,
-// and deriving keys instead of declaring each one in KEYS is a deliberate
-// portability constraint that future Cluster support must test and document.
+// atomic Redis slot-affinity domain, including when the queue uses Redis Cluster.
 //
 // Wait queues are one sorted set per group, scored by a sequence number so
 // ready jobs in a group run in FIFO order. Positive priorities use a separate
@@ -58,14 +64,16 @@ function waitForRedisReady(client: Redis): Promise<void> {
 // served round-robin. A companion set provides constant-time rotation-list
 // membership checks when adding groups. LMOVE requires Redis 6.2.
 
-async function assertMinimumRedisVersion(client: Redis): Promise<void> {
-  const info = await client.info('server');
-  const match = info.match(/^redis_version:(\d+)\.(\d+)\.(\d+)/m);
+async function assertMinimumRedisVersion(client: RedisClient): Promise<void> {
+  // ElastiCache Serverless returns version metadata in unsectioned INFO,
+  // and may omit the patch component or identify itself as Valkey.
+  const info = await client.info();
+  const match = info.match(/^(?:redis|valkey)_version:(\d+)\.(\d+)(?:\.(\d+))?\r?$/m);
   if (!match) {
     throw new RedisCompatibilityError('PrairieMQ could not determine the Redis server version');
   }
 
-  const version = match.slice(1).map(Number);
+  const version = [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)];
   const minimum = MINIMUM_REDIS_VERSION.split('.').map(Number);
   for (let i = 0; i < minimum.length; i++) {
     if (version[i] > minimum[i]) return;
@@ -77,7 +85,8 @@ async function assertMinimumRedisVersion(client: Redis): Promise<void> {
   }
 }
 
-export async function ensureSelectedDatabase(client: Redis): Promise<void> {
+export async function ensureSelectedDatabase(client: RedisClient): Promise<void> {
+  if (client instanceof Cluster) return;
   const database = client.options.db ?? 0;
   if (database !== 0) {
     await client.select(database);
@@ -916,6 +925,7 @@ return reply
 `;
 
 interface PrairieMQCommands {
+  pmqGetTime(prefix: string): Promise<[string, string]>;
   pmqAddJob(
     prefix: string,
     jobId: string,
@@ -987,12 +997,13 @@ interface PrairieMQCommands {
   pmqGetGroups(prefix: string): Promise<string[]>;
 }
 
-export type PrairieMQRedis = Redis &
+export type PrairieMQRedis = RedisClient &
   PrairieMQCommands & {
     ensureMinimumRedisVersion(): Promise<void>;
   };
 
 const scripts: Record<keyof PrairieMQCommands, string> = {
+  pmqGetTime: "return redis.call('TIME')",
   pmqAddJob: addJobLua,
   pmqAddBulk: addBulkLua,
   pmqGetJobStatus: getJobStatusLua,
@@ -1010,23 +1021,14 @@ const scripts: Record<keyof PrairieMQCommands, string> = {
 
 export function createScriptedClient({
   redisUrl,
+  redisMode,
   role,
 }: {
   redisUrl: string;
+  redisMode?: QueueOptions['redisMode'];
   role: 'queue' | 'worker';
 }): PrairieMQRedis {
-  const client = new Redis<'legacy'>(redisUrl, {
-    // Every mutating script has an ambiguous outcome if its reply is lost.
-    // Callers may retry with a stable job ID; the client must never replay a
-    // command that can allocate a fresh ID or advance queue state.
-    autoResendUnfulfilledCommands: false,
-    commandTimeout: REDIS_COMMAND_TIMEOUT,
-    // Command timeouts reject callers but leave commands queued for replies.
-    // Close stalled sockets so those commands and their payloads are released.
-    socketTimeout: REDIS_COMMAND_TIMEOUT,
-    enableOfflineQueue: false,
-    maxRetriesPerRequest: role === 'worker' ? 0 : 1,
-  });
+  const client = createRedisClient({ redisUrl, redisMode, role });
   for (const [name, lua] of Object.entries(scripts)) {
     client.defineCommand(name, { numberOfKeys: 1, lua });
   }
@@ -1034,7 +1036,7 @@ export function createScriptedClient({
   let connectionGeneration = 0;
   let verifiedGeneration = -1;
   let versionCheck: { generation: number; promise: Promise<void> } | null = null;
-  client.on('close', () => {
+  onRedisConnectionChange(client, () => {
     connectionGeneration += 1;
     versionCheck = null;
   });
@@ -1045,9 +1047,15 @@ export function createScriptedClient({
       if (versionCheck?.generation !== generation) {
         versionCheck = {
           generation,
-          promise: waitForRedisReady(client)
-            .then(() => ensureSelectedDatabase(client))
-            .then(() => assertMinimumRedisVersion(client)),
+          promise: waitForRedisReady(client).then(async () => {
+            await Promise.all(
+              getRedisPrimaries(client).map(async (node) => {
+                await waitForRedisReady(node);
+                await ensureSelectedDatabase(node);
+                await assertMinimumRedisVersion(node);
+              }),
+            );
+          }),
         };
       }
       const check = versionCheck;

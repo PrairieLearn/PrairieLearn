@@ -436,6 +436,11 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "printExportRedisMode": {
+      "default": "standalone",
+      "type": "string",
+      "enum": ["standalone", "cluster"]
+    },
     "printExportQueuePrefix": {
       "default": null,
       "type": ["string", "null"]

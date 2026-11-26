@@ -45,6 +45,15 @@ export function normalizeRedisUrl(value: unknown): string {
   return url.href;
 }
 
+export function validateRedisMode(value: unknown, redisUrl: string): void {
+  if (value !== undefined && value !== 'standalone' && value !== 'cluster') {
+    throw new Error('redisMode must be "standalone" or "cluster"');
+  }
+  if (value === 'cluster' && Number(new URL(redisUrl).pathname.slice(1)) !== 0) {
+    throw new Error('Cluster connections require Redis database zero');
+  }
+}
+
 export function validatePrefix(value: unknown): void {
   if (value !== undefined && (typeof value !== 'string' || value === '')) {
     throw new Error('prefix must be a non-empty string');

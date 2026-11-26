@@ -27,6 +27,7 @@ describe('Queue', () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await queue.obliterate();
     await queue.close();
   });
@@ -65,17 +66,27 @@ describe('Queue', () => {
     expect(disconnect).toHaveBeenCalledOnce();
   });
 
+  it.each(['# Server\r\nredis_version:7.2\r\n', '# Server\r\nvalkey_version:7.2.6\r\n'])(
+    'accepts supported metadata from unsectioned INFO: %j',
+    async (metadata) => {
+      const client = Reflect.get(queue, 'client') as PrairieMQRedis;
+      if (client.status !== 'ready') await once(client, 'ready');
+      const info = vi.spyOn(client, 'info').mockResolvedValue(metadata);
+
+      await queue.waitUntilReady();
+
+      expect(info).toHaveBeenCalledWith();
+    },
+  );
+
   it('rejects unsupported Redis versions', async () => {
-    const unsupportedQueue = new Queue(`test-${randomUUID()}`, { redisUrl });
-    const client = Reflect.get(unsupportedQueue, 'client') as PrairieMQRedis;
+    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
     if (client.status !== 'ready') await once(client, 'ready');
     vi.spyOn(client, 'info').mockResolvedValue('# Server\r\nredis_version:6.0.20\r\n');
 
-    await expect(unsupportedQueue.waitUntilReady()).rejects.toThrow(
+    await expect(queue.waitUntilReady()).rejects.toThrow(
       'PrairieMQ requires Redis 6.2.0 or later; connected server is 6.0.20',
     );
-
-    await unsupportedQueue.close();
   });
 
   it('does not reuse a version check completed by an older connection', async () => {
@@ -626,6 +637,10 @@ describe('Queue', () => {
       [{ redisUrl: 'localhost:6379' }, 'redisUrl'],
       [{ redisUrl: 'http://localhost:6379' }, 'redisUrl'],
       [{ redisUrl: 'redis://' }, 'redisUrl'],
+      [
+        { redisUrl: 'redis://localhost:6379/1', redisMode: 'cluster' },
+        'Cluster connections require Redis database zero',
+      ],
       [{ redisUrl, prefix: null }, 'prefix'],
       [{ redisUrl, prefix: '' }, 'prefix'],
       [{ redisUrl, prefix: 42 }, 'prefix'],

@@ -90,6 +90,8 @@ export interface GroupStatus {
 export interface QueueOptions {
   /** A `redis://` or `rediss://` URL with a hostname and optional numeric database path. */
   redisUrl: string;
+  /** Connection mode. Use `cluster` for ElastiCache Serverless. Defaults to `standalone`. */
+  redisMode?: 'standalone' | 'cluster';
   /** Non-empty, brace-free prefix for all Redis keys used by the queue. Defaults to `prairiemq`. */
   prefix?: string;
   /** Options other than `jobId` applied to every added job unless overridden per job. */
@@ -104,6 +106,8 @@ export interface RateLimiterOptions {
 export interface WorkerOptions {
   /** A `redis://` or `rediss://` URL with a hostname and optional numeric database path. */
   redisUrl: string;
+  /** Must match the connection mode used by the corresponding queue. */
+  redisMode?: 'standalone' | 'cluster';
   /** Must match the prefix used by the corresponding {@link QueueOptions.prefix}. */
   prefix?: string;
   /** Maximum number of jobs this worker processes concurrently. Defaults to 1; maximum 1000. */

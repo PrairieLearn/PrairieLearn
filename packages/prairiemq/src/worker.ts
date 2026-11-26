@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events';
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { Redis } from 'ioredis';
+import { Cluster } from 'ioredis';
 
 import { assertNever, withResolvers } from '@prairielearn/utils';
 
@@ -13,8 +13,14 @@ import { serializeJson } from './json.js';
 import { DEFAULT_PREFIX, QueueKeys } from './keys.js';
 import { validateQueueName } from './queue.js';
 import {
-  type PrairieMQRedis,
   REDIS_COMMAND_TIMEOUT,
+  type RedisClient,
+  createRedisClient,
+  getRedisPrimaries,
+  onRedisConnectionChange,
+} from './redis.js';
+import {
+  type PrairieMQRedis,
   RedisCompatibilityError,
   createScriptedClient,
   ensureSelectedDatabase,
@@ -25,6 +31,7 @@ import {
   validateOptionsObject,
   validatePrefix,
   validateRateLimiter,
+  validateRedisMode,
 } from './validation.js';
 
 const MAX_CONCURRENCY = 1000;
@@ -35,6 +42,7 @@ const FETCH_SESSION_HEARTBEAT = 60 * 60 * 1000;
 const MINIMUM_LOCK_DURATION = REDIS_COMMAND_TIMEOUT * 3;
 const WORKER_OPTION_NAMES = new Set<keyof WorkerOptions>([
   'redisUrl',
+  'redisMode',
   'prefix',
   'concurrency',
   'limiter',
@@ -139,6 +147,7 @@ function validateIntegerOption(
 function validateWorkerOptions(options: unknown): string {
   const optionRecord = validateOptionsObject('Worker', options, WORKER_OPTION_NAMES);
   const redisUrl = normalizeRedisUrl(optionRecord.redisUrl);
+  validateRedisMode(optionRecord.redisMode, redisUrl);
   validatePrefix(optionRecord.prefix);
 
   if (optionRecord.limiter !== undefined) {
@@ -174,7 +183,7 @@ function validateWorkerOptions(options: unknown): string {
   return redisUrl;
 }
 
-function waitForRedisReady(clients: readonly Redis[], signal: AbortSignal): Promise<void> {
+function waitForRedisReady(clients: readonly RedisClient[], signal: AbortSignal): Promise<void> {
   if (signal.aborted) return Promise.resolve();
   if (clients.every((client) => client.status === 'ready')) return Promise.resolve();
   if (clients.some((client) => client.status === 'end')) {
@@ -235,7 +244,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
   private readonly processor: Processor<Data, Result>;
   private readonly keys: QueueKeys;
   private readonly client: PrairieMQRedis;
-  private readonly blockingClient: Redis;
+  private readonly blockingClient: RedisClient;
   private readonly concurrency: number;
   private readonly limiter: WorkerOptions['limiter'];
   private readonly groupConcurrency: number;
@@ -292,21 +301,21 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
 
     this.client = createScriptedClient({
       redisUrl,
+      redisMode: options.redisMode,
       role: 'worker',
     });
-    // Explicitly use the default mapping to avoid costly inference over Redis's command types.
-    this.blockingClient = new Redis<'legacy'>(redisUrl, {
-      autoResendUnfulfilledCommands: false,
-      // A short BLPOP poll can receive a late reply from a healthy connection.
-      // Detect unresponsive connections independently of the polling interval.
-      commandTimeout: REDIS_COMMAND_TIMEOUT,
-      socketTimeout: REDIS_COMMAND_TIMEOUT,
-      enableOfflineQueue: false,
-      maxRetriesPerRequest: null,
+    this.blockingClient = createRedisClient({
+      redisUrl,
+      redisMode: options.redisMode,
+      role: 'blocking',
     });
-    this.client.on('error', (err) => this.handleRedisError(err));
-    this.blockingClient.on('error', (err) => this.handleRedisError(err));
-    this.blockingClient.on('close', () => {
+    for (const client of [this.client, this.blockingClient]) {
+      client.on('error', (err) => this.handleRedisError(err));
+      if (client instanceof Cluster) {
+        client.on('node error', (err) => this.handleRedisError(err));
+      }
+    }
+    onRedisConnectionChange(this.blockingClient, () => {
       this.blockingConnectionGeneration += 1;
     });
 
@@ -545,6 +554,8 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     if (this.closing) return false;
     const blockingConnectionGeneration = this.blockingConnectionGeneration;
     if (this.verifiedBlockingConnectionGeneration !== blockingConnectionGeneration) {
+      await waitForRedisReady(getRedisPrimaries(this.blockingClient), this.closeController.signal);
+      if (this.closing) return false;
       await ensureSelectedDatabase(this.blockingClient);
       if (this.blockingConnectionGeneration !== blockingConnectionGeneration) return false;
       this.verifiedBlockingConnectionGeneration = blockingConnectionGeneration;
@@ -645,12 +656,14 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
 
   private async getFetchSession(): Promise<FetchSession> {
     if (this.fetchSession) return this.fetchSession;
-    this.fetchSessionCreation ??= this.client.time().then(([seconds, microseconds]) => ({
-      id: randomUUID(),
-      startedAt: Number(seconds) * 1000 + Math.floor(Number(microseconds) / 1000),
-      nextSequence: 1,
-      pending: null,
-    }));
+    this.fetchSessionCreation ??= this.client
+      .pmqGetTime(this.keys.base)
+      .then(([seconds, microseconds]) => ({
+        id: randomUUID(),
+        startedAt: Number(seconds) * 1000 + Math.floor(Number(microseconds) / 1000),
+        nextSequence: 1,
+        pending: null,
+      }));
     const creation = this.fetchSessionCreation;
     try {
       this.fetchSession ??= await creation;
@@ -766,14 +779,25 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
 
   private async blockingPop(key: string, timeoutMs: number): Promise<boolean> {
     const connectionGeneration = this.blockingConnectionGeneration;
-    const stream = this.blockingClient.stream;
+    const streams = new Set(
+      this.blockingClient instanceof Cluster
+        ? this.blockingClient.nodes().map((node) => node.stream)
+        : [this.blockingClient.stream],
+    );
     try {
       await this.blockingClient.blpop(key, Math.max(timeoutMs, 50) / 1000);
     } catch (err) {
       // A command deadline rejects without cancelling Redis's pending BLPOP.
-      // Close its socket so it cannot consume future wake-up markers. Capture
-      // the socket before awaiting so a late failure cannot close its replacement.
-      stream.destroy();
+      // This client owns only one blocking wait. Include redirect targets
+      // created during the wait and destroy sockets immediately: disconnect()
+      // only ends them, so a pending BLPOP could still consume a later marker.
+      if (this.blockingClient instanceof Cluster) {
+        for (const node of this.blockingClient.nodes()) streams.add(node.stream);
+      }
+      for (const stream of streams) stream?.destroy();
+      if (this.blockingClient instanceof Cluster && !this.closing) {
+        this.blockingClient.disconnect(true);
+      }
       throw err;
     }
     return this.blockingConnectionGeneration === connectionGeneration;

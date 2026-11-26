@@ -12,6 +12,7 @@ import { UnrecoverableError } from './errors.js';
 import type { Job } from './job.js';
 import { DEFAULT_PREFIX, QueueKeys } from './keys.js';
 import { Queue } from './queue.js';
+import type { RedisClient } from './redis.js';
 import type { PrairieMQRedis } from './scripts.js';
 import { MAX_TIMER_DELAY_MILLISECONDS, type WorkerOptions } from './types.js';
 import { Worker } from './worker.js';
@@ -36,7 +37,7 @@ async function redisTimestamp(client: PrairieMQRedis): Promise<number> {
   return Number(seconds) * 1000 + Math.floor(Number(microseconds) / 1000);
 }
 
-async function waitForRedisConnection(client: Redis): Promise<void> {
+async function waitForRedisConnection(client: RedisClient): Promise<void> {
   if (client.status === 'ready') return;
   await once(client, 'ready');
 }
@@ -2817,6 +2818,10 @@ describe('Worker', () => {
       [{ redisUrl: '' }, 'redisUrl'],
       [{ redisUrl: 'http://localhost:6379' }, 'redisUrl'],
       [{ redisUrl: 'redis://' }, 'redisUrl'],
+      [
+        { redisUrl: 'redis://localhost:6379/1', redisMode: 'cluster' },
+        'Cluster connections require Redis database zero',
+      ],
       [{ redisUrl, prefix: null }, 'prefix'],
       [{ redisUrl, prefix: '' }, 'prefix'],
       [{ redisUrl, prefix: 42 }, 'prefix'],

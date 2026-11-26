@@ -172,6 +172,8 @@ export const ConfigSchema = z.object({
   /** Cloudflare Browser Run account and API token for printing. */
   printingCloudflareAccountId: z.string().nullable().default(null),
   printingCloudflareApiToken: z.string().nullable().default(null),
+  /** Redis connection mode for print exports. ElastiCache Serverless requires cluster mode. */
+  printExportRedisMode: z.enum(['standalone', 'cluster']).default('standalone'),
   /** Override the database-derived Redis namespace when hosts use different aliases for the same database. */
   printExportQueuePrefix: z.string().nullable().default(null),
   /** Whether this host renders queued print exports. Requires Chromium or Cloudflare credentials. */

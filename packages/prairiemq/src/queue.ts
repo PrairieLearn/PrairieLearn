@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import { type Job, createJob, jobFromRecord } from './job.js';
 import { serializeJson } from './json.js';
 import { DEFAULT_PREFIX, QueueKeys } from './keys.js';
+import { getRedisPrimaries } from './redis.js';
 import { type PrairieMQRedis, createScriptedClient } from './scripts.js';
 import type {
   DeduplicatedJobOptions,
@@ -20,10 +21,16 @@ import {
   validateOptionsObject,
   validatePrefix,
   validateRateLimiter,
+  validateRedisMode,
 } from './validation.js';
 
 const MAX_BULK_JOBS = 1000;
-const QUEUE_OPTION_NAMES = new Set<keyof QueueOptions>(['redisUrl', 'prefix', 'defaultJobOptions']);
+const QUEUE_OPTION_NAMES = new Set<keyof QueueOptions>([
+  'redisUrl',
+  'redisMode',
+  'prefix',
+  'defaultJobOptions',
+]);
 
 function escapeRedisGlob(value: string): string {
   return value.replaceAll(/[\\*?[\]]/g, '\\$&');
@@ -149,6 +156,7 @@ function validateDefaultJobOptions(opts: JobOptions): void {
 function validateQueueOptions(options: QueueOptions): string {
   const optionRecord = validateOptionsObject('Queue', options, QUEUE_OPTION_NAMES);
   const redisUrl = normalizeRedisUrl(optionRecord.redisUrl);
+  validateRedisMode(optionRecord.redisMode, redisUrl);
   validatePrefix(optionRecord.prefix);
   if (options.defaultJobOptions !== undefined) {
     validateDefaultJobOptions(options.defaultJobOptions);
@@ -196,6 +204,7 @@ export class Queue<Data = unknown, Result = unknown> extends EventEmitter<QueueE
     this.defaultJobOptions = mergeJobOptions({}, options.defaultJobOptions ?? {});
     this.client = createScriptedClient({
       redisUrl,
+      redisMode: options.redisMode,
       role: 'queue',
     });
     this.client.on('error', (err) => this.emit('error', err));
@@ -608,13 +617,15 @@ export class Queue<Data = unknown, Result = unknown> extends EventEmitter<QueueE
    */
   async obliterate(): Promise<void> {
     await this.waitUntilReady();
-    const stream = this.client.scanStream({
-      match: `${escapeRedisGlob(this.keys.base)}:*`,
-      count: 250,
-    });
-    for await (const keys of stream) {
-      if ((keys as string[]).length > 0) {
-        await this.client.unlink(...(keys as string[]));
+    for (const node of getRedisPrimaries(this.client)) {
+      const stream = node.scanStream({
+        match: `${escapeRedisGlob(this.keys.base)}:*`,
+        count: 250,
+      });
+      for await (const keys of stream) {
+        if ((keys as string[]).length > 0) {
+          await this.client.unlink(...(keys as string[]));
+        }
       }
     }
   }

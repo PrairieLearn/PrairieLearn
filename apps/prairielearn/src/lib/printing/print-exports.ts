@@ -71,6 +71,7 @@ function reportQueueError(error: unknown) {
 function queueConnection(redisUrl: string) {
   return {
     redisUrl,
+    redisMode: config.printExportRedisMode,
     prefix:
       config.printExportQueuePrefix ??
       `prairielearn-print-exports-${createHash('sha256')
