@@ -6,7 +6,7 @@ import type { UrlTransform } from 'react-markdown';
 import { ChatMarkdown } from './ChatMarkdown.js';
 
 /** A chevron and summary that show or hide the details beneath them. */
-export function Disclosure({
+function Disclosure({
   summary,
   expanded,
   onToggle,

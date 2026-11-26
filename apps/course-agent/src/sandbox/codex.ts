@@ -28,6 +28,12 @@ import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
 import { MESSAGE_TOOL_CHARS, toolCallFromItem } from './tool-calls.js';
 
+/** How much of a running command's latest output the chat shows, and how often it is refreshed. */
+const LIVE_OUTPUT_CHARS = 600;
+const LIVE_OUTPUT_INTERVAL_MS = 1000;
+/** Marks a text part as an update, which the chat folds in with the agent's work. */
+const UPDATE_METADATA = { courseAgent: { update: true } };
+
 // Validate only fields consumed by this adapter; Codex may return additional data.
 const EmptyResult = z.object({});
 const ThreadResult = z.object({ thread: z.object({ id: z.string() }) });
@@ -37,6 +43,12 @@ const TextDelta = z.object({
   turnId: z.string(),
   itemId: z.string(),
   delta: z.string(),
+});
+const SummaryPartAdded = z.object({
+  threadId: z.string(),
+  turnId: z.string(),
+  itemId: z.string(),
+  summaryIndex: z.number(),
 });
 const TurnCompleted = z.object({
   threadId: z.string(),
@@ -140,8 +152,13 @@ export class CodexAppServerClient {
   /** Codex cannot list a new thread's history until its first user message. */
   private newThread = false;
   private parts = new Map<string, 'text' | 'reasoning'>();
+  /** Messages Codex labels as written along the way, not as the reply. Not every model says. */
+  private updates = new Set<string>();
   /** Calls Codex has started but not finished, by history part ID. */
   private runningTools = new Map<string, ToolCall>();
+  /** The latest output of running commands, by history part ID, and what has yet to be shown. */
+  private liveOutput = new Map<string, { tail: string; total: number; shown: number }>();
+  private liveOutputTimer: ReturnType<typeof setTimeout> | null = null;
   /** Tool call characters in the open message, which continuation turns append to. */
   private toolChars = { messageId: '', used: 0 };
   private failure: Error | null = null;
@@ -159,7 +176,9 @@ export class CodexAppServerClient {
     this.terminal = Promise.withResolvers<undefined>();
     this.turnId = null;
     this.parts.clear();
+    this.updates.clear();
     this.runningTools.clear();
+    this.clearLiveOutput();
     if (this.toolChars.messageId !== messageId) this.toolChars = { messageId, used: 0 };
     this.onReview = onReview;
     void this.terminal.promise.catch(() => {});
@@ -213,7 +232,18 @@ export class CodexAppServerClient {
     onNotification('item/reasoning/summaryTextDelta', TextDelta, (params) =>
       this.delta('reasoning', params),
     );
-    onNotification('item/started', ItemEvent, (params) => this.toolCall('started', params));
+    // A summary's sections arrive as separate parts, each starting with its own heading.
+    onNotification('item/reasoning/summaryPartAdded', SummaryPartAdded, (params) => {
+      if (params.summaryIndex > 0) this.delta('reasoning', { ...params, delta: '\n\n' });
+    });
+    onNotification('item/commandExecution/outputDelta', TextDelta, (params) =>
+      this.outputDelta(params),
+    );
+    onNotification('item/started', ItemEvent, (params) => {
+      const { item } = params;
+      if (item.type === 'agentMessage' && item.phase === 'commentary') this.updates.add(item.id);
+      this.toolCall('started', params);
+    });
     onNotification('item/completed', ItemEvent, (params) => {
       this.toolCall('completed', params);
       const { threadId, turnId, item } = params;
@@ -422,6 +452,8 @@ export class CodexAppServerClient {
       {
         threadId: this.threadId!,
         clientUserMessageId: input.tag,
+        // Reasoning summaries tell staff what the agent is working out between its steps.
+        summary: 'auto',
         input: [
           ...(context ? [{ type: 'text' as const, text: context, text_elements: [] }] : []),
           { type: 'text', text: input.text, text_elements: [] },
@@ -494,7 +526,15 @@ export class CodexAppServerClient {
     const id = `${type}:${params.itemId}`;
     if (!this.parts.has(id)) {
       this.parts.set(id, type);
-      this.controller.enqueue({ type: type === 'text' ? 'text-start' : 'reasoning-start', id });
+      this.controller.enqueue(
+        type === 'reasoning'
+          ? { type: 'reasoning-start', id }
+          : {
+              type: 'text-start',
+              id,
+              ...(this.updates.has(params.itemId) ? { providerMetadata: UPDATE_METADATA } : {}),
+            },
+      );
     }
     this.controller.enqueue({
       type: type === 'text' ? 'text-delta' : 'reasoning-delta',
@@ -518,9 +558,49 @@ export class CodexAppServerClient {
       this.emit({ type: 'data-tool', id, data: call });
     } else {
       this.runningTools.delete(id);
+      this.liveOutput.delete(id);
       const overBudget = this.toolChars.used + JSON.stringify(call).length > MESSAGE_TOOL_CHARS;
       this.emitFinal(id, overBudget ? toolCallFromItem(phase, params.item, false)! : call);
     }
+  }
+
+  /**
+   * A running command's output so far. The chat shows only its end, so the part is rewritten with
+   * that at a fixed pace however fast the command prints.
+   */
+  private outputDelta(params: z.infer<typeof TextDelta>) {
+    if (params.threadId !== this.threadId || (this.turnId && params.turnId !== this.turnId)) {
+      return;
+    }
+    const id = `tool:${params.itemId}`;
+    if (!this.runningTools.has(id)) return;
+    const live = this.liveOutput.get(id) ?? { tail: '', total: 0, shown: 0 };
+    live.tail = (live.tail + params.delta).slice(-LIVE_OUTPUT_CHARS);
+    live.total += params.delta.length;
+    this.liveOutput.set(id, live);
+    this.liveOutputTimer ??= setTimeout(() => this.showLiveOutput(), LIVE_OUTPUT_INTERVAL_MS);
+  }
+
+  private showLiveOutput() {
+    this.liveOutputTimer = null;
+    for (const [id, live] of this.liveOutput) {
+      const call = this.runningTools.get(id);
+      if (call?.kind !== 'command' || live.shown === live.total) continue;
+      live.shown = live.total;
+      const shown = {
+        ...call,
+        output: { text: live.tail, omitted: live.total - live.tail.length },
+      };
+      // A call the turn ends without finishing keeps the output it had shown.
+      this.runningTools.set(id, shown);
+      this.emit({ type: 'data-tool', id, data: shown });
+    }
+  }
+
+  private clearLiveOutput() {
+    if (this.liveOutputTimer) clearTimeout(this.liveOutputTimer);
+    this.liveOutputTimer = null;
+    this.liveOutput.clear();
   }
 
   /** History keeps a call's final form, so the message's budget counts only these. */
@@ -549,6 +629,7 @@ export class CodexAppServerClient {
       this.emitFinal(id, { ...call, status: 'interrupted' });
     }
     this.runningTools.clear();
+    this.clearLiveOutput();
     if (error) {
       this.controller.enqueue({
         type: 'error',

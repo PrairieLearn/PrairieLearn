@@ -310,6 +310,65 @@ textarea.course-agent-composer-input {
   }
 }
 
+/* A line that opens to show more is set smaller than the replies around it. */
+.course-agent-fold {
+  --bs-btn-font-size: 0.875rem;
+}
+
+/* The agent's steps sit in one bordered list, each divided from the next. */
+.course-agent-step + .course-agent-step {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+/*
+ * A highlight sweeps across the label of whatever the agent is doing now. Its size is fixed, not
+ * relative to the label, so it keeps one pace and does not jump as labels of different lengths
+ * replace each other.
+ */
+.course-agent-shimmer {
+  --course-agent-shimmer-width: 20rem;
+
+  color: transparent;
+  background: linear-gradient(
+      90deg,
+      var(--bs-secondary-color) 35%,
+      var(--bs-emphasis-color) 50%,
+      var(--bs-secondary-color) 65%
+    )
+    0 0 / var(--course-agent-shimmer-width) 100% repeat-x;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: course-agent-shimmer 2s linear infinite;
+}
+
+/* The gradient shows only through transparent text, and a chip's own background would cover it. */
+.course-agent-shimmer code {
+  color: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Digits of one width keep the elapsed time from shifting as it counts. */
+.course-agent-status-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Each line is cut off rather than wrapped, so the block keeps a steady height as output arrives. */
+.course-agent-live-output {
+  padding-left: 0.5rem;
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: pre;
+  border-left: 2px solid var(--bs-border-color);
+}
+
+/* One repeat of the gradient, so the loop has no seam. */
+@keyframes course-agent-shimmer {
+  to {
+    background-position-x: var(--course-agent-shimmer-width);
+  }
+}
+
 /* Wide display math scrolls instead of widening the panel. */
 .course-agent-panel .katex-display {
   overflow-x: auto;
@@ -431,6 +490,11 @@ body:has(.course-agent-panel-animate) .app-main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Slowed rather than stopped, as Bootstrap does for spinners, so work in progress stays visible. */
+  .course-agent-shimmer {
+    animation-duration: 4s;
+  }
+
   .course-agent-composer-pulse {
     animation: none;
   }

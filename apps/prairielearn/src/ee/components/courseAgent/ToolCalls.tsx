@@ -1,12 +1,33 @@
+import type { ReasoningUIPart, TextUIPart } from 'ai';
 import clsx from 'clsx';
-import { type ReactNode, useEffect, useState } from 'react';
-import { Spinner } from 'react-bootstrap';
+import { type ReactNode, useEffect, useId, useState } from 'react';
+import type { UrlTransform } from 'react-markdown';
 
 import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
-import { Disclosure } from '../ai/ChatParts.js';
+import { ChatMarkdown } from '../ai/ChatMarkdown.js';
 
-import { ChatDiff, preloadDiffHighlighting } from './ChatDiff.js';
+/**
+ * One thing the agent did on the way to its reply: a tool call, reasoning between calls, or an
+ * update it wrote along the way.
+ */
+export type WorkItem = ToolCall | ReasoningUIPart | TextUIPart;
+
+const isCall = (item: WorkItem): item is ToolCall => 'kind' in item;
+
+/** Where the sandbox keeps the agent's skills, which staff cannot see. */
+const SKILLS_DIR = '/etc/codex/skills/';
+
+/** The agent's own tools for students' results. */
+const isCourseData = (call: ToolCall) =>
+  call.kind === 'tool' &&
+  call.server === null &&
+  ['list_course_datasets', 'get_course_data'].includes(call.tool);
+
+/** Reading its skills is how the agent checks how this kind of work is done. */
+const usesSkills = (call: ToolCall) => call.kind === 'command' && call.command.includes(SKILLS_DIR);
+
+import { ChatCodeBlock, ChatDiff, preloadDiffHighlighting } from './ChatDiff.js';
 
 type Verb =
   | 'read'
@@ -18,19 +39,27 @@ type Verb =
   | 'create'
   | 'delete'
   | 'call'
+  | 'check'
+  | 'look up'
   | 'summarize';
 
+/**
+ * Finished steps are worded as instructions, as the agent words the ones it labels itself, so a
+ * list of steps reads the same way throughout.
+ */
 const VERBS: Record<Verb, [running: string, done: string]> = {
   read: ['Reading', 'Read'],
-  list: ['Listing', 'Listed'],
-  search: ['Searching for', 'Searched for'],
-  browse: ['Browsing', 'Browsed'],
-  run: ['Running', 'Ran'],
-  edit: ['Editing', 'Edited'],
-  create: ['Creating', 'Created'],
-  delete: ['Deleting', 'Deleted'],
-  call: ['Calling', 'Called'],
-  summarize: ['Summarizing', 'Summarized'],
+  list: ['Looking through', 'Look through'],
+  search: ['Searching', 'Search'],
+  browse: ['Browsing', 'Browse'],
+  run: ['Running', 'Run'],
+  edit: ['Editing', 'Edit'],
+  create: ['Creating', 'Create'],
+  delete: ['Deleting', 'Delete'],
+  call: ['Calling', 'Call'],
+  check: ['Checking', 'Check'],
+  'look up': ['Looking up', 'Look up'],
+  summarize: ['Summarizing', 'Summarize'],
 };
 
 /** Codex runs commands through a login shell; the inner script is what the agent wrote. */
@@ -62,47 +91,24 @@ function Code({ children, title }: { children: ReactNode; title?: string }) {
 const toolName = (call: Extract<ToolCall, { kind: 'tool' }>) =>
   call.server ? `${call.server}.${call.tool}` : call.tool;
 
-/**
- * What a call does, for grouping consecutive calls of one kind into a row like "Read 3 files".
- * Groups count calls, so a command that reads two files counts once.
- */
-function category(call: ToolCall): {
-  key: string;
-  /** A Bootstrap icon for the action, so reads, edits, and runs differ at a glance. */
-  icon: string;
-  group: (count: number) => string;
-} {
+const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+
+/** What kind of thing a call does, which decides how it is described. */
+function category(call: ToolCall) {
   switch (call.kind) {
     case 'command': {
       const types = new Set(call.actions.map((action) => action.type));
-      if (types.size === 1 && types.has('read')) {
-        return { key: 'read', icon: 'bi-file-earmark-text', group: (n) => `Read ${n} files` };
-      }
-      if (call.actions.length === 1 && types.has('listFiles')) {
-        return { key: 'list', icon: 'bi-folder2-open', group: (n) => `Listed ${n} folders` };
-      }
-      if (call.actions.length === 1 && types.has('search')) {
-        return { key: 'search', icon: 'bi-search', group: (n) => `Searched ${n} times` };
-      }
-      return { key: 'run', icon: 'bi-terminal', group: (n) => `Ran ${n} commands` };
+      if (types.size === 1 && types.has('read')) return 'read';
+      if (call.actions.length === 1 && types.has('listFiles')) return 'list';
+      if (call.actions.length === 1 && types.has('search')) return 'search';
+      return 'run';
     }
     case 'fileChange':
-      return { key: 'edit', icon: 'bi-pencil-square', group: (n) => `Made ${n} edits` };
+      return 'edit';
     case 'tool':
-      if (call.server === 'web') {
-        return { key: 'web', icon: 'bi-globe', group: (n) => `Browsed the web ${n} times` };
-      }
-      return {
-        key: `call:${toolName(call)}`,
-        icon: 'bi-plug',
-        group: (n) => `Called ${toolName(call)} ${n} times`,
-      };
+      return call.server === 'web' ? 'web' : isCourseData(call) ? 'data' : 'call';
     case 'compaction':
-      return {
-        key: 'compaction',
-        icon: 'bi-arrows-collapse',
-        group: (n) => `Summarized earlier conversation ${n} times`,
-      };
+      return 'compaction';
   }
 }
 
@@ -110,9 +116,10 @@ function category(call: ToolCall): {
 function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: string } {
   switch (call.kind) {
     case 'command': {
+      if (usesSkills(call)) return { verb: 'check', subject: 'guidance' };
       const { actions } = call;
       const [action] = actions;
-      if (category(call).key === 'read') {
+      if (category(call) === 'read') {
         return {
           verb: 'read',
           subject: actions.map((read, i) => (
@@ -125,26 +132,14 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
           )),
         };
       }
+      // Staff read what a step was for; its command, query, or path is in the step's details.
       if (actions.length === 1 && action.type === 'listFiles') {
-        return { verb: 'list', subject: <Code>{action.path ?? 'files'}</Code> };
+        return { verb: 'list', subject: 'the course files' };
       }
       if (actions.length === 1 && action.type === 'search') {
-        return {
-          verb: 'search',
-          subject: (
-            <>
-              <Code>{action.query ?? 'files'}</Code>
-              {action.path && (
-                <>
-                  {' in '}
-                  <Code>{action.path}</Code>
-                </>
-              )}
-            </>
-          ),
-        };
+        return { verb: 'search', subject: 'the course files' };
       }
-      return { verb: 'run', subject: <Code>{unwrapShell(call.command).split('\n')[0]}</Code> };
+      return { verb: 'run', subject: 'a command' };
     }
     case 'fileChange': {
       const meta = changeMeta([call]);
@@ -157,6 +152,7 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
     }
     case 'tool':
       if (call.server === 'web') return describeWeb(call.tool, call.arguments.text);
+      if (isCourseData(call)) return { verb: 'look up', subject: 'course data' };
       return { verb: 'call', subject: <Code>{toolName(call)}</Code> };
     case 'compaction':
       return { verb: 'summarize', subject: 'earlier conversation' };
@@ -168,13 +164,10 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
  * page, or pattern. Opening a search result by reference, and a call still starting, have neither.
  */
 function describeWeb(action: string, text: string): { verb: Verb; subject: ReactNode } {
-  const lines = text.split('\n').filter(Boolean);
-  if (action === 'openPage' && lines.length > 0) {
-    return { verb: 'read', subject: <Code>{lines[0]}</Code> };
-  }
-  if ((action === 'search' || action === 'findInPage') && lines.length > 0) {
-    return { verb: 'search', subject: <Code>{lines.at(-1)}</Code> };
-  }
+  const known = text.split('\n').some(Boolean);
+  if (action === 'openPage' && known) return { verb: 'read', subject: 'a web page' };
+  if (action === 'findInPage' && known) return { verb: 'search', subject: 'a web page' };
+  if (action === 'search' && known) return { verb: 'search', subject: 'the web' };
   return { verb: 'browse', subject: 'the web' };
 }
 
@@ -190,95 +183,146 @@ function statusOf(call: ToolCall, live: boolean): ToolCall['status'] {
   return call.status === 'running' && !live ? 'interrupted' : call.status;
 }
 
-function statusNote(call: ToolCall, live: boolean) {
-  const status = statusOf(call, live);
-  if (status === 'interrupted') return { text: 'Interrupted', failed: false };
-  if (call.kind === 'command' && call.exitCode !== null && call.exitCode !== 0) {
-    return { text: `Exit ${call.exitCode}`, failed: true };
-  }
-  return status === 'failed' ? { text: 'Failed', failed: true } : null;
-}
-
-/** The collapsed line: icon or spinner, label, and status in text as well as colour. */
-function Summary({
-  icon,
-  running,
+/**
+ * A line that opens to show more: its label, then a chevron. Steps are listed this way so they
+ * read as sentences, with commands and paths one click further in.
+ */
+function Fold({
   label,
+  running = false,
   meta,
-  note,
-}: {
-  icon: string;
-  running: boolean;
-  label: ReactNode;
-  meta?: string;
-  note: { text: string; failed: boolean } | null;
-}) {
-  return (
-    <span className="d-flex align-items-center gap-2 small overflow-hidden flex-grow-1">
-      {/* One fixed-width slot, sized to the icon, keeps the spinner and icons in a column. */}
-      <span
-        className="d-inline-flex justify-content-center flex-shrink-0"
-        style={{ width: '1.25em' }}
-        aria-hidden="true"
-      >
-        {running ? (
-          <Spinner
-            animation="border"
-            style={{ width: '1em', height: '1em', borderWidth: '0.15em' }}
-          />
-        ) : (
-          <i className={clsx('bi', icon, note?.failed && 'text-danger')} />
-        )}
-      </span>
-      <span className="text-truncate">{label}</span>
-      {/* The spaces separate words in the button's accessible name; flex layout drops them. */}
-      {meta && <span className="flex-shrink-0"> {meta}</span>}
-      {running && <span className="visually-hidden"> (in progress)</span>}
-      {note && (
-        <span className={clsx('flex-shrink-0 fw-semibold', note.failed && 'text-danger')}>
-          {' '}
-          {note.text}
-        </span>
-      )}
-    </span>
-  );
-}
-
-function Row({
-  summary,
+  stopped = false,
+  tail,
+  className,
   onExpand,
   children,
 }: {
-  summary: ReactNode;
+  label: ReactNode;
+  running?: boolean;
+  meta?: string;
+  /** The turn ended before this finished. */
+  stopped?: boolean;
+  /** Shown under the closed line; the details replace it when the line opens. */
+  tail?: ReactNode;
+  className?: string;
   onExpand?: () => void;
   children: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const detailsId = useId();
   return (
-    <Disclosure
-      summary={summary}
-      expanded={expanded}
-      onToggle={() => {
-        if (!expanded) onExpand?.();
-        setExpanded(!expanded);
-      }}
-    >
-      <div className="d-flex flex-column gap-1 mt-1 mb-2 ms-4">{children}</div>
-    </Disclosure>
+    <div className={className}>
+      <button
+        type="button"
+        className="course-agent-fold btn btn-link p-0 border-0 d-flex align-items-center gap-1 mw-100 text-start text-decoration-none text-body-secondary"
+        aria-expanded={expanded}
+        aria-controls={detailsId}
+        onClick={() => {
+          if (!expanded) onExpand?.();
+          setExpanded(!expanded);
+        }}
+      >
+        <span className={clsx('text-truncate', running && 'course-agent-shimmer')}>{label}</span>
+        {/* The spaces separate words in the button's accessible name; flex layout drops them. */}
+        {meta && <span className="flex-shrink-0"> {meta}</span>}
+        {running && <span className="visually-hidden"> (in progress)</span>}
+        {stopped && <span className="flex-shrink-0 fw-semibold"> Stopped</span>}
+        <i
+          className={clsx(
+            'bi small flex-shrink-0',
+            expanded ? 'bi-chevron-down' : 'bi-chevron-right',
+          )}
+          aria-hidden="true"
+        />
+      </button>
+      {expanded ? <div id={detailsId}>{children}</div> : tail}
+    </div>
   );
 }
 
-function ToolCallRow({
-  call,
-  live,
-  onExpand,
-}: {
-  call: ToolCall;
-  live: boolean;
-  onExpand?: () => void;
-}) {
-  const running = statusOf(call, live) === 'running';
+/** The end of a running command's output, so a long command shows that it is getting somewhere. */
+export function LiveOutput({ call }: { call: ToolCall }) {
+  if (call.kind !== 'command' || !call.output?.text.trim()) return null;
+  // A progress bar rewrites its line; only the last rewrite is on screen.
+  const line = call.output.text.trimEnd().split('\n').at(-1)?.split('\r').at(-1);
+  return (
+    <pre className="course-agent-live-output text-body-secondary mb-0 mt-1" aria-hidden="true">
+      {line}
+    </pre>
+  );
+}
+
+/**
+ * The agent starts each command with a comment saying what it does, which is what staff read in
+ * place of the command.
+ */
+function commandNote(call: ToolCall) {
+  if (call.kind !== 'command') return null;
+  const [first] = unwrapShell(call.command)
+    // A script that could not be unwrapped still starts after the shell and its opening quote.
+    .replace(/^(?:\S*\/)?(?:ba|z)?sh -l?c ["']?/, '')
+    .split('\n');
+  return /^#(?!!)\s*(.+)$/.exec(first.trim())?.[1] ?? null;
+}
+
+/**
+ * What a running call is doing, for the chat's status line. Many staff are not technical, so it
+ * names files but never shows a command.
+ */
+export function runningLabel(call: ToolCall): string {
+  const name = (path: string) => path.split('/').at(-1);
+  switch (call.kind) {
+    case 'command': {
+      const note = commandNote(call);
+      if (note) return note;
+      if (usesSkills(call)) return 'Checking guidance';
+      const kind = category(call);
+      if (kind === 'read') {
+        const paths = call.actions.flatMap((action) =>
+          action.type === 'read' ? [action.path] : [],
+        );
+        return paths.length === 1 ? `Reading ${name(paths[0])}` : `Reading ${paths.length} files`;
+      }
+      if (kind === 'list') return 'Looking through the course files';
+      if (kind === 'search') return 'Searching the course files';
+      return 'Running a command';
+    }
+    case 'fileChange': {
+      const total = call.changes.length + call.omittedChanges;
+      if (total !== 1) return `Editing ${total} files`;
+      const [{ change, path }] = call.changes;
+      const verb = change === 'add' ? 'Creating' : change === 'delete' ? 'Deleting' : 'Editing';
+      return `${verb} ${name(path)}`;
+    }
+    case 'tool':
+      if (isCourseData(call)) return 'Looking up course data';
+      if (call.server !== 'web') return 'Getting information';
+      return call.tool === 'search' ? 'Searching the web' : 'Reading a web page';
+    case 'compaction':
+      return 'Summarizing earlier conversation';
+  }
+}
+
+/**
+ * What went wrong with a step, for its details. The closed line stays quiet about failures, which
+ * are routine, so the details must say when a command or an edit did not go through.
+ */
+function failureNote(call: ToolCall) {
+  if (call.kind === 'command' && call.exitCode !== null && call.exitCode !== 0) {
+    return `This command ended with an error (exit code ${call.exitCode}).`;
+  }
+  if (call.status !== 'failed') return null;
+  if (call.kind === 'fileChange') return 'These changes were not made.';
+  // A failed tool call shows its own error.
+  return call.kind === 'tool' && call.error ? null : 'This step failed.';
+}
+
+/** One call in the list of steps, which opens to show its command, output, or changes. */
+function Step({ call, live, onExpand }: { call: ToolCall; live: boolean; onExpand?: () => void }) {
+  const status = statusOf(call, live);
+  const running = status === 'running';
   const { verb, subject, meta } = describe(call);
+  const failure = failureNote(call);
   const editedPaths =
     call.kind === 'fileChange' ? call.changes.map((change) => change.path).join('\n') : '';
   // An edit's changes stay hidden until the row is expanded. Loading their language's highlighting
@@ -290,82 +334,130 @@ function ToolCallRow({
     for (const path of editedPaths.split('\n')) preloadDiffHighlighting(path);
   }, [editedPaths]);
   return (
-    <Row
-      summary={
-        <Summary
-          icon={category(call).icon}
-          running={running}
-          label={
-            <>
-              {VERBS[verb][running ? 0 : 1]} {subject}
-            </>
-          }
-          meta={meta}
-          note={statusNote(call, live)}
-        />
+    <Fold
+      className="course-agent-step px-2 py-1"
+      label={
+        commandNote(call) ?? (
+          <>
+            {VERBS[verb][running ? 0 : 1]} {subject}
+          </>
+        )
       }
+      running={running}
+      meta={meta}
+      stopped={status === 'interrupted'}
       onExpand={onExpand}
     >
-      <ToolCallDetails call={call} />
-    </Row>
+      <div className="d-flex flex-column gap-1 my-1">
+        {failure && <div className="small text-danger">{failure}</div>}
+        <ToolCallDetails call={call} />
+      </div>
+    </Fold>
   );
 }
 
-/** Consecutive tool calls from one message, with runs of the same kind grouped. */
+/** Codex heads each section of a reasoning summary with a bold title; the latest names the topic. */
+export function reasoningHeading(text: string) {
+  return [...text.matchAll(/\*\*(.+?)\*\*/g)].at(-1)?.[1] ?? null;
+}
+
+/**
+ * Everything the agent did before a reply, folded into one line so the chat reads as its replies.
+ * Opening it shows the agent's updates and, between them, its steps as a list. Reasoning is left
+ * out: the status line shows what the agent is thinking about while that matters.
+ */
 export function ToolCalls({
-  calls,
+  items,
   live,
+  settled,
+  showUpdate,
+  urlTransform,
   onExpand,
 }: {
-  calls: ToolCall[];
-  /** Whether the calls' message is still streaming; otherwise a running call was cut off. */
+  items: WorkItem[];
+  /** Whether the message is still streaming; otherwise a running call was cut off. */
   live: boolean;
-  /** Called before a row opens, which makes the chat taller. */
+  /** Whether this work is over. */
+  settled: boolean;
+  /** Whether to show the agent's latest update under the line while it works. */
+  showUpdate: boolean;
+  /** Updates link to course files as replies do. */
+  urlTransform: UrlTransform;
+  /** Called before a line opens, which makes the chat taller. */
   onExpand?: () => void;
 }) {
-  const groups: ToolCall[][] = [];
-  for (const call of calls) {
-    const last = groups.at(-1);
-    if (last && category(last[0]).key === category(call).key) last.push(call);
-    else groups.push([call]);
+  const blocks: (ToolCall[] | TextUIPart)[] = [];
+  for (const item of items) {
+    const last = blocks.at(-1);
+    if (!isCall(item)) {
+      if (item.type === 'text') blocks.push(item);
+    } else if (Array.isArray(last)) {
+      last.push(item);
+    } else {
+      blocks.push([item]);
+    }
   }
-  // Rows only ever append to a streaming message, so their positions identify them.
+  const calls = items.filter(isCall);
+  const updates = blocks.filter((block): block is TextUIPart => !Array.isArray(block));
+  // A new update starts out empty; the one before it stays up until there is text to replace it.
+  let update: TextUIPart | undefined;
+  for (const part of updates) {
+    if (part.text.trim()) update = part;
+  }
+  // With no steps to fold away, the updates stay in view; hiding them until the turn ended would
+  // have them pop back in above the reply.
+  if (calls.length === 0) {
+    // Updates only ever append to a streaming message, so their positions identify them.
+    // oxlint-disable-next-line react/no-array-index-key
+    return updates.map((part, i) => <Update key={i} part={part} urlTransform={urlTransform} />);
+  }
   return (
-    <div className="d-flex flex-column gap-1">
-      {groups.map((group, i) => {
-        if (group.length === 1) {
-          // oxlint-disable-next-line react/no-array-index-key
-          return <ToolCallRow key={i} call={group[0]} live={live} onExpand={onExpand} />;
-        }
-        const notes = group.map((call) => statusNote(call, live));
-        const failures = notes.filter((note) => note?.failed).length;
-        return (
-          <Row
+    <Fold
+      label={
+        settled
+          ? `Worked through ${count(calls.length, 'step')}`
+          : `Working · ${count(calls.length, 'step')}`
+      }
+      // Failed steps are routine and stay in the details; a turn cut short is worth saying.
+      stopped={calls.some((call) => statusOf(call, live) === 'interrupted')}
+      // While it works, the agent's latest update says where it has got to.
+      tail={
+        !settled && showUpdate && update && <Update part={update} urlTransform={urlTransform} />
+      }
+      onExpand={onExpand}
+    >
+      <div className="d-flex flex-column gap-2 mt-2 mb-1">
+        {blocks.map((block, i) =>
+          Array.isArray(block) ? (
+            // Blocks only ever append to a streaming message, so their positions identify them.
             // oxlint-disable-next-line react/no-array-index-key
-            key={i}
-            summary={
-              <Summary
-                icon={category(group[0]).icon}
-                running={group.some((call) => statusOf(call, live) === 'running')}
-                label={category(group[0]).group(group.length)}
-                meta={group[0].kind === 'fileChange' ? changeMeta(group) : undefined}
-                note={
-                  failures > 0
-                    ? { text: `${failures} failed`, failed: true }
-                    : (notes.find((note) => note) ?? null)
-                }
-              />
-            }
-            onExpand={onExpand}
-          >
-            {group.map((call, j) => (
-              // oxlint-disable-next-line react/no-array-index-key
-              <ToolCallRow key={j} call={call} live={live} onExpand={onExpand} />
-            ))}
-          </Row>
-        );
-      })}
-    </div>
+            <div key={i} className="border rounded-3">
+              {block.map((call, j) => (
+                // oxlint-disable-next-line react/no-array-index-key
+                <Step key={j} call={call} live={live} onExpand={onExpand} />
+              ))}
+            </div>
+          ) : (
+            // oxlint-disable-next-line react/no-array-index-key
+            <Update key={i} part={block} urlTransform={urlTransform} />
+          ),
+        )}
+      </div>
+    </Fold>
+  );
+}
+
+/** Something the agent wrote along the way, which is not part of its reply. */
+function Update({ part, urlTransform }: { part: TextUIPart; urlTransform: UrlTransform }) {
+  return (
+    <ChatMarkdown
+      className="markdown-body small text-body-secondary mt-1"
+      content={part.text}
+      streaming={part.state === 'streaming'}
+      urlTransform={urlTransform}
+      codeBlock={ChatCodeBlock}
+      math
+    />
   );
 }
 

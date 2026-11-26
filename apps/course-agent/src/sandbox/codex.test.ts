@@ -141,6 +141,7 @@ describe('course agent turns', () => {
         params: {
           threadId: 'thread',
           clientUserMessageId: 'review:1',
+          summary: 'auto',
           input: [{ type: 'text', text: 'The review finished.', text_elements: [] }],
         },
       },
@@ -312,6 +313,62 @@ describe('course agent turns', () => {
     ]);
   });
 
+  it("shows the end of a running command's output as a part replaced in place", async () => {
+    const { sandbox, native, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const ids = { threadId: 'thread', turnId: 'turn' };
+    emit({
+      method: 'item/started',
+      params: {
+        ...ids,
+        item: {
+          type: 'commandExecution',
+          id: 'tests',
+          command: 'pytest',
+          commandActions: [{ type: 'unknown', command: 'pytest' }],
+          aggregatedOutput: null,
+          exitCode: null,
+          status: 'inProgress',
+        },
+      },
+    });
+    const output = (delta: string) =>
+      emit({
+        method: 'item/commandExecution/outputDelta',
+        params: { ...ids, itemId: 'tests', delta },
+      });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    output('x'.repeat(1000));
+    output('\n3 passed');
+    // Output is shown at a fixed pace, so both deltas arrive as one update.
+    await vi.advanceTimersByTimeAsync(1000);
+    vi.useRealTimers();
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type === 'data-tool')).toMatchObject([
+      { id: 'tool:tests', data: { status: 'running', output: null } },
+      {
+        id: 'tool:tests',
+        data: {
+          status: 'running',
+          output: { text: expect.stringMatching(/^x{591}\n3 passed$/), omitted: 409 },
+        },
+      },
+      { id: 'tool:tests', data: { status: 'interrupted', output: { omitted: 409 } } },
+    ]);
+  });
+
   it('offers the course data tools to new threads and returns their replies to the model', async () => {
     const courseData = {
       listCourseDatasets: vi.fn(async () => ({ success: true, text: 'Course datasets' })),
@@ -375,6 +432,42 @@ describe('course agent turns', () => {
     });
     expect(byId[13]).toMatchObject({ success: false });
     expect(courseData.getCourseData).toHaveBeenCalledTimes(2);
+  });
+
+  it('marks text that Codex labels as commentary, so the chat can tell an update from the reply', async () => {
+    const { sandbox, native, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const ids = { threadId: 'thread', turnId: 'turn' };
+    for (const [id, phase] of [
+      ['update', 'commentary'],
+      ['reply', 'final_answer'],
+    ]) {
+      const item = { type: 'agentMessage', id, text: '', phase };
+      emit({ method: 'item/started', params: { ...ids, item } });
+      emit({ method: 'item/agentMessage/delta', params: { ...ids, itemId: id, delta: 'Hi' } });
+      emit({ method: 'item/completed', params: { ...ids, item: { ...item, text: 'Hi' } } });
+    }
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type === 'text-start')).toEqual([
+      {
+        type: 'text-start',
+        id: 'text:update',
+        providerMetadata: { courseAgent: { update: true } },
+      },
+      { type: 'text-start', id: 'text:reply' },
+    ]);
   });
 
   it('shows input the agent requests as an input request part', async () => {
