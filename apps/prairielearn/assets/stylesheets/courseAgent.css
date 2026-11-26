@@ -131,12 +131,17 @@ textarea.course-agent-composer-input {
 /* A one-line offer above the message box, so it is tighter than a page alert. */
 .alert.course-agent-auto-approve-offer {
   --bs-alert-padding-x: 1rem;
-  --bs-alert-padding-y: 0.5rem;
+  --bs-alert-padding-y: 0.625rem;
 }
 
-/* The question and button share a line when they fit; otherwise the button wraps below. */
+/*
+ * The question and button share a line when they fit; otherwise the button wraps below. The text
+ * box is trimmed to the letters, so its line spacing doesn't make the space above it look larger
+ * than the space below the button.
+ */
 .course-agent-auto-approve-offer-text {
   flex: 1 1 auto;
+  text-box: trim-both cap alphabetic;
 }
 
 .course-agent-auto-approve-offer .btn-close {
