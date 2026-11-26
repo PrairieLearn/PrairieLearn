@@ -150,7 +150,7 @@ type SystemRole = 'System';
 
 type StudentCourseInstanceRole = 'Student';
 
-type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
+export type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
 
 export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
 

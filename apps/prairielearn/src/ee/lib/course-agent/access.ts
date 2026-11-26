@@ -1,4 +1,4 @@
-import type { CourseRole } from '../../../lib/authz-data-lib.js';
+import type { CourseRole, InstructorCourseInstanceRole } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import type { Course, Institution, User } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -36,13 +36,22 @@ export async function courseAgentEnabled(context: CourseAgentAccessContext): Pro
 }
 
 /**
- * Why the course agent was refused for lacking a role, in words it can pass on to the instructor.
- * Student data roles are granted per course instance, so a read of student data is refused only
- * when the instructor has one in no course instance.
+ * The roles a course agent read or action needs, in PrairieLearn's two kinds: a course role, which
+ * applies to the whole course, and a course instance role (student data access), which is granted
+ * in each course instance. When both are given, both are needed, as some PrairieLearn pages
+ * require.
  */
-export function missingRoleMessage(requiredRole: (CourseRole | 'Student Data Viewer')[]) {
-  const access = requiredRole.includes('Student Data Viewer')
-    ? 'Student Data Viewer access in at least one course instance'
-    : `${requiredRole.join(' or ')} access to the course`;
+export type CourseAgentRequiredRoles =
+  | { courseRole: CourseRole; courseInstanceRole?: InstructorCourseInstanceRole }
+  | { courseRole?: CourseRole; courseInstanceRole: InstructorCourseInstanceRole };
+
+/**
+ * Why the course agent was refused for lacking a role, in words it can pass on to the instructor.
+ */
+export function missingRoleMessage(role: CourseRole | InstructorCourseInstanceRole) {
+  const access =
+    role === 'Student Data Viewer' || role === 'Student Data Editor'
+      ? `${role} access in at least one course instance`
+      : `${role} access to the course`;
   return `The instructor needs ${access} for this, which they do not have. Tell them, and do not retry. A course Owner can grant it on the Staff page.`;
 }

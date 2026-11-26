@@ -8,9 +8,16 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { CoursePageAuthzDataSchema, hasRole } from '../../../lib/authz-data-lib.js';
+import {
+  CoursePageAuthzDataSchema,
+  type InstructorCourseInstanceRole,
+  hasRole,
+} from '../../../lib/authz-data-lib.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
-import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
+import {
+  type CourseInstanceAuthz,
+  selectCourseInstancesWithStaffAccess,
+} from '../../../models/course-instances.js';
 import { courseAgentEnabled, missingRoleMessage } from '../../lib/course-agent/access.js';
 
 import { COURSE_DATA_DATASETS, courseDataSchema, isCourseDataset } from './datasets.js';
@@ -42,24 +49,32 @@ router.use(
 );
 
 /**
- * The course instances whose student data the user can see, as on the Issues page. Checked on
- * every request, so a role removed during a conversation applies to its next read.
+ * The course instances the user can see, each with their student data access, from the same query
+ * the Issues page uses. Checked on every request, so a role removed during a conversation applies
+ * to its next read.
  */
-async function selectStudentDataCourseInstances(locals: ResLocalsForPage<'course'>) {
-  const courseInstances = await selectCourseInstancesWithStaffAccess({
+async function selectStaffCourseInstances(locals: ResLocalsForPage<'course'>) {
+  return await selectCourseInstancesWithStaffAccess({
     course: locals.course,
     authzData: CoursePageAuthzDataSchema.parse(locals.authz_data),
   });
-  return courseInstances.filter((ci) => ci.has_course_instance_permission_view);
+}
+
+function hasCourseInstanceRole(ci: CourseInstanceAuthz, role: InstructorCourseInstanceRole) {
+  return role === 'Student Data Editor'
+    ? ci.has_course_instance_permission_edit
+    : ci.has_course_instance_permission_view;
 }
 
 router.get(
   '/',
   typedAsyncHandler<'course'>(async (req, res) => {
-    const courseInstances = await selectStudentDataCourseInstances(res.locals);
+    const courseInstances = await selectStaffCourseInstances(res.locals);
     res.send({
       ...SCHEMA,
-      student_data_course_instances: courseInstances.map((ci) => ci.short_name),
+      student_data_course_instances: courseInstances
+        .filter((ci) => hasCourseInstanceRole(ci, 'Student Data Viewer'))
+        .map((ci) => ci.short_name),
     });
   }),
 );
@@ -81,14 +96,21 @@ router.post(
     const body = dataset.querySchema.safeParse(req.body);
     if (!body.success) throw new HttpStatusError(400, z.prettifyError(body.error));
 
+    const { courseRole, courseInstanceRole } = dataset.requiredRoles;
+    if (courseRole && !hasRole(res.locals.authz_data, [courseRole])) {
+      throw new HttpStatusError(403, missingRoleMessage(courseRole));
+    }
     let courseInstanceIds: string[] | null = null;
-    if (dataset.studentData) {
-      courseInstanceIds = (await selectStudentDataCourseInstances(res.locals)).map((ci) => ci.id);
-      if (courseInstanceIds.length === 0) {
-        throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
+    if (courseInstanceRole) {
+      const courseInstances = await selectStaffCourseInstances(res.locals);
+      const permitted = courseInstances.filter((ci) =>
+        hasCourseInstanceRole(ci, courseInstanceRole),
+      );
+      // A course with no course instances has no rows; refusing would blame a missing role.
+      if (courseInstances.length > 0 && permitted.length === 0) {
+        throw new HttpStatusError(403, missingRoleMessage(courseInstanceRole));
       }
-    } else if (!hasRole(res.locals.authz_data, dataset.requiredRole)) {
-      throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
+      courseInstanceIds = permitted.map((ci) => ci.id);
     }
 
     const { rawSqlQuery, params } = selectCourseDatasetRowsQuery(dataset.query, body.data, {
