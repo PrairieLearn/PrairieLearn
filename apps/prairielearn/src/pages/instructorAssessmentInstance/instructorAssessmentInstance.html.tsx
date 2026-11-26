@@ -84,6 +84,7 @@ export function InstructorAssessmentInstance({
   assessmentInstanceLog,
   actionRow,
   trpcCsrfToken,
+  examGracePeriodEnabled,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
   logCsvFilename: string;
@@ -92,6 +93,7 @@ export function InstructorAssessmentInstance({
   assessmentInstanceLog: InstanceLogEntry[];
   actionRow: AssessmentInstanceActionRow;
   trpcCsrfToken: string;
+  examGracePeriodEnabled: boolean;
 }) {
   const headingLabel = resLocals.instance_group
     ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
@@ -770,7 +772,16 @@ export function InstructorAssessmentInstance({
                           : html`<td>&mdash;</td>`
                         : ''
                     }
-                    <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
+                    <td>
+                      <span class="badge color-${row.event_color}">${row.event_name}</span>
+                      ${
+                        examGracePeriodEnabled &&
+                        row.event_name === 'Submission' &&
+                        row.data?.grace_period === true
+                          ? html`<span class="badge color-blue1 ms-1">Grace period</span>`
+                          : ''
+                      }
+                    </td>
                     <td>
                       ${run(() => {
                         if (!row.qid || !row.question_id) return '';

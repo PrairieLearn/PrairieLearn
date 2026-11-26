@@ -101,6 +101,7 @@ import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
 import { assessmentTrpcRouter } from './trpc/assessment/trpc.js';
+import { assessmentInstanceTrpcRouter } from './trpc/assessmentInstance/trpc.js';
 import { assessmentQuestionTrpcRouter } from './trpc/assessmentQuestion/trpc.js';
 import { courseTrpcRouter } from './trpc/course/trpc.js';
 import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
@@ -148,6 +149,10 @@ function excludeRoutes(routes: (string | RegExp)[], handler: RequestHandler) {
  */
 export async function initExpress(): Promise<Express> {
   const app = express();
+  app.use((_req, res, next) => {
+    res.locals.requestReceivedAt = new Date();
+    next();
+  });
   app.set('views', path.join(import.meta.dirname, 'pages'));
   app.set('trust proxy', config.trustProxy);
 
@@ -398,8 +403,13 @@ export async function initExpress(): Promise<Express> {
     // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
     if (isMultipartRequest(req)) return next();
 
-    // Limit to 5MB of JSON
-    bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
+    const limit =
+      /^\/pl\/course_instance\/\d+\/assessment_instance\/\d+\/trpc\/examGrace\.save\/?$/.test(
+        req.path,
+      )
+        ? 5 * 1536 * 1024
+        : 5 * 1024 * 1024;
+    bodyParser.json({ limit })(req, res, next);
   });
   app.use((req, res, next) => {
     if (isMultipartRequest(req)) return next();
@@ -1591,6 +1601,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)',
     (await import('./pages/studentAssessment/studentAssessment.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/trpc',
+    assessmentInstanceTrpcRouter,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/file',

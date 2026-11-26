@@ -8,6 +8,7 @@ columns
     duration: interval default '00:00:00'::interval
     feedback: jsonb
     format_errors: jsonb
+    grace_period: boolean not null default false
     gradable: boolean default true
     graded_at: timestamp with time zone
     grading_requested_at: timestamp with time zone

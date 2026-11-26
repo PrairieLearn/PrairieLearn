@@ -66,7 +66,7 @@ export type ResLocalsAssessmentInstance = SelectAndAuthzAssessmentInstance &
     assessment_label: string;
   };
 
-async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
+export async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   const rawRow = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {

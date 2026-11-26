@@ -18,6 +18,7 @@ import {
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { features } from '../../lib/features/index.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
@@ -64,20 +65,25 @@ router.get(
       accessType: 'instructor',
     });
     const logCsvFilename = makeLogCsvFilename(res.locals);
-    const [assessment_instance_stats, instance_questions, assessmentInstanceLog] =
-      await Promise.all([
-        sqldb.queryRows(
-          sql.assessment_instance_stats,
-          { assessment_instance_id: res.locals.assessment_instance.id },
-          AssessmentInstanceStatsSchema,
-        ),
-        sqldb.queryRows(
-          sql.select_instance_questions,
-          { assessment_instance_id: res.locals.assessment_instance.id },
-          InstanceQuestionRowSchema,
-        ),
-        selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
-      ]);
+    const [
+      assessment_instance_stats,
+      instance_questions,
+      assessmentInstanceLog,
+      examGracePeriodEnabled,
+    ] = await Promise.all([
+      sqldb.queryRows(
+        sql.assessment_instance_stats,
+        { assessment_instance_id: res.locals.assessment_instance.id },
+        AssessmentInstanceStatsSchema,
+      ),
+      sqldb.queryRows(
+        sql.select_instance_questions,
+        { assessment_instance_id: res.locals.assessment_instance.id },
+        InstanceQuestionRowSchema,
+      ),
+      selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
+      features.enabledFromLocals('exam-grace-period', res.locals),
+    ]);
 
     const actionRow: AssessmentInstanceActionRow = {
       assessment_instance: {
@@ -107,6 +113,7 @@ router.get(
         assessmentInstanceLog,
         actionRow,
         trpcCsrfToken,
+        examGracePeriodEnabled,
       }),
     );
   }),

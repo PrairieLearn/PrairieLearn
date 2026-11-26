@@ -13,6 +13,7 @@ import {
 } from '../../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import type { File } from '../../lib/db-types.js';
+import { finishExamGraceIfEnabled } from '../../lib/exam-grace.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
   getGroupConfig,
@@ -158,6 +159,14 @@ router.post(
         // Only close if the timer expired due to time limit, not for access end
         if (!res.locals.assessment_instance_time_limit_expired) {
           return res.redirect(req.originalUrl);
+        }
+        if (
+          await finishExamGraceIfEnabled(
+            res.locals as ResLocalsForPage<'assessment-instance'>,
+            res.locals.client_fingerprint_id,
+          )
+        ) {
+          return res.redirect(req.originalUrl + '?timeLimitExpired=true');
         }
       }
 

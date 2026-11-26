@@ -1033,7 +1033,10 @@ WITH
           END,
           'correct',
           s.correct
-        ) AS data
+        ) || CASE
+          WHEN s.grace_period THEN jsonb_build_object('grace_period', TRUE)
+          ELSE '{}'::jsonb
+        END AS data
       FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)

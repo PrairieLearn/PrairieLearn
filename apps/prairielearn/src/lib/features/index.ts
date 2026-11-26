@@ -20,6 +20,7 @@ const featureNames = [
   'ai-question-generation',
   'rich-text-editor',
   'question-hosting-update',
+  'exam-grace-period',
 
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.
   'lti11',
