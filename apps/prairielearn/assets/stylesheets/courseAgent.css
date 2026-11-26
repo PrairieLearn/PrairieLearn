@@ -130,13 +130,13 @@ textarea.course-agent-composer-input {
 
 /* A one-line offer above the message box, so it is tighter than a page alert. */
 .alert.course-agent-auto-approve-offer {
-  --bs-alert-padding-x: 0.75rem;
+  --bs-alert-padding-x: 1rem;
   --bs-alert-padding-y: 0.5rem;
 }
 
-/* The button sits under the question, and the close button is centred beside both. */
+/* The question and button share a line when they fit; otherwise the button wraps below. */
 .course-agent-auto-approve-offer-text {
-  flex-basis: 100%;
+  flex: 1 1 auto;
 }
 
 .course-agent-auto-approve-offer .btn-close {

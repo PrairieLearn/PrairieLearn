@@ -713,6 +713,31 @@ function Chat({
           )}
         </div>
       </div>
+      {autoApproveOffered && (
+        <Alert
+          variant="warning"
+          className="course-agent-auto-approve-offer small mb-0 rounded-0 border-start-0 border-end-0 border-bottom-0 d-flex align-items-center gap-2"
+        >
+          <div className="d-flex flex-wrap align-items-center column-gap-3 row-gap-2 flex-grow-1">
+            <span className="course-agent-auto-approve-offer-text">
+              Don't want to approve every request manually?
+            </span>
+            <Button
+              variant="primary"
+              size="sm"
+              className="text-nowrap"
+              onClick={() => setConfirmingAutoApprove(true)}
+            >
+              Turn on auto-approve
+            </Button>
+          </div>
+          <CloseButton
+            className="flex-shrink-0"
+            aria-label="Dismiss"
+            onClick={() => setAutoApproveOffered(false)}
+          />
+        </Alert>
+      )}
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
@@ -727,33 +752,6 @@ function Chat({
         pending={sending || deny.isPending}
         attachments={drafts.attachments}
         approvalMode={shownApprovalMode}
-        notice={
-          autoApproveOffered && (
-            <Alert
-              variant="warning"
-              className="course-agent-auto-approve-offer small mb-2 d-flex align-items-center gap-2"
-            >
-              <div className="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
-                <span className="course-agent-auto-approve-offer-text">
-                  Don't want to approve every request manually?
-                </span>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="text-nowrap"
-                  onClick={() => setConfirmingAutoApprove(true)}
-                >
-                  Turn on auto-approve
-                </Button>
-              </div>
-              <CloseButton
-                className="flex-shrink-0"
-                aria-label="Dismiss"
-                onClick={() => setAutoApproveOffered(false)}
-              />
-            </Alert>
-          )
-        }
         stopDisabled={!connected || !canStop}
         onApprovalModeChange={changeApprovalMode}
         onAttach={drafts.add}
@@ -788,7 +786,6 @@ function Composer({
   pending = false,
   attachments,
   approvalMode,
-  notice,
   onApprovalModeChange,
   onAttach,
   onRemoveAttachment,
@@ -806,8 +803,6 @@ function Composer({
   pending?: boolean;
   attachments: DraftAttachment[];
   approvalMode: ApprovalMode;
-  /** Shown directly above the message box. */
-  notice?: ReactNode;
   onApprovalModeChange: (mode: ApprovalMode) => void;
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
@@ -829,7 +824,6 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
-      {notice}
       <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
         <DraftAttachmentList
           attachments={attachments}
