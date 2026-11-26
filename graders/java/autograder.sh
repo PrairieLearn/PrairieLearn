@@ -78,6 +78,9 @@ DISABLE_JAVA_MANAGEMENT="-XX:+DisableAttachMechanism -Djavax.management.builder.
 # or the FFM API to access arbitrary memory or bypass the sandbox.
 DISABLE_RESTRICTED_METHODS="--illegal-native-access=deny"
 
+# Workaround to cover CVE-2026-114938
+DISABLE_BASE64_OPT="-XX:-UseBASE64Intrinsics"
+
 SANDBOX_PREFIX="landlock_sandbox"
 GRADE_FS_TYPE=$(findmnt -n -T /grade -o FSTYPE 2> /dev/null)
 case "$GRADE_FS_TYPE" in
@@ -92,7 +95,7 @@ case "$GRADE_FS_TYPE" in
 esac
 
 su - sbuser << EOF
-$SANDBOX_PREFIX java $DISABLE_JAVA_MANAGEMENT $DISABLE_RESTRICTED_METHODS $JDK_JAVA_OPTIONS -cp "$CLASSPATH" JUnitAutograder
+$SANDBOX_PREFIX java $DISABLE_JAVA_MANAGEMENT $DISABLE_RESTRICTED_METHODS $DISABLE_BASE64_OPT $JDK_JAVA_OPTIONS -cp "$CLASSPATH" JUnitAutograder
 EOF
 
 if [ -f $RESULTS_TEMP_FILE ]; then

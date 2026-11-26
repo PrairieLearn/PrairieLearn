@@ -98,6 +98,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       loader: {
         '.woff': 'file',
         '.woff2': 'file',
+        '.ttf': 'file',
       },
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
@@ -313,6 +314,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     loader: {
       '.woff': 'file',
       '.woff2': 'file',
+      '.ttf': 'file',
     },
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,

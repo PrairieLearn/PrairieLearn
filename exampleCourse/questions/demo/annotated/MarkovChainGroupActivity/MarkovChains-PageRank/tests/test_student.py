@@ -6,7 +6,6 @@ import pytest
 from pytest_prairielearn_grader import ConfigObject
 from pytest_prairielearn_grader.assertions import assert_true
 from pytest_prairielearn_grader.fixture import StudentFixture
-from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 autograder_config = ConfigObject(
     student_code_pattern="Markov-Chains-3.ipynb",
@@ -33,7 +32,6 @@ def _expected_matrices(tests_dir: Path) -> dict[str, np.ndarray]:
     return {"M2": M2, "M3": M3}
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.parametrize(
     "name",
     [

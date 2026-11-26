@@ -22,7 +22,7 @@ Since your course content is a Git repository hosted on GitHub, you can work dir
 
 To get started, ensure you have access to your course's repository. You may need to request access from an owner of the repository. Next, follow the [local installation instructions](installing.md) to get PrairieLearn running on your computer. From there, you can edit your course content in your preferred file editor and preview the changes locally.
 
-We recommend the [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow): users should clone the course repository, check out a new branch, push their changes to the branch, and open a pull request. Once their changes have been reviewed, approved, and merged, an instructor with "Editor" permissions in the course can navigate to the "Sync" page of the course and sync the changes into PrairieLearn with the "Pull from remote git repository" button. Note that you must have "Editor" or "Owner" permissions in the course to sync the repository.
+We recommend the [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow): users should clone the course repository, check out a new branch, push their changes to the branch, and open a pull request. Once their changes have been reviewed, approved, and merged into the course's [configured branch](#which-branch-prairielearn-syncs-from), an instructor with "Editor" permissions in the course can navigate to the "Sync" page of the course and sync the changes into PrairieLearn with the "Pull from remote git repository" button. Note that you must have "Editor" or "Owner" permissions in the course to sync the repository.
 
 If you're new to Git, the following resources can help get you started:
 
@@ -31,3 +31,15 @@ If you're new to Git, the following resources can help get you started:
 - [tryGit tutorial](https://try.github.io/)
 
 You can use any Git client you like on your computer. The [`git` CLI](https://git-scm.com/downloads) is available on all platforms. Some popular graphical clients are [GitHub Desktop](https://desktop.github.com) and [SourceTree](https://www.sourcetreeapp.com).
+
+## Which branch PrairieLearn syncs from
+
+Each course is configured with a single branch, which is shown in the "Branch" field on the course settings page. "Pull from remote git repository" only pulls from that branch, and edits made in the in-browser editor are only pushed to that branch. Other branches in the repository are ignored, so you can push work-in-progress branches without affecting your live course; merge them into the configured branch when you want them synced.
+
+PrairieLearn does **not** use your repository's default branch on GitHub. Changing the default branch in your GitHub repository settings has no effect on which branch PrairieLearn syncs from.
+
+Instructors can't change the configured branch themselves. If you want PrairieLearn to sync from a different branch (for example, because you are renaming `master` to `main`), email [support@prairielearn.com](mailto:support@prairielearn.com) with your course's URL and the new branch name. If you run your own PrairieLearn server, an administrator can change it on the administrator "Courses" page. To avoid failed syncs, ask for the change at the same time as you rename the branch.
+
+If the configured branch no longer exists in the repository, syncing will fail with an error like `Branch "master" does not exist in the remote git repository.` This usually means the branch was renamed or deleted on GitHub; ask for the course's branch to be updated as described above.
+
+This only applies to syncing on a PrairieLearn server. When you [run PrairieLearn locally](installing.md), it uses whatever is checked out in your local course directory, so you can switch branches with `git checkout` as usual.

@@ -3,7 +3,6 @@ import pytest
 from pytest_prairielearn_grader import ConfigObject
 from pytest_prairielearn_grader.assertions import assert_true
 from pytest_prairielearn_grader.fixture import StudentFixture
-from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 autograder_config = ConfigObject(
     import_blacklist=[
@@ -19,7 +18,6 @@ autograder_config = ConfigObject(
 )
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="x", points=1)
 def test_x(sandbox: StudentFixture) -> None:
     A = sandbox.query_setup("A")

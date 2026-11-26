@@ -74,7 +74,7 @@ If `allow-sets="true"`, the following additional layer of syntax is enabled:
 - Set literals with explicitly listed members (e.g. `{1, 2, 3}`, `{0, 2pi/3, 4pi/3}`, `{ {}, { {} } }`)
 - Interval set notation, including $\infty$ (e.g `(-sin(x), +sin(x))`, `(-infty, 5]`, `[2, oo]`)
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
-  intersection (`cap` or `&`), and difference (`-`)
+  intersection (`cap` or `&`), and difference (`-`, `\`, or `∖`)
 
 Names listed in the `variables` attribute are scalar symbols, not named sets,
 even when `allow-sets="true"`; sets must be constructed with set notation.

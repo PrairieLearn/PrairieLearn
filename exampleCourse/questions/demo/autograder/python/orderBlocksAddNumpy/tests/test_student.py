@@ -3,14 +3,12 @@ import pytest
 from pytest_prairielearn_grader import ConfigObject
 from pytest_prairielearn_grader.assertions import assert_true
 from pytest_prairielearn_grader.fixture import FeedbackFixture, StudentFixture
-from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 autograder_config = ConfigObject(
     student_code_pattern="user_code.py", sandbox_timeout=15
 )
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="Check function my_dot_product", points=1)
 def test_my_dot_product(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
     a = np.random.rand(4)

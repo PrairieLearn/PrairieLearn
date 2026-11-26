@@ -12,7 +12,7 @@ Copy the secrets template:
 cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
 ```
 
-Set `OPENAI_API_KEY` and `PL_SERVICE_TOKEN` in `apps/course-agent/.dev.vars`. Set `PL_SERVICE_URL` to your local PrairieLearn origin if it differs from the template’s `http://localhost:3000`. Generate a service token with:
+Set `OPENAI_API_KEY` and `PL_SERVICE_TOKEN` in `apps/course-agent/.dev.vars`. `PL_SERVICE_URL` defaults to `http://localhost:3000` in `wrangler.jsonc`; set it in `.dev.vars` if your local PrairieLearn origin differs. Generate a service token with:
 
 ```sh
 openssl rand -hex 32
@@ -63,9 +63,21 @@ Each review supports at most 100 changed files, with a 1 MiB limit on each origi
 
 The sandbox image (`container/Dockerfile`) is Debian slim with Codex's app server, a few CLI tools, and Python with pandas and numpy for analyzing course data. It has no Node.js, so the agent can't run `node`, `npm`, or `npx`. Each sandbox installs the Codex config from `container/codex-config.toml` into its workspace, and installs it again after restoring a checkpoint.
 
+PrairieLearn sends the course's timezone with the course context. New threads get rules for stating times in it, and before starting each runner the sandbox sets its system timezone (`/etc/localtime` and `/etc/timezone`) to it, or to UTC when the zone is missing or unknown. Codex tells the model the date and zone from that clock, including in threads that started before the zone was known or before it changed, and commands such as `date` print course-local times. A changed zone reaches the clock when the next runner starts.
+
 `SANDBOX_INSTANCE_TYPE` selects the Cloudflare instance type for each environment. It defaults to `standard-2` because cloning large courses is CPU-bound.
 
 To upgrade Codex, update the release version and the asset's SHA-256 digest (shown on the GitHub release) in the Dockerfile. Then update the feature flags in `container/codex-config.toml` to match the new release.
+
+## Repository cache
+
+Cloning a large course repository takes most of a new conversation's startup. After cloning, a sandbox archives the clone's `.git` directory to the checkpoint bucket before the agent runs, along with a small record of that archive named for the course, repository, and branch (`repository-snapshots/<course ID>/<owner>/<repository>@<branch>.json`). For a large course this adds a few seconds to that one startup.
+
+A later GitHub-backed conversation in the same course, on the same repository and branch, finds the record, restores the archive, fetches the branch tip, and checks it out, so it downloads from GitHub only what changed since the archive was saved. If the record is missing, or the archive cannot be restored or fetched, the sandbox clones as it would without one.
+
+A copy belongs to one course. Repository names can change hands, so a copy found by name alone could give one course another's files; two courses that use the same repository each keep their own copy.
+
+A course's copy is replaced when it is more than 14 days old or a restore fails: the sandbox then clones, saves the new archive, and deletes the old one. Until then each conversation fetches everything the branch has gained since the copy was saved. The copy also keeps objects for files the branch has since deleted, and a restored sandbox has them in its object store, so the age limit also bounds how long those deleted files persist. When several sandboxes replace the same copy at once, the first new archive is kept and the others are deleted. Only a sandbox that has just cloned writes an archive, so it holds nothing but what GitHub served. Conversations started from local files are unaffected.
 
 ## Skills
 
@@ -109,9 +121,13 @@ Only the uploaded files expire. A sandbox checkpoint holds the agent's workspace
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.
 
-Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `PL_SERVICE_URL` (the PrairieLearn origin that receives usage reports and the Worker's other requests), `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
+Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. `PL_SERVICE_URL`, the PrairieLearn origin that receives usage reports and the Worker's other requests, is a plain variable set for each environment in `wrangler.jsonc`. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
 
-Every object in the checkpoint bucket lives under a prefix that names its kind, so R2 lifecycle rules can be scoped by prefix: sandbox checkpoints under `checkpoints/` (`<id>.tar.zst`, referenced by conversation state and deleted by the archive cleanup, so they must never expire by age) and local course archives under `local-sources/`. A checkpoint record stores only its id, so changing the checkpoint prefix makes existing checkpoints unreachable unless their objects are copied to the new prefix first.
+Every object in the checkpoint bucket lives under a prefix that names its kind, so R2 lifecycle rules can be scoped by prefix:
+
+- `checkpoints/`: sandbox checkpoints (`<id>.tar.zst`). Conversation state references them and the archive cleanup deletes them, so they must never expire by age. A checkpoint record stores only its id, so changing this prefix makes existing checkpoints unreachable unless their objects are copied to the new prefix first.
+- `repository-snapshots/`: repository archives and their records. Give this prefix a lifecycle rule that deletes objects after 30 days, which must stay longer than the 14 days after which a sandbox replaces a copy. The rule removes archives left behind by interrupted saves and copies for courses, repositories, or branches no longer in use. Losing a record or archive is harmless: the sandbox clones and saves a new one.
+- `local-sources/`: local course archives.
 
 Set that environment's `SENTRY_DSN` secret (`wrangler secret put SENTRY_DSN --env <environment>`) to enable error reporting; the DSN is kept out of this public repository. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local development does not report to Sentry.
 

@@ -31,7 +31,7 @@ import type { SimpleVariantWithScore } from '../models/variant.js';
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
-import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
+import { SubmissionPanel, type SubmissionSummary } from './SubmissionPanel.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
@@ -39,6 +39,7 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  questionNumber,
   questionRenderContext,
   showFooter = true,
   manualGradingPreviewUrl,
@@ -49,6 +50,7 @@ export function QuestionContainer({
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
+  questionNumber?: string;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
@@ -102,6 +104,7 @@ export function QuestionContainer({
                 ${QuestionPanel({
                   resLocals,
                   questionContext,
+                  questionNumber,
                   questionRenderContext,
                   showFooter,
                   manualGradingPreviewUrl,
@@ -110,7 +113,7 @@ export function QuestionContainer({
                 })}
               </form>
             `
-          : QuestionPanel({ resLocals, showFooter, questionContext })
+          : QuestionPanel({ resLocals, showFooter, questionContext, questionNumber })
       }
       ${
         // The AI grader omits a blank answer, so the preview omits the card entirely.
@@ -727,7 +730,12 @@ export function QuestionFooterContent({
                     />
                   `
                 : html`
-                    <input type="hidden" name="postData" class="postData" />
+                    <input
+                      type="hidden"
+                      name="postData"
+                      class="postData"
+                      data-deferred-initial-value="true"
+                    />
                     <input type="hidden" name="__action" class="__action" />
                   `
             }
@@ -944,6 +952,7 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  questionNumber,
   questionRenderContext,
   showFooter,
   manualGradingPreviewUrl,
@@ -952,6 +961,7 @@ function QuestionPanel({
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
+  questionNumber?: string;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
@@ -975,7 +985,7 @@ function QuestionPanel({
           ${QuestionTitle({
             questionContext,
             question,
-            questionNumber: instance_question_info?.question_number,
+            questionNumber: questionNumber ?? instance_question_info?.question_number,
             // Student contexts honor the assessment setting; other contexts always render titles.
             showQuestionTitles:
               questionContext === 'student_exam' || questionContext === 'student_homework'
@@ -1076,7 +1086,7 @@ function SubmissionList({
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
-  submissions: SubmissionForRender[];
+  submissions: SubmissionSummary[];
   submissionHtmls: string[];
   submissionCount: number;
   renderSubmissionSearchParams?: URLSearchParams;

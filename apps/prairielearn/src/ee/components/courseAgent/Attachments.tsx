@@ -1,12 +1,14 @@
 import { type FileUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
-import { type DragEvent, type ReactNode, useCallback, useState } from 'react';
-import { Button } from 'react-bootstrap';
+import { type DragEvent, type ReactNode, useCallback, useId, useState } from 'react';
+import { Button, CloseButton, Modal } from 'react-bootstrap';
 
 import {
+  INLINE_IMAGE_TYPES,
   MAX_ATTACHMENTS_PER_MESSAGE,
   MAX_ATTACHMENT_BYTES,
+  THUMBNAIL_PIXELS,
   UploadedAttachmentSchema,
   attachmentIdOf,
   attachmentUrl,
@@ -26,6 +28,8 @@ export type AttachmentStatus =
 export interface DraftAttachment {
   key: string;
   file: File;
+  /** An object URL for an image's preview. */
+  previewUrl: string | null;
   status: AttachmentStatus;
 }
 
@@ -34,6 +38,10 @@ function statusOf(file: File): AttachmentStatus {
   if (file.size > MAX_ATTACHMENT_BYTES) return invalid(`Over ${MAX_ATTACHMENT_SIZE}`);
   if (file.size === 0) return invalid('Empty file');
   return { kind: 'ready' };
+}
+
+export function revokePreviews(attachments: DraftAttachment[]) {
+  for (const { previewUrl } of attachments) if (previewUrl) URL.revokeObjectURL(previewUrl);
 }
 
 /** Why an attachment can't be sent. The file limit depends on position, so removing one clears it. */
@@ -61,11 +69,20 @@ export function useDraftAttachments(initial: DraftAttachment[] = []) {
       const added = files.map((file) => ({
         key: crypto.randomUUID(),
         file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
         status: statusOf(file),
       }));
       setAttachments((current) => [...current, ...added]);
     },
-    remove: (key: string) => setAttachments((current) => current.filter((a) => a.key !== key)),
+    remove: (key: string) => {
+      revokePreviews(attachments.filter((a) => a.key === key));
+      setAttachments((current) => current.filter((a) => a.key !== key));
+    },
+    clear: () => {
+      revokePreviews(attachments);
+      setAttachments([]);
+    },
+    /** Replaces the attachments without revoking previews, for passing them to another owner. */
     setAttachments,
     setStatus,
   };
@@ -102,6 +119,43 @@ function uploadFile(url: string, csrfToken: string, file: File, onProgress: (p: 
 }
 
 /**
+ * A small WebP of an image for its tile in chat history, or null if the browser can't make one:
+ * it can't decode the image (HEIC in most browsers, or a corrupt file) or lacks `OffscreenCanvas`.
+ * Browsers without WebP encoding produce a PNG.
+ */
+async function makeThumbnail(file: File) {
+  let bitmap: ImageBitmap | undefined;
+  // The preview is optional, so no failure here may reject and hold up the message.
+  try {
+    bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, THUMBNAIL_PIXELS / Math.max(bitmap.width, bitmap.height));
+    const canvas = new OffscreenCanvas(
+      Math.max(1, Math.round(bitmap.width * scale)),
+      Math.max(1, Math.round(bitmap.height * scale)),
+    );
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return await canvas.convertToBlob({ type: 'image/webp', quality: 0.8 });
+  } catch {
+    return null;
+  } finally {
+    bitmap?.close();
+  }
+}
+
+/**
+ * A preview is optional, so a failed one leaves a file tile in its place. The message waits for
+ * it, so a stalled request gives up rather than holding up the send.
+ */
+async function uploadThumbnail(url: string, csrfToken: string, thumbnail: Blob) {
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/octet-stream' },
+    body: thumbnail,
+    signal: AbortSignal.timeout(10_000),
+  }).catch(() => null);
+}
+
+/**
  * Upload every attachment not uploaded yet, then return the message's file parts, or null if any
  * upload failed. Earlier successes keep their upload IDs, so sending again retries only failures.
  */
@@ -121,10 +175,13 @@ export async function uploadDraftAttachments(
     attachments.map(async ({ key, file, status }) => {
       if (status.kind === 'uploaded') return status.id;
       setStatus(key, { kind: 'uploading', percent: 0 });
+      const thumbnail = file.type.startsWith('image/') ? makeThumbnail(file) : null;
       const result = await uploadFile(url, csrfToken, file, (percent) =>
         setStatus(key, { kind: 'uploading', percent }),
       );
       if ('id' in result) {
+        const made = await thumbnail;
+        if (made) await uploadThumbnail(`${url}/${result.id}/thumbnail`, csrfToken, made);
         setStatus(key, { kind: 'uploaded', id: result.id });
         return result.id;
       }
@@ -155,12 +212,18 @@ function typeLabel(mediaType: string, filename: string) {
   return (extensionOf(filename) || mediaType.split('/').at(-1) || 'File').toUpperCase();
 }
 
-/** A square tile for an attachment, with its name and either its type or a problem. */
+/**
+ * A square tile for an attachment: an image's preview, or its name and either its type or a
+ * problem.
+ */
 function AttachmentTile({
   filename,
   label,
   problem = null,
   percent = null,
+  previewUrl = null,
+  downloadUrl = null,
+  onView,
   onRemove,
 }: {
   filename: string;
@@ -168,20 +231,29 @@ function AttachmentTile({
   problem?: string | null;
   /** Upload progress, shown over the tile while uploading. */
   percent?: number | null;
+  previewUrl?: string | null;
+  downloadUrl?: string | null;
+  /** Opens a sent image in the viewer; an image without a preview downloads instead. */
+  onView?: () => void;
   onRemove?: () => void;
 }) {
-  return (
-    <li
-      className={clsx(
-        'course-agent-attachment position-relative flex-shrink-0 rounded-3 border',
-        problem
-          ? 'course-agent-attachment-invalid border-danger bg-danger-subtle'
-          : 'bg-body-tertiary',
-      )}
-      title={filename}
-    >
-      <div className="position-relative h-100 overflow-hidden rounded-3">
-        <div className="d-flex flex-column justify-content-between h-100 p-2">
+  // Uploads from before previews existed, and images the browser couldn't decode, have none.
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const previewing = previewUrl !== null && !problem && !previewFailed;
+  const viewable = previewing && onView !== undefined;
+  // Spans, since a viewable tile's content sits inside a button.
+  const content = (
+    <span className="d-block position-relative h-100 overflow-hidden rounded-3">
+      {previewing ? (
+        <img
+          src={previewUrl}
+          alt=""
+          loading="lazy"
+          className="w-100 h-100 object-fit-cover"
+          onError={() => setPreviewFailed(true)}
+        />
+      ) : (
+        <span className="d-flex flex-column justify-content-between h-100 p-2">
           <span className={clsx('course-agent-attachment-name', problem && 'text-danger')}>
             {filename}
           </span>
@@ -195,13 +267,54 @@ function AttachmentTile({
               {label}
             </span>
           )}
-        </div>
-        {percent !== null && (
-          <div className="course-agent-attachment-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fw-medium">
-            {percent}%
-          </div>
-        )}
-      </div>
+        </span>
+      )}
+      {percent !== null && (
+        <span className="course-agent-attachment-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fw-medium">
+          {percent}%
+        </span>
+      )}
+      {downloadUrl && (
+        <span className="course-agent-attachment-overlay course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fs-5">
+          <i
+            className={clsx('bi', viewable ? 'bi-arrows-angle-expand' : 'bi-download')}
+            aria-hidden="true"
+          />
+        </span>
+      )}
+    </span>
+  );
+  return (
+    <li
+      className={clsx(
+        'course-agent-attachment position-relative flex-shrink-0 rounded-3 border',
+        problem
+          ? 'course-agent-attachment-invalid border-danger bg-danger-subtle'
+          : 'bg-body-tertiary',
+      )}
+      title={filename}
+    >
+      {viewable ? (
+        <button
+          type="button"
+          className="d-block w-100 h-100 p-0 border-0 bg-transparent text-reset"
+          aria-label={`View ${filename}`}
+          onClick={onView}
+        >
+          {content}
+        </button>
+      ) : downloadUrl ? (
+        <a
+          href={downloadUrl}
+          download={filename}
+          className="d-block h-100 text-reset text-decoration-none"
+          aria-label={`Download ${filename}`}
+        >
+          {content}
+        </a>
+      ) : (
+        content
+      )}
       {onRemove && (
         <Button
           variant="light"
@@ -243,6 +356,7 @@ export function DraftAttachmentList({
           label={typeLabel(attachment.file.type, attachment.file.name)}
           problem={draftProblem(attachment, position)}
           percent={attachment.status.kind === 'uploading' ? attachment.status.percent : null}
+          previewUrl={attachment.previewUrl}
           onRemove={sending ? undefined : () => onRemove(attachment.key)}
         />
       ))}
@@ -250,25 +364,101 @@ export function DraftAttachmentList({
   );
 }
 
-/** A sent message's attachments, shown above its text. */
-export function SentAttachments({ message }: { message: UIMessage }) {
-  const files = message.parts.filter(
-    (part): part is FileUIPart => part.type === 'file' && attachmentIdOf(part.url) !== null,
+/** A sent image, viewed in the browser at full size. */
+interface ViewedImage {
+  filename: string;
+  url: string;
+}
+
+function ImageViewer({
+  image,
+  show,
+  onHide,
+}: {
+  image: ViewedImage | null;
+  show: boolean;
+  onHide: () => void;
+}) {
+  const titleId = useId();
+  return (
+    <Modal show={show} size="xl" aria-labelledby={titleId} centered onHide={onHide}>
+      {image && (
+        <>
+          <Modal.Header className="gap-2">
+            <Modal.Title id={titleId} as="h2" className="h6 text-truncate me-auto">
+              {image.filename}
+            </Modal.Title>
+            <a
+              href={image.url}
+              download={image.filename}
+              className="btn btn-sm btn-outline-secondary text-nowrap"
+            >
+              <i className="bi bi-download me-1" aria-hidden="true" />
+              Download
+            </a>
+            <CloseButton aria-label="Close" className="ms-0" onClick={onHide} />
+          </Modal.Header>
+          <Modal.Body className="course-agent-image-viewer d-flex justify-content-center p-2">
+            <img src={image.url} alt={image.filename} className="mw-100" />
+          </Modal.Body>
+        </>
+      )}
+    </Modal>
   );
+}
+
+/**
+ * A sent message's attachments, shown above its text. An image with a preview opens in a viewer,
+ * and anything else downloads when clicked.
+ */
+export function SentAttachments({
+  message,
+  uploadsUrl,
+}: {
+  message: UIMessage;
+  uploadsUrl: string;
+}) {
+  const files = message.parts.flatMap((part) => {
+    if (part.type !== 'file') return [];
+    const id = attachmentIdOf(part.url);
+    return id ? [{ part, url: `${uploadsUrl}/${id}` }] : [];
+  });
+  // The image stays set while the viewer fades out, so it doesn't empty first.
+  const [viewed, setViewed] = useState<ViewedImage | null>(null);
+  const [viewing, setViewing] = useState(false);
   if (files.length === 0) return null;
   return (
-    <ul
-      className="list-unstyled d-flex flex-wrap justify-content-end gap-2 m-0"
-      aria-label="Attachments"
-    >
-      {files.map((part) => (
-        <AttachmentTile
-          key={part.url}
-          filename={part.filename ?? 'File'}
-          label={typeLabel(part.mediaType, part.filename ?? '')}
-        />
-      ))}
-    </ul>
+    <>
+      <ul
+        className="list-unstyled d-flex flex-wrap justify-content-end gap-2 m-0"
+        aria-label="Attachments"
+      >
+        {files.map(({ part, url }) => {
+          const filename = part.filename ?? 'File';
+          const image = part.mediaType.startsWith('image/');
+          // Other images may have a preview, but the browser can't display the original.
+          const viewable = INLINE_IMAGE_TYPES.includes(part.mediaType);
+          return (
+            <AttachmentTile
+              key={part.url}
+              filename={filename}
+              label={typeLabel(part.mediaType, part.filename ?? '')}
+              previewUrl={image ? `${url}/thumbnail` : null}
+              downloadUrl={url}
+              onView={
+                viewable
+                  ? () => {
+                      setViewed({ filename, url });
+                      setViewing(true);
+                    }
+                  : undefined
+              }
+            />
+          );
+        })}
+      </ul>
+      <ImageViewer image={viewed} show={viewing} onHide={() => setViewing(false)} />
+    </>
   );
 }
 

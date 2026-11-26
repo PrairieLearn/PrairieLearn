@@ -134,7 +134,9 @@ test.describe.serial('Student access control', () => {
     await expect(assessmentLink).not.toBeVisible();
 
     // Availability message should reference the future release date (2099-06-01).
-    await expect(page.getByText('Available 00:00, Mon, Jun 1', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText('Available Mon, Jun 1, 2099, start of day', { exact: true }),
+    ).toBeVisible();
   });
 
   test('normal access shows clickable assessment link', async ({

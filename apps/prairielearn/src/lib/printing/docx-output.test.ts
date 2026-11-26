@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { describe, expect, it } from 'vitest';
 
 import { createDocxDocument } from './docx-document.js';
+import { PRINT_FOOTER_SEPARATOR, getPrintFooterLabel } from './print-cover.js';
 import type { PrintableCover } from './printable-cover.js';
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -22,7 +23,7 @@ const cover: PrintableCover = {
   eyebrow: 'XC 101',
   eyebrowDetail: 'Example Course',
   title: 'E4',
-  subtitle: 'Exam including autograded and manually graded questions',
+  subtitle: 'Assessment including autograded and manually graded questions',
   fields: [
     { label: 'Name', wide: true },
     { label: 'Section' },
@@ -37,17 +38,20 @@ const cover: PrintableCover = {
     {
       heading: 'Instructions',
       blocks: [
-        { type: 'list', ordered: true, items: ['Write your name.', 'Show your work.'] },
-        { type: 'paragraph', text: 'No calculators.' },
+        {
+          type: 'list',
+          ordered: true,
+          items: [[{ text: 'Write your name.' }], [{ text: 'Show your work.' }]],
+        },
+        { type: 'paragraph', runs: [{ text: 'No calculators.', bold: true, italic: true }] },
       ],
     },
     {
-      heading: 'Academic integrity pledge',
-      blocks: [{ type: 'list', ordered: false, items: ['I pledge on my honor.'] }],
+      heading: 'Honor code',
+      blocks: [{ type: 'list', ordered: false, items: [[{ text: 'I pledge on my honor.' }]] }],
       signatureLabel: 'Signature',
     },
   ],
-  footer: 'Spring 2015  |  Form ID 13',
 };
 
 const source = {
@@ -80,11 +84,15 @@ async function readDocx(buffer: Buffer) {
   };
 }
 
-async function renderDocx({ cover, footerLabel }: { cover?: PrintableCover; footerLabel: string }) {
+async function renderDocx({ cover, rightLabel }: { cover?: PrintableCover; rightLabel: string }) {
   const document = createDocxDocument({
     geometry: LETTER_GEOMETRY,
     cover,
-    footerLabel,
+    footer: {
+      left: `Example Course${PRINT_FOOTER_SEPARATOR}Spring 2015`,
+      center: 'Assessment including autograded and manually graded questions',
+      right: rightLabel,
+    },
     source,
     figures: [{ ...source.figures[0], png: PNG_SIGNATURE }],
   });
@@ -98,7 +106,7 @@ describe('createDocxDocument', () => {
         ...cover,
         gradingTable: { questionNumbers: ['1', '2', '3', '4', '5'], rowsPerColumn: 3 },
       },
-      footerLabel: 'Form A',
+      rightLabel: 'Form A',
     });
     const { documentXml } = await readDocx(docx);
     expect(documentXml.match(/(?:[1-5]|Total) {3}__________/g)).toEqual([
@@ -117,7 +125,7 @@ describe('createDocxDocument', () => {
         ...cover,
         fields: [{ label: 'Section' }, { label: 'Full name', wide: true }, { label: 'Date' }],
       },
-      footerLabel: 'Form A',
+      rightLabel: 'Form A',
     });
     const { documentXml } = await readDocx(docx);
     const word = load(documentXml, { xml: true });
@@ -131,9 +139,15 @@ describe('createDocxDocument', () => {
   it('keeps question text, math, lists, tables, and answer spaces editable', async () => {
     const docx = await renderDocx({
       cover,
-      footerLabel: 'Form ID 13',
+      rightLabel: 'Form ID 13',
     });
     const { files, documentXml, footerXml, stylesXml } = await readDocx(docx);
+    const word = load(documentXml, { xml: true });
+    const instruction = word('w\\:r').filter(
+      (_, run) => word(run).find('w\\:t').text() === 'No calculators.',
+    );
+    expect(instruction.find('w\\:b')).toHaveLength(1);
+    expect(instruction.find('w\\:i')).toHaveLength(1);
     const styles = load(stylesXml, { xml: true });
     const defaultParagraphStyle = styles('w\\:style[w\\:type="paragraph"][w\\:default="1"]');
     expect(defaultParagraphStyle).toHaveLength(1);
@@ -152,18 +166,34 @@ describe('createDocxDocument', () => {
     expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
     expect(documentXml).toContain('<w:pgSz w:w="12240" w:h="15840" w:orient="portrait"/>');
     expect(documentXml).toContain('A plotted function');
+    expect(documentXml).not.toContain('Spring 2015');
     expect(footerXml).toContain('PAGE');
     expect(footerXml).toContain('NUMPAGES');
+    const footer = load(footerXml, { xml: true });
+    const cells = footer('w\\:tbl w\\:tr w\\:tc');
+    expect(cells).toHaveLength(3);
+    expect(footer(cells[0]).text()).toContain(`Example Course${PRINT_FOOTER_SEPARATOR}Spring 2015`);
+    expect(footer(cells[1]).text()).toContain(
+      'Assessment including autograded and manually graded questions',
+    );
+    expect(footer(cells[2]).text()).toContain(`Form ID 13${PRINT_FOOTER_SEPARATOR}Page `);
+    expect(cells.map((_, cell) => footer(cell).find('w\\:jc').attr('w:val')).get()).toEqual([
+      'left',
+      'center',
+      'right',
+    ]);
   });
 
   it('starts with questions without a leading page break when the cover is omitted', async () => {
     const docx = await renderDocx({
-      footerLabel: 'Form A',
+      rightLabel: getPrintFooterLabel({ document: 'answer_key', formLabel: 'A1' }),
     });
     const { documentXml, footerXml } = await readDocx(docx);
     expect(documentXml).toContain('Find the derivative');
     expect(documentXml).not.toContain(cover.title);
     expect(documentXml).not.toContain('<w:pageBreakBefore/>');
-    expect(footerXml).toContain('Form A');
+    expect(footerXml).toContain(`Example Course${PRINT_FOOTER_SEPARATOR}Spring 2015`);
+    expect(footerXml).toContain('Assessment including autograded and manually graded questions');
+    expect(footerXml).toContain(`Answer key${PRINT_FOOTER_SEPARATOR}Form A1`);
   });
 });

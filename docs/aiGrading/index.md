@@ -151,6 +151,8 @@ Instructors should review AI output before relying on it for grades. For each su
 
       ![AI transcription of a student's handwritten image submission, shown beneath the explanation.](ai-grading-transcription.png)
 
+AI grading marks each submission it grades as "Graded". To review AI-graded submissions one by one, select them in the manual grading table and choose **Tag for grading > Tag as required grading**. They will then appear in the "Requires grading" queue. Submitting a grade, or choosing "Tag as graded (keep current grade)", marks a submission as graded again.
+
 After both AI and human grades are present, PrairieLearn can also show comparison information:
 
 - **AI agreement indicator** — A per-item view of where the AI and human grader agreed or disagreed.

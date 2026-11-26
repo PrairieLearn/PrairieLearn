@@ -41,6 +41,7 @@ import {
   InstitutionSettingsSchema as RawInstitutionSettingsSchema,
   JobSchema as RawJobSchema,
   JobSequenceSchema as RawJobSequenceSchema,
+  PrintFormSchema as RawPrintFormSchema,
   QuestionSchema as RawQuestionSchema,
   RubricItemSchema as RawRubricItemSchema,
   RubricSchema as RawRubricSchema,
@@ -152,6 +153,24 @@ export const StudentAssessmentInstanceSchema__UNSAFE =
 export type StudentAssessmentInstance__UNSAFE = z.infer<
   typeof StudentAssessmentInstanceSchema__UNSAFE
 >;
+
+/** Print Forms */
+export const RawStaffPrintFormSchema = RawPrintFormSchema.pick({
+  archived_at: true,
+  assessment_id: true,
+  created_at: true,
+  id: true,
+  label: true,
+  question_selection_locked_at: true,
+  settings: true,
+});
+export const StaffPrintFormSchema = RawStaffPrintFormSchema.brand<'StaffPrintForm'>();
+export type StaffPrintForm = z.infer<typeof StaffPrintFormSchema>;
+
+export const StaffPrintPreparationFormSchema = RawStaffPrintFormSchema.extend({
+  has_randomizable_questions: z.boolean(),
+}).brand<'StaffPrintPreparationForm'>();
+export type StaffPrintPreparationForm = z.infer<typeof StaffPrintPreparationFormSchema>;
 
 /** Assessment Instance Authz Results */
 export const RawStudentAssessmentInstanceAuthzResultSchema =

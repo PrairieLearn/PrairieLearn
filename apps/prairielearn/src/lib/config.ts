@@ -169,9 +169,13 @@ export const ConfigSchema = z.object({
    * `https://us.prairielearn.com`.
    */
   serverCanonicalHost: z.string().nullable().default(null),
-  /** Cloudflare Browser Run account and API token for printable assessments. */
+  /** Cloudflare Browser Run account and API token for printing. */
   printingCloudflareAccountId: z.string().nullable().default(null),
   printingCloudflareApiToken: z.string().nullable().default(null),
+  /** Override the database-derived Redis namespace when hosts use different aliases for the same database. */
+  printExportQueuePrefix: z.string().nullable().default(null),
+  /** Whether this host renders queued print exports. Requires Chromium or Cloudflare credentials. */
+  printExportWorkerActive: z.boolean().default(true),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**

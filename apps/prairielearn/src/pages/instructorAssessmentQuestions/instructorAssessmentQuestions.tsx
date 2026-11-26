@@ -153,11 +153,13 @@ router.get(
       assessmentToolDefaults[row.tool] = row.enabled;
     }
 
-    const questionSharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
-    const consumePublicQuestionsEnabled = await features.enabledFromLocals(
-      'consume-public-questions',
-      res.locals,
-    );
+    const [questionSharingEnabled, consumePublicQuestionsEnabled, printingAvailable] =
+      await Promise.all([
+        features.enabledFromLocals('question-sharing', res.locals),
+        features.enabledFromLocals('consume-public-questions', res.locals),
+        !pageContext.course.example_course &&
+          features.enabledFromLocals('printable-assessments', res.locals),
+      ]);
 
     const canEdit =
       pageContext.authz_data.has_course_permission_edit && !res.locals.course.example_course;
@@ -222,6 +224,7 @@ router.get(
                 pageContext.authz_data.has_course_instance_permission_edit
               }
               canEdit={canEdit}
+              printingAvailable={printingAvailable}
               courseHasQuestions={courseHasQuestions}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}

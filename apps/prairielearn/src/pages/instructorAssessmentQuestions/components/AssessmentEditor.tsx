@@ -26,7 +26,7 @@ import type {
   StaffCourse,
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
-import { getQuestionCreateUrl } from '../../../lib/client/url.js';
+import { getAssessmentUrl, getQuestionCreateUrl } from '../../../lib/client/url.js';
 import {
   type CalculatorType,
   type EnumAssessmentTool,
@@ -154,6 +154,7 @@ interface AssessmentEditorInnerProps {
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
+  printingAvailable: boolean;
   courseHasQuestions: boolean;
   csrfToken: string;
   origHash: string;
@@ -178,6 +179,7 @@ function AssessmentEditorInner({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
+  printingAvailable,
   courseHasQuestions,
   csrfToken,
   origHash,
@@ -1141,21 +1143,35 @@ function AssessmentEditorInner({
                   actions={treeActions}
                   isAllExpanded={isAllExpanded}
                   editControls={
-                    <EditModeToolbar
-                      csrfToken={csrfToken}
-                      origHash={origHash}
-                      zones={zonesForSave}
-                      editMode={editMode}
-                      canEdit={canEdit && !!origHash}
-                      setEditMode={setEditMode}
-                      saveButtonDisabled={saveButtonDisabled}
-                      saveButtonDisabledReason={saveButtonDisabledReason}
-                      onSubmit={disableBeforeUnload}
-                      onCancel={() => {
-                        dispatch({ type: 'RESET' });
-                        setEditMode(false);
-                      }}
-                    />
+                    <div className="d-flex align-items-center gap-2">
+                      <EditModeToolbar
+                        csrfToken={csrfToken}
+                        origHash={origHash}
+                        zones={zonesForSave}
+                        editMode={editMode}
+                        canEdit={canEdit && !!origHash}
+                        setEditMode={setEditMode}
+                        saveButtonDisabled={saveButtonDisabled}
+                        saveButtonDisabledReason={saveButtonDisabledReason}
+                        onSubmit={disableBeforeUnload}
+                        onCancel={() => {
+                          dispatch({ type: 'RESET' });
+                          setEditMode(false);
+                        }}
+                      />
+                      {!editMode &&
+                        hasCoursePermissionPreview &&
+                        printingAvailable &&
+                        !groupsConfigured &&
+                        questionRows.length > 0 && (
+                          <a
+                            className="btn btn-outline-secondary btn-sm"
+                            href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print`}
+                          >
+                            <i className="bi bi-printer me-1" aria-hidden="true" /> Print
+                          </a>
+                        )}
+                    </div>
                   }
                   canEdit={canEdit}
                   canAddQuestions={canEdit && !!origHash}

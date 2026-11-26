@@ -296,20 +296,18 @@ export function InstanceQuestionPoints({
       : component === 'manual'
         ? assessment_question.max_manual_points
         : assessment_question.max_points;
+  // A saved answer to a manual-only question has no auto points to wait for, so
+  // it is only pending while it requires manual grading.
+  const autoPointsPending =
+    ['saved', 'grading'].includes(instance_question.status ?? '') &&
+    (!!assessment_question.max_auto_points || !assessment_question.max_manual_points);
   const pointsPending =
-    (['saved', 'grading'].includes(instance_question.status ?? '') && component !== 'manual') ||
-    (instance_question.requires_manual_grading && component !== 'auto');
-
-  // Special case: if this is a manually-graded question in the saved state, don't show
-  // a "pending" badge for auto points, since there aren't any pending auto points.
-  if (
-    instance_question.status === 'saved' &&
-    component === 'auto' &&
-    !assessment_question.max_auto_points &&
-    assessment_question.max_manual_points
-  ) {
-    return html`&mdash;`;
-  }
+    (autoPointsPending && component !== 'manual') ||
+    // Staff can tag unanswered questions for manual grading, but there is
+    // nothing to grade, and the manual grading queue excludes them too.
+    (instance_question.requires_manual_grading &&
+      instance_question.status !== 'unanswered' &&
+      component !== 'auto');
 
   return html`
     <span class="text-nowrap ${instance_question.used_for_grade === false ? 'text-muted' : ''}">

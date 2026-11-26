@@ -10,6 +10,8 @@ import {
   queryOptionalScalar,
   queryRows,
   queryScalar,
+  queryScalars,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -40,6 +42,14 @@ export const SimpleVariantWithScoreSchema = VariantSchema.pick({
 });
 export type SimpleVariantWithScore = z.infer<typeof SimpleVariantWithScoreSchema>;
 
+/**
+ * Resetting a variant discards any answer that was saved to it but never
+ * graded, so the instance question must stop reporting a saved answer.
+ */
+async function updateInstanceQuestionStatusAfterReset(instance_question_ids: string[]) {
+  await execute(sql.update_instance_question_status_after_reset, { instance_question_ids });
+}
+
 export async function resetVariantsForAssessmentQuestion({
   assessment_id,
   unsafe_assessment_question_id,
@@ -49,10 +59,13 @@ export async function resetVariantsForAssessmentQuestion({
   unsafe_assessment_question_id: string;
   authn_user_id: string;
 }) {
-  await execute(sql.reset_variants_for_assessment_question, {
-    assessment_id,
-    unsafe_assessment_question_id,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    const instance_question_ids = await queryScalars(
+      sql.reset_variants_for_assessment_question,
+      { assessment_id, unsafe_assessment_question_id, authn_user_id },
+      IdSchema,
+    );
+    await updateInstanceQuestionStatusAfterReset(instance_question_ids);
   });
 }
 
@@ -65,10 +78,13 @@ export async function resetVariantsForInstanceQuestion({
   unsafe_instance_question_id: string;
   authn_user_id: string;
 }) {
-  await execute(sql.reset_variants_for_instance_question, {
-    assessment_instance_id,
-    unsafe_instance_question_id,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    const instance_question_ids = await queryScalars(
+      sql.reset_variants_for_instance_question,
+      { assessment_instance_id, unsafe_instance_question_id, authn_user_id },
+      IdSchema,
+    );
+    await updateInstanceQuestionStatusAfterReset(instance_question_ids);
   });
 }
 

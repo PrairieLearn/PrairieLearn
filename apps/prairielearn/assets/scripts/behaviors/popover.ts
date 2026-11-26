@@ -167,7 +167,7 @@ onDocumentReady(() => {
     // will immediately close, which we don't want.
     if (container && !isFocusTrigger(target)) {
       // Trap focus inside this new popover.
-      const trap = trapFocus(container);
+      const trap = trapFocus(container, { returnFocusTo: target });
 
       // Remove focus trap when this popover is ultimately hidden.
       const removeFocusTrap = () => {

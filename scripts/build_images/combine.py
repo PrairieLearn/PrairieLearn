@@ -6,12 +6,15 @@ from utils import get_env_or_exit, print_and_run_command
 
 
 def combine_images_from_metadata_dir(
-    metadata_dir: str, *, tags: list[str], registry: str
+    metadata_dir: str, *, tags: list[str], registry: str, skip_unpushed: bool = False
 ) -> list[str]:
     """This combines images from the metadata directory into a single image.
 
     It reads the metadata files in the directory, collects the digests for each image,
     and then creates a new image grouping the digests by image name.
+
+    If `skip_unpushed` is set, images that were built but not pushed to Docker Hub
+    are ignored, since their digests don't exist in the remote registry.
     """
     digests_by_image: defaultdict[str, list[str]] = defaultdict(list)
 
@@ -21,6 +24,9 @@ def combine_images_from_metadata_dir(
             print(f"Loaded {file} with metadata: {metadata}")
 
             metadata_json = json.loads(metadata)
+            if skip_unpushed and not metadata_json["image.pushed"]:
+                continue
+
             digest = metadata_json["containerimage.digest"]
             image_name = metadata_json["image.name"]
 
@@ -52,5 +58,5 @@ if __name__ == "__main__":
     metadata_dir = get_env_or_exit("METADATA_DIR")
     tags = get_env_or_exit("TAGS")
     combine_images_from_metadata_dir(
-        metadata_dir, tags=tags.split(","), registry="docker.io"
+        metadata_dir, tags=tags.split(","), registry="docker.io", skip_unpushed=True
     )

@@ -42,6 +42,15 @@ export function useServerJobProgress({
     string,
     string
   > | null>(initialOngoingJobSequenceTokens);
+  /**
+   * Per job, the items whose terminal status the user has dismissed. Kept apart
+   * from `jobsProgress` so that progress re-fetched on reconnect doesn't
+   * bring dismissed statuses back. Only terminal statuses are hidden, so an item
+   * dismissed while still queued or in progress keeps showing that status.
+   */
+  const [dismissedItemIds, setDismissedItemIds] = useState<
+    Partial<Record<string, ReadonlySet<string>>>
+  >({});
 
   const setJobsProgressAndEmit = useCallback(
     (stateUpdater: SetStateAction<Record<string, JobProgress>>) => {
@@ -84,15 +93,22 @@ export function useServerJobProgress({
         continue;
       }
       const dropQueued = job.status === 'stopping' || job.status === 'stopped';
+      const dismissed = dismissedItemIds[job.job_sequence_id];
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
         if (dropQueued && status === JobItemStatus.queued) continue;
+        if (
+          dismissed?.has(itemId) &&
+          (status === JobItemStatus.complete || status === JobItemStatus.failed)
+        ) {
+          continue;
+        }
         if (!(itemId in merged) || status < merged[itemId]) {
           merged[itemId] = status;
         }
       }
     }
     return merged;
-  }, [jobsProgressWithStatus, enabled]);
+  }, [jobsProgressWithStatus, dismissedItemIds, enabled]);
 
   useEffect(() => {
     if (
@@ -155,6 +171,30 @@ export function useServerJobProgress({
   }
 
   /**
+   * Stops displaying the terminal (complete or failed) statuses of the given items
+   * for the jobs known so far, e.g. once the user has changed an item's grading
+   * status and the job's status for it no longer describes the item. Jobs started
+   * later still display their statuses for these items.
+   */
+  const handleDismissItemStatuses = useCallback(
+    (itemIds: string[]) =>
+      setDismissedItemIds((prev) => {
+        const next = { ...prev };
+        // Include jobs that haven't reported progress yet, since their
+        // completion may only arrive after the dismissal.
+        const jobSequenceIds = new Set([
+          ...Object.keys(jobsProgress),
+          ...Object.keys(ongoingJobSequenceTokens ?? {}),
+        ]);
+        for (const jobSequenceId of jobSequenceIds) {
+          next[jobSequenceId] = new Set([...(prev[jobSequenceId] ?? []), ...itemIds]);
+        }
+        return next;
+      }),
+    [jobsProgress, ongoingJobSequenceTokens],
+  );
+
+  /**
    * When the user dismisses a completed job progress alert, remove the job from state.
    */
   function handleDismissCompleteJobSequence(jobSequenceId: string) {
@@ -182,12 +222,18 @@ export function useServerJobProgress({
       const { [jobSequenceId]: _removed, ...newTokens } = prev;
       return newTokens;
     });
+
+    setDismissedItemIds((prev) => {
+      const { [jobSequenceId]: _removed, ...newDismissedItemIds } = prev;
+      return newDismissedItemIds;
+    });
   }
 
   return {
     jobsProgress: jobsProgressWithStatus,
     displayedStatuses,
     handleAddOngoingJobSequence,
+    handleDismissItemStatuses,
     handleDismissCompleteJobSequence,
   };
 }

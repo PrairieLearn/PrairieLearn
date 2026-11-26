@@ -10,7 +10,7 @@ Student-specific access overrides are managed from the assessment **Access** pag
 
 ## Exams in a PrairieTest-managed testing center
 
-For a PrairieTest-only access path, enable PrairieTest on the assessment and leave date control disabled.
+For a PrairieTest-only access path, enable PrairieTest on the assessment, disable Date control, and check for overrides that enable it.
 
 In the UI:
 

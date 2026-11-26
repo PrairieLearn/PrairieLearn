@@ -42,7 +42,7 @@ import {
   attachmentsOf,
   attachmentsToWrite,
   formatRequest,
-  isImage,
+  imageType,
   keepUploadReferences,
   uploadKey,
   uploadPrefix,
@@ -158,11 +158,19 @@ function estimateUsage(body: string): Usage {
   };
 }
 
-const CourseContextSchema = z.object({
+export const CourseContextSchema = z.object({
   // Optional while a PrairieLearn deployment that does not send it may still connect.
   courseId: z.string().regex(/^\d+$/).optional(),
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
+  // Optional while a PrairieLearn deployment that does not send it may still connect. The sandbox
+  // uses it as a path under its zone files, so anything but a zone name counts as none.
+  timezone: z
+    .string()
+    .max(100)
+    .regex(/^[\w+-]+(\/[\w+-]+)*$/)
+    .optional()
+    .catch(undefined),
 });
 
 /**
@@ -290,7 +298,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Shared by every shutdown caller; delivery waits for it to finish. */
   private sandboxShutdown: Promise<void> | null = null;
   private readonly uploadQuota = new UploadQuota(async () => {
-    const { objects } = await this.env.CHECKPOINTS.list({ prefix: uploadPrefix(this.name) });
+    // The delimiter leaves out thumbnails, which are one level down and don't count.
+    const { objects } = await this.env.CHECKPOINTS.list({
+      prefix: uploadPrefix(this.name),
+      delimiter: '/',
+    });
     return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
   });
 
@@ -1031,8 +1043,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         startup && !this.record.checkpoint
           ? async () => {
               log('turn_course_files_started');
-              await this.sandbox.addCourseFiles(this.record.config);
-              log('turn_course_files_ready');
+              log(
+                'turn_course_files_ready',
+                await this.sandbox.addCourseFiles(
+                  this.record.config,
+                  this.record.courseContext?.courseId,
+                ),
+              );
             }
           : undefined,
       thread: {
@@ -1041,6 +1058,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         threadId: this.record.nativeThreadId,
         pages: this.record.pages ?? [],
       },
+      timezone: this.record.courseContext?.timezone,
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.
       onThread: (id) => {
@@ -1128,7 +1146,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const images = new Set<string>();
     for (const [index, upload] of uploads.entries()) {
       if (!upload) return null;
-      if (isImage(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
+      if (imageType(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
     }
     return images;
   }

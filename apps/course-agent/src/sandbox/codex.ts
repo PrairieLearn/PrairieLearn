@@ -53,12 +53,12 @@ const ItemEvent = z.object({
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
 /**
- * `request_changes` shows as a review card and navigation as its own part; only a failed call
- * needs a tool entry.
+ * `request_changes` shows as a review card, and an offered page or reload as its own part; only a
+ * failed call needs a tool entry.
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'offer_page']),
+  tool: z.enum(['request_changes', 'offer_page', 'offer_reload']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -174,11 +174,12 @@ export class CodexAppServerClient {
     });
   }
 
-  async connect() {
+  /** Starting a runner for this connection sets the sandbox's clock to `timezone`. */
+  async connect(timezone?: string) {
     if (this.failure) throw this.failure;
     if (this.rpc) return;
     const response = await this.sandbox.fetch('http://codex.internal/', {
-      headers: { Upgrade: 'websocket' },
+      headers: { Upgrade: 'websocket', ...(timezone && { 'X-Course-Timezone': timezone }) },
     });
     if (response.status !== 101 || !response.webSocket) {
       throw new Error('Native runner supplied no WebSocket');
@@ -301,6 +302,13 @@ export class CodexAppServerClient {
       }
       case 'offer_page':
         return await this.offerPage(call.data.callId, call.data.arguments);
+      case offerReloadTool.name:
+        // The chat shows this part as a button that reloads the page when the instructor clicks it.
+        this.emit({ type: 'data-reload', id: `reload:${call.data.callId}`, data: {} });
+        return {
+          success: true,
+          text: 'The instructor sees a "Reload this page" button; do not describe it.',
+        };
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
@@ -388,6 +396,7 @@ export class CodexAppServerClient {
               listCourseDatasetsTool,
               courseDataTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
+              offerReloadTool,
             ],
           } satisfies ThreadStartParams,
           ThreadResult,
@@ -637,6 +646,14 @@ function navigateTool(pages: PageCatalog): DynamicToolSpec {
     },
   };
 }
+
+const offerReloadTool = {
+  type: 'function',
+  name: 'offer_reload',
+  description:
+    'Show the instructor a button that reloads the PrairieLearn page they are viewing, for example so it shows changes that were saved and synced. Nothing changes until they click it.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+} satisfies DynamicToolSpec;
 
 /** Models often send empty or null values for the params a page does not take. */
 function withoutEmptyParams(args: unknown) {

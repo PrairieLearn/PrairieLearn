@@ -64,7 +64,9 @@ WHERE
   AND v.open = TRUE
   AND v.broken_at IS NULL
   AND aq.id = $unsafe_assessment_question_id
-  AND aq.assessment_id = $assessment_id;
+  AND aq.assessment_id = $assessment_id
+RETURNING
+  v.instance_question_id;
 
 -- BLOCK reset_variants_for_instance_question
 UPDATE variants AS v
@@ -79,7 +81,42 @@ WHERE
   AND v.open = TRUE
   AND v.broken_at IS NULL
   AND iq.id = $unsafe_instance_question_id
-  AND iq.assessment_instance_id = $assessment_instance_id;
+  AND iq.assessment_instance_id = $assessment_instance_id
+RETURNING
+  v.instance_question_id;
+
+-- BLOCK update_instance_question_status_after_reset
+-- Saving an answer overwrites the question's status, so once that answer is
+-- discarded the status is derived again from what was graded before it. The
+-- rules mirror `computeInstanceQuestionPointsHomework`.
+UPDATE instance_questions AS iq
+SET
+  status = CASE
+  -- Staff can award points without recording a submission score. That
+  -- grading had marked the question complete, and marking it unanswered
+  -- would hide it from manual grading.
+    WHEN iq.highest_submission_score IS NULL
+    AND iq.last_grader IS NULL
+    AND coalesce(iq.points, 0) = 0 THEN 'unanswered'
+    WHEN iq.highest_submission_score IS NULL THEN 'complete'
+    WHEN coalesce(iq.auto_points, 0) >= coalesce(aq.max_auto_points, 0)
+    AND coalesce(aq.max_manual_points, 0) = 0 THEN 'complete'
+    WHEN iq.highest_submission_score >= 1 THEN 'correct'
+    ELSE 'incorrect'
+  END::enum_instance_question_status,
+  modified_at = now()
+FROM
+  assessment_questions AS aq
+WHERE
+  iq.id = ANY ($instance_question_ids::bigint[])
+  AND aq.id = iq.assessment_question_id
+  AND iq.status = 'saved'
+  -- A question that is waiting for manual grading must stay answered so that
+  -- it remains in the manual grading queue.
+  AND (
+    iq.highest_submission_score IS NOT NULL
+    OR NOT iq.requires_manual_grading
+  );
 
 -- BLOCK select_variant_by_instance_question_id
 WITH

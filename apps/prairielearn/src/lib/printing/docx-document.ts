@@ -22,7 +22,13 @@ import { assertNever } from '@prairielearn/utils';
 import type { DocxSource } from './docx-browser.js';
 import type { DocxFigure } from './docx-content-context.js';
 import { buildDocxContent } from './docx-content.js';
-import type { PrintableCover, PrintableCoverField, PrintableTextBlock } from './printable-cover.js';
+import { PRINT_FOOTER_SEPARATOR, type PrintFooter } from './print-cover.js';
+import type {
+  PrintableCover,
+  PrintableCoverField,
+  PrintableTextBlock,
+  PrintableTextRun,
+} from './printable-cover.js';
 
 /** Sheet and margin geometry measured from the first paginated page, in CSS pixels. */
 export interface PrintedPageGeometry {
@@ -52,15 +58,27 @@ function toDxa(px: number): number {
 
 function text(
   value: string,
-  options: { bold?: boolean; size?: number; color?: string } = {},
+  options: Omit<PrintableTextRun, 'text'> & { size?: number; color?: string } = {},
 ): TextRun {
   return new TextRun({
     text: value,
     bold: options.bold,
+    italics: options.italic,
+    underline: options.underline ? {} : undefined,
+    strike: options.strike,
+    subScript: options.script === 'subscript' ? true : undefined,
+    superScript: options.script === 'superscript' ? true : undefined,
     size: options.size ?? BODY_FONT_SIZE,
     color: options.color,
-    font: FONT,
+    font: options.code ? 'Courier New' : FONT,
   });
+}
+
+function formattedText(
+  runs: PrintableTextRun[],
+  options: Parameters<typeof text>[1] = {},
+): TextRun[] {
+  return runs.map(({ text: value, ...format }) => text(value, { ...format, ...options }));
 }
 
 class ListNumbering {
@@ -84,11 +102,11 @@ function buildTextBlocks(blocks: PrintableTextBlock[], numbering: ListNumbering)
         return [
           new Paragraph({
             spacing: { before: 120, after: 60 },
-            children: [text(block.text, { bold: true, size: BODY_FONT_SIZE + 1 })],
+            children: formattedText(block.runs, { bold: true, size: BODY_FONT_SIZE + 1 }),
           }),
         ];
       case 'paragraph':
-        return [new Paragraph({ spacing: { after: 80 }, children: [text(block.text)] })];
+        return [new Paragraph({ spacing: { after: 80 }, children: formattedText(block.runs) })];
       case 'list': {
         const listNumbering = numbering.next(block.ordered);
         return block.items.map(
@@ -96,7 +114,7 @@ function buildTextBlocks(blocks: PrintableTextBlock[], numbering: ListNumbering)
             new Paragraph({
               numbering: listNumbering,
               spacing: { after: 60 },
-              children: [text(item)],
+              children: formattedText(item),
             }),
         );
       }
@@ -288,21 +306,58 @@ function buildCover(cover: PrintableCover, contentWidthDxa: number): (Paragraph 
           buildGradingTable(cover.gradingTable, contentWidthDxa),
         ]
       : []),
-    line(cover.footer, { size: SMALL_FONT_SIZE, color: '555555' }, { before: 400, after: 0 }),
   ];
 }
 
-function buildFooter(footerLabel: string): Footer {
+function buildFooter(footer: PrintFooter, contentWidthDxa: number): Footer {
   const footerText = { size: SMALL_FONT_SIZE, color: '555555', font: FONT };
+  const leftWidth = Math.floor(contentWidthDxa / 3);
+  const centerWidth = leftWidth;
+  const rightWidth = contentWidthDxa - leftWidth - centerWidth;
+  const widths = [leftWidth, centerWidth, rightWidth];
+  const cell = (
+    width: number,
+    alignment: (typeof AlignmentType)[keyof typeof AlignmentType],
+    children: TextRun[],
+  ) =>
+    new TableCell({
+      width: { size: width, type: WidthType.DXA },
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      children: [new Paragraph({ alignment, spacing: { before: 0, after: 0 }, children })],
+    });
   return new Footer({
     children: [
-      new Paragraph({
-        alignment: AlignmentType.RIGHT,
-        children: [
-          new TextRun({ text: `${footerLabel}  |  Page `, ...footerText }),
-          new TextRun({ children: [PageNumber.CURRENT], ...footerText }),
-          new TextRun({ text: ' of ', ...footerText }),
-          new TextRun({ children: [PageNumber.TOTAL_PAGES], ...footerText }),
+      new Table({
+        width: { size: contentWidthDxa, type: WidthType.DXA },
+        columnWidths: widths,
+        borders: {
+          top: NO_BORDER,
+          bottom: NO_BORDER,
+          left: NO_BORDER,
+          right: NO_BORDER,
+          insideHorizontal: NO_BORDER,
+          insideVertical: NO_BORDER,
+        },
+        rows: [
+          new TableRow({
+            children: [
+              cell(leftWidth, AlignmentType.LEFT, [
+                new TextRun({ text: footer.left, ...footerText }),
+              ]),
+              cell(centerWidth, AlignmentType.CENTER, [
+                new TextRun({ text: footer.center, ...footerText }),
+              ]),
+              cell(rightWidth, AlignmentType.RIGHT, [
+                new TextRun({
+                  text: `${footer.right}${PRINT_FOOTER_SEPARATOR}Page `,
+                  ...footerText,
+                }),
+                new TextRun({ children: [PageNumber.CURRENT], ...footerText }),
+                new TextRun({ text: ' of ', ...footerText }),
+                new TextRun({ children: [PageNumber.TOTAL_PAGES], ...footerText }),
+              ]),
+            ],
+          }),
         ],
       }),
     ],
@@ -312,13 +367,13 @@ function buildFooter(footerLabel: string): Footer {
 export function createDocxDocument({
   geometry,
   cover,
-  footerLabel,
+  footer,
   source,
   figures,
 }: {
   geometry: PrintedPageGeometry;
   cover?: PrintableCover;
-  footerLabel: string;
+  footer: PrintFooter;
   source: DocxSource;
   figures: DocxFigure[];
 }): Document {
@@ -379,7 +434,7 @@ export function createDocxDocument({
             },
           },
         },
-        footers: { default: buildFooter(footerLabel) },
+        footers: { default: buildFooter(footer, toDxa(contentWidthPx)) },
         children: [...(cover ? buildCover(cover, toDxa(contentWidthPx)) : []), ...content.children],
       },
     ],

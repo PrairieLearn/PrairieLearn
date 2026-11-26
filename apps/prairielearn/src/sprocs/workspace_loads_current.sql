@@ -19,7 +19,6 @@ CREATE FUNCTION
         OUT workspace_hosts_longest_unhealthy_sec double precision,
         OUT workspace_hosts_longest_terminating_sec double precision,
         -- workspaces in each state
-        OUT workspace_uninitialized_count integer,
         OUT workspace_launching_count integer,
         OUT workspace_relaunching_count integer,
         OUT workspace_running_count integer,
@@ -37,7 +36,6 @@ BEGIN
     -- Current number of running workspaces. We do this with separate queries
     -- because it maximizes the likelihood that Postgres will use the index
     -- instead of a sequential scan.
-    SELECT count(*) INTO workspace_uninitialized_count FROM workspaces AS w WHERE w.state = 'uninitialized';
     SELECT count(*) INTO workspace_launching_count FROM workspaces AS w WHERE w.state = 'launching';
     SELECT count(*) INTO workspace_relaunching_count FROM workspaces AS w WHERE w.state = 'launching' AND num_nonnulls(w.rebooted_at, w.reset_at) > 0;
     SELECT count(*) INTO workspace_running_count FROM workspaces AS w WHERE w.state = 'running';
@@ -155,7 +153,6 @@ BEGIN
         ('workspace_hosts_longest_draining_sec', workspace_hosts_longest_draining_sec),
         ('workspace_hosts_longest_unhealthy_sec', workspace_hosts_longest_unhealthy_sec),
         ('workspace_hosts_longest_terminating_sec', workspace_hosts_longest_terminating_sec),
-        ('workspace_uninitialized_count', workspace_uninitialized_count),
         ('workspace_launching_count', workspace_launching_count),
         ('workspace_relaunching_count', workspace_relaunching_count),
         ('workspace_running_count', workspace_running_count),

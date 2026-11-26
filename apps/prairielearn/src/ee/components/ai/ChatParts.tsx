@@ -1,9 +1,9 @@
 import type { ReasoningUIPart, TextUIPart } from 'ai';
 import clsx from 'clsx';
-import { type ReactNode, useId, useState } from 'react';
+import { type ComponentProps, type ReactNode, useId, useState } from 'react';
 import type { UrlTransform } from 'react-markdown';
 
-import { MemoizedMarkdown } from './MemoizedMarkdown.js';
+import { ChatMarkdown } from './ChatMarkdown.js';
 
 /** A chevron and summary that show or hide the details beneath them. */
 export function Disclosure({
@@ -43,7 +43,7 @@ export function Disclosure({
   );
 }
 
-export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
+export function ReasoningBlock({ part, math = false }: { part: ReasoningUIPart; math?: boolean }) {
   // Track whether the user has explicitly interacted with the expand/collapse
   const [userControlled, setUserControlled] = useState(false);
   const [userExpanded, setUserExpanded] = useState(false);
@@ -65,23 +65,39 @@ export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
         setUserExpanded(!isExpanded);
       }}
     >
-      <div className="markdown-body reasoning-body p-1 pt-0">
-        <MemoizedMarkdown content={part.text} />
-      </div>
+      <ChatMarkdown
+        className="markdown-body reasoning-body p-1 pt-0"
+        content={part.text}
+        math={math}
+        streaming={isStreaming}
+      />
     </Disclosure>
   );
 }
 
 export function TextPart({
   part,
+  math = false,
   urlTransform,
+  codeBlock,
 }: {
   part: TextUIPart;
+  math?: boolean;
   urlTransform?: UrlTransform;
+  /**
+   * The AI question generation chat doesn't pass this. Once it's removed, always use the course
+   * agent's code block.
+   */
+  codeBlock?: ComponentProps<typeof ChatMarkdown>['codeBlock'];
 }) {
   return (
-    <div className="markdown-body">
-      <MemoizedMarkdown content={part.text} urlTransform={urlTransform} />
-    </div>
+    <ChatMarkdown
+      className="markdown-body"
+      content={part.text}
+      math={math}
+      streaming={part.state === 'streaming'}
+      urlTransform={urlTransform}
+      codeBlock={codeBlock}
+    />
   );
 }

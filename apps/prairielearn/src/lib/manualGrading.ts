@@ -10,7 +10,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import { updateAssessmentInstanceGrade } from './assessment-grading.js';
@@ -157,7 +156,7 @@ export async function selectRubricData({
   submission,
 }: {
   assessment_question?: AssessmentQuestion | null;
-  submission?: Submission | SubmissionForRender | null;
+  submission?: Pick<Submission, 'true_answer' | 'params' | 'submitted_answer'> | null;
 }): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!assessment_question?.manual_rubric_id) return null;
@@ -224,8 +223,7 @@ export function renderRubricItemFields(
 /**
  * Builds the locals object for rubric grading data. Can be called with any object that contains a
  * `manual_rubric_grading_id` field, typically a submission or grading job. Updates the object
- * in-place by adding a `rubric_grading` value, as well as the rendered version of the manual
- * feedback.
+ * in-place by adding a `rubric_grading` value.
  *
  * @param submission - The object whose rubric grading must be retrieved and populated. Typically a submission or grading job.
  */
@@ -236,9 +234,6 @@ export async function populateManualGradingData(submission: Record<string, any>)
       { rubric_grading_id: submission.manual_rubric_grading_id },
       RubricGradingDataSchema,
     );
-  }
-  if (submission.feedback?.manual) {
-    submission.feedback_manual_html = markdownToHtml(submission.feedback?.manual?.toString() || '');
   }
 }
 

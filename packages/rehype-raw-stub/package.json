@@ -1,0 +1,13 @@
+{
+  "name": "@prairielearn/rehype-raw-stub",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Empty stand-in for rehype-raw; see the override in pnpm-workspace.yaml.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/rehype-raw-stub"
+  },
+  "type": "module",
+  "exports": "./index.js"
+}

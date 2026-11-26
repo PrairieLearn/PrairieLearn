@@ -18,7 +18,7 @@ import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCo
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import type { ResLocalsConfig } from './config.js';
-import type { Course, CourseInstance } from './db-types.js';
+import type { Course, CourseInstance, PrintForm } from './db-types.js';
 
 interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
@@ -58,6 +58,11 @@ interface ResLocalsForPageLookup {
     ResLocalsAssessment &
     ResLocalsAssessmentInstance;
   assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
+  'print-form': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsAssessment & {
+      print_form: PrintForm;
+    };
 }
 
 // Only apply MergeUnion when T is a union of page types; preserve unions for single types
@@ -89,6 +94,7 @@ type PageType = keyof ResLocalsForPageLookup;
  * - `assessment-question`: An assessment question page.
  * - `assessment-instance`: An assessment instance page.
  * - `assessment`: An assessment page.
+ * - `print-form`: An instructor-owned printable form.
  *
  * @param handler - The handler function to wrap.
  * @returns A wrapped handler function.

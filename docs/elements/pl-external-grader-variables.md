@@ -1,8 +1,10 @@
 # `pl-external-grader-variables` element
 
-Displays variables that are given to the student, or expected for the student to define in externally-graded Python questions.
+Displays variables that are given to the student, or expected for the student to define in questions graded by the [Python autograder](../python-grader/index.md).
 
-**We advise against using this element for any question not using the `prairielearn/grader-python` Docker image**, as the way this element stores parameters is specifically for use with that autograder. If you want to display a table of variables for a question using a different autograder, consider using a standard HTML `<table>` instead.
+With `params-name="names_for_user"`, the listed variables are also the ones that the Python autograder gives to student code from the question's setup code, unless the test's `ConfigObject` sets `names_for_user`, which replaces this list. The autograder doesn't read `names_from_user`, which is only used to display the table. Questions that still use the legacy `prairielearn/grader-python` image need `names_from_user`, because that grader reads it to collect the student's variables.
+
+**We advise against using this element for any question not using the Python autograder**, as the way this element stores parameters is specifically for use with that autograder. If you want to display a table of variables for a question using a different autograder, consider using a standard HTML `<table>` instead.
 
 The list of variables can be defined in `data["params"]` or the question HTML itself (but not both!). If defined in the
 question HTML itself, the variable information is added to `data["params"]` for use by the external grader. If no descriptions
@@ -68,13 +70,15 @@ The HTML inside the inner `pl-variable` tag is used as the description. If the t
 - [demo/autograder/codeEditor]
 - [demo/autograder/codeUpload]
 - [demo/autograder/python/square]
+- [demo/autograder/python/random]
 - [demo/autograder/python/numpy]
 - [demo/autograder/python/pandas]
+- [demo/autograder/python/earlyExit]
 - [demo/autograder/python/plots]
-- [demo/autograder/python/random]
 
 [demo/autograder/codeeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
 [demo/autograder/codeupload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload
+[demo/autograder/python/earlyexit]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/earlyExit
 [demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy
 [demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
 [demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
