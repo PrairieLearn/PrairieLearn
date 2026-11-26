@@ -52,3 +52,7 @@
 .pl-matching-container-bottom {
   display: block;
 }
+
+.pl-matching-reset-btn {
+  margin: 0.5rem;
+}

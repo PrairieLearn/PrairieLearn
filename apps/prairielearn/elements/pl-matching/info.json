@@ -1,6 +1,13 @@
 {
   "controller": "pl-matching.py",
   "dependencies": {
-    "elementStyles": ["pl-matching.css"]
+    "elementScripts": [
+    "pl-matching.js",
+    "pl-matching-radio-matrix.js"
+  ],
+    "elementStyles": [
+      "pl-matching.css",
+      "pl-matching-radio-matrix.css"
+    ]
   }
 }

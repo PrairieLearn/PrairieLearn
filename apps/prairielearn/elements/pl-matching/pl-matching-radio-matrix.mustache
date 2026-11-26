@@ -1,0 +1,254 @@
+{{#question}}
+    <table 
+        id="{{name}}" 
+        class="pl-matching pl-matching-radio-matrix-container
+            table table-sm
+            table-hover table-striped
+            rounded-top-3 text-center overflow-hidden 
+            mb-0 w-100
+        " 
+        aria-label="{{aria_label}}" 
+        data-answers-name="{{name}}" 
+        data-max-response-per-option="{{max_response_per_option}}"
+        style="table-layout: fixed;"
+    >
+        <colgroup>
+            <col style="width: {{radio-matrix-statement-column-width}}">
+        </colgroup>
+        {{#radio_matrix_list}}
+            <legend class="visually-hidden">Statements Panel</legend>
+            <!-- Header Row -->
+            <thead class="radio-matrix-header">
+                <tr>
+                    <th scope="row" class="px-2"></th>
+                    {{#options}}
+                        <th scope="row" class="px-2">{{{html}}}</th>
+                    {{/options}}
+                </tr>
+            </thead>
+            <!-- Statement Rows -->
+            <tbody>
+                {{#statement_list}}
+                    <tr id="statement-{{statement_id}}" class="table-light align-middle radio-matrix-row">
+                        <th scope="row" class="p-2">
+                            {{{html}}}
+                            {{#display_score_badge}}
+                                {{#correct}}
+                                    <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i></span>
+                                {{/correct}}
+                                {{^correct}}
+                                    <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i></span>
+                                {{/correct}}
+                            {{/display_score_badge}}
+                            {{#parse_error}}
+                                <span class="small" style="white-space: nowrap">
+                                    <span class="badge text-bg-danger">
+                                        Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                                    </span>
+                                    <a
+                                        class="link-primary"
+                                        tabindex="0"
+                                        role="button"
+                                        data-bs-placement="auto"
+                                        data-bs-toggle="popover"
+                                        data-bs-html="true"
+                                        title="Format error"
+                                        data-bs-content="{{parse_error}}"
+                                    >
+                                        More info…
+                                    </a>
+                                </span>
+                            {{/parse_error}}
+                        </th>
+
+                        {{#statement_options}}
+                            <td class="option-cell">
+                                <label>
+                                    <input 
+                                        type="radio"
+                                        {{#selected}}checked{{/selected}} 
+                                        {{^editable}}disabled{{/editable}} 
+                                        {{#editable}}name="{{statement_name}}"{{/editable}}
+                                        value="{{index}}" 
+                                        aria-label="{{statement_name}}"
+                                    >
+                                </label>
+                            </td>
+                        {{/statement_options}}
+                    </tr>
+                {{/statement_list}}
+            </tbody>
+        {{/radio_matrix_list}}
+    </table>
+    {{#has_max_response_per_option}}
+        <div id="{{name}}-max-options-warning" class="pl-matching-max-options-warning text-danger" aria-live="polite" hidden>
+            {{max_options_warning_statement}}
+        </div>
+    {{/has_max_response_per_option}}
+    <div class="right-info-column d-flex flex-column align-items-start ps-1">
+        {{#show_help_text}}
+            <button
+                type="button"
+                class="btn p-0 border-0 text-dark d-flex align-items-center"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Radio Input"
+                data-bs-content="{{info}}"
+                data-bs-placement="auto"
+            >
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </button>
+        {{/show_help_text}}
+    </div>
+    {{#reset_button}}
+        <button id="{{name}}-reset-btn" type="button" class="btn btn-outline-secondary btn-sm pl-matching-reset-btn" data-answers-name="{{name}}" radio-matrix-name="{{name}}">
+            Reset Above Radio Matrix
+        </button>
+    {{/reset_button}}
+    <div>
+        {{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+        {{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+        {{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+    </div>
+{{/question}}
+
+{{#answer}}
+    <table 
+        id="{{name}}_ap_table" 
+        class="pl-matching-radio-matrix-container
+            table table-sm
+            table-hover table-striped
+            rounded-top-3 text-center overflow-hidden 
+            mb-0 w-100
+        " 
+        aria-label="{{aria_label}}"
+        style="table-layout: fixed;"
+    >
+        <colgroup>
+            <col style="width: {{radio-matrix-statement-column-width}}">
+        </colgroup>
+        {{#radio_matrix_list}}
+            <legend class="visually-hidden">Statements Panel</legend>
+            <!-- Header Row -->
+            <thead class="radio-matrix-header">
+                <tr>
+                    <th scope="row" class="px-2"></th>
+                    {{#options}}
+                        <th scope="row" class="px-2">{{{html}}}</th>
+                    {{/options}}
+                </tr>
+            </thead>
+            <!-- Statement Rows -->
+            <tbody>
+                {{#statement_list}}
+                    <tr class="radio-matrix-row {{#is_even_row}}even{{/is_even_row}} {{^is_even_row}}odd{{/is_even_row}} table-light align-middle" id="statement-{{statement_id}}">
+                        <td class="statement-text">
+                            {{{html}}}
+                        </td>
+
+                        {{#statement_options}}
+                            <td class="option-cell">
+                                <label>
+                                    <input 
+                                        type="radio"
+                                        {{#selected}}checked{{/selected}} 
+                                        {{^editable}}disabled{{/editable}} 
+                                        {{#editable}}name="{{statement_name}}"{{/editable}}
+                                        value="{{index}}" 
+                                        aria-label="{{statement_name}}"
+                                    >
+                                </label>
+                            </td>
+                        {{/statement_options}}
+                    </tr>
+                {{/statement_list}}
+            </tbody>
+        {{/radio_matrix_list}}
+    </table>
+{{/answer}}
+
+{{#submission}}
+    <table 
+        id="{{name}}_sp_table" 
+        class="pl-matching-radio-matrix-container
+            table table-sm
+            table-hover table-striped
+            rounded-top-3 text-center overflow-hidden 
+            mb-0 w-100
+        " 
+        aria-label="{{aria_label}}"
+        style="table-layout: fixed;"
+    >
+        <colgroup>
+            <col style="width: {{radio-matrix-statement-column-width}}">
+        </colgroup>
+        {{#radio_matrix_list}}
+            <legend class="visually-hidden">Statements Panel</legend>
+            <!-- Header Row -->
+            <thead class="radio-matrix-header">
+                <tr>
+                    <th scope="row" class="px-2"></th>
+                    {{#options}}
+                        <th scope="row" class="px-2">{{{html}}}</th>
+                    {{/options}}
+                </tr>
+            </thead>
+            <!-- Statement Rows -->
+            <tbody>
+                {{#statement_list}}
+                    <tr class="radio-matrix-row {{#is_even_row}}even{{/is_even_row}} {{^is_even_row}}odd{{/is_even_row}} table-light align-middle" id="statement-{{statement_id}}">
+                        <td class="statement-text">
+                            {{{html}}}
+                            {{#display_score_badge}}
+                                {{#correct}}
+                                    <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i></span>
+                                {{/correct}}
+                                {{^correct}}
+                                    <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i></span>
+                                {{/correct}}
+                            {{/display_score_badge}}
+                            {{#parse_error}}
+                                <span class="small" style="white-space: nowrap">
+                                    <span class="badge text-bg-danger">
+                                        Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                                    </span>
+                                    <a
+                                        class="link-primary"
+                                        tabindex="0"
+                                        role="button"
+                                        data-bs-placement="auto"
+                                        data-bs-toggle="popover"
+                                        data-bs-html="true"
+                                        title="Format error"
+                                        data-bs-content="{{parse_error}}"
+                                    >
+                                        More info…
+                                    </a>
+                                </span>
+                            {{/parse_error}}
+                        </td>
+
+                        {{#statement_options}}
+                            <td class="option-cell">
+                                <label>
+                                    <input 
+                                        type="radio"
+                                        {{#selected}}checked{{/selected}}
+                                        {{^editable}}disabled{{/editable}} 
+                                        {{#editable}}name="{{statement_name}}"{{/editable}}
+                                        value="{{index}}" 
+                                        aria-label="{{statement_name}}"
+                                    >
+                                </label>
+                            </td>
+                        {{/statement_options}}
+                    </tr>
+                {{/statement_list}}
+            </tbody>
+        {{/radio_matrix_list}}
+    </table>
+{{/submission}}
+
+{{#format}}
+    <p>{{grading_text}}</p>
+{{/format}}
