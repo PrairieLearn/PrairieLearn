@@ -7,7 +7,7 @@
   "workers_dev": true,
   "preview_urls": false,
   "vars": {
-    "OPENAI_MODEL": "gpt-6-luna",
+    "OPENAI_MODEL": "gpt-6.1-sol",
     "AGENT_TURN_SECONDS": "18000",
     "USER_IDLE_SECONDS": "600",
     // A Cloudflare instance type: lite or standard-1 through standard-4.
@@ -78,7 +78,7 @@
     "staging": {
       "name": "prairielearn-course-agent-staging",
       "vars": {
-        "OPENAI_MODEL": "gpt-6-luna",
+        "OPENAI_MODEL": "gpt-6.1-sol",
         "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
         // A Cloudflare instance type: lite or standard-1 through standard-4.
@@ -141,7 +141,7 @@
     "production": {
       "name": "prairielearn-course-agent-production",
       "vars": {
-        "OPENAI_MODEL": "gpt-6-luna",
+        "OPENAI_MODEL": "gpt-6.1-sol",
         "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
         // A Cloudflare instance type: lite or standard-1 through standard-4.

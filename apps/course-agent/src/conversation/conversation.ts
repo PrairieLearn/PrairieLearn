@@ -1127,7 +1127,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     void this.keepAliveWhile(async () => {
       const title = await generateTitle({
         apiKey: this.env.OPENAI_API_KEY,
-        model: this.record.config.model,
         message: text,
       });
       if (title) this.setRecord({ ...this.record, title });

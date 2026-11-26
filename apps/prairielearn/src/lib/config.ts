@@ -721,6 +721,7 @@ export const ConfigSchema = z.object({
       'gpt-5.6-luna': TokenPricingSchema,
       'gpt-6-luna': TokenPricingSchema,
       'gpt-6-sol': TokenPricingSchema,
+      'gpt-6.1-sol': TokenPricingSchema,
       'gpt-5.6-terra': TokenPricingSchema,
       'gpt-5.6-sol': TokenPricingSchema,
       'gpt-6-astra': TokenPricingSchema,
@@ -749,6 +750,8 @@ export const ConfigSchema = z.object({
       'gpt-6-astra': { input: 10, cachedInput: 1, cacheWrite: 12.5, output: 50 },
       'gpt-6-luna': { input: 0.1, cachedInput: 0.01, cacheWrite: 0.125, output: 0.5 },
       'gpt-6-sol': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 10 },
+      // Price current as of 2026-11-20.
+      'gpt-6.1-sol': { input: 2, cachedInput: 0.1, cacheWrite: 2.5, output: 10 },
 
       // Prices current as of 2026-09-05. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
