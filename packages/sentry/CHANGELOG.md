@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 6.0.3
+
+### Patch Changes
+
+- 8212d19: Upgrade `@sentry/core` and `@sentry/node` to 11.16.0
+
 ## 6.0.2
 
 ### Patch Changes
