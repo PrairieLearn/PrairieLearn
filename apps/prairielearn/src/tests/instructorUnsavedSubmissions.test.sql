@@ -14,7 +14,9 @@ UPDATE questions
 SET
   grading_method = $grading_method,
   external_grading_files = $external_grading_files,
-  external_grading_image = $external_grading_image
+  external_grading_image = $external_grading_image,
+  external_grading_entrypoint = $external_grading_entrypoint,
+  external_grading_environment = $external_grading_environment
 WHERE
   id = $question_id;
 

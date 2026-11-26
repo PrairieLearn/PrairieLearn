@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 
-import { S3 } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
@@ -159,6 +159,8 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
         grading_method: 'External',
         external_grading_files: [],
         external_grading_image: 'grader-test',
+        external_grading_entrypoint: '/grade/tests/original.sh',
+        external_grading_environment: { VERSION: 'original' },
       });
       await withConfig(
         {
@@ -182,6 +184,8 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
         grading_method: draft.question.grading_method,
         external_grading_files: draft.question.external_grading_files,
         external_grading_image: draft.question.external_grading_image,
+        external_grading_entrypoint: draft.question.external_grading_entrypoint,
+        external_grading_environment: draft.question.external_grading_environment,
       });
       await jobRoot.cleanup();
     }
@@ -664,6 +668,8 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
         grading_method: 'External',
         external_grading_files: ['missing-grader-file.py'],
         external_grading_image: 'grader-test',
+        external_grading_entrypoint: '/grade/tests/original.sh',
+        external_grading_environment: { VERSION: 'original' },
       });
       const send = vi.spyOn(SQSClient.prototype, 'send');
       await withUser(editor, async () => {
@@ -723,12 +729,17 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
         graded_at: null,
         grading_submitted_at: expect.any(Date),
       });
-      expect(upload).toHaveBeenCalledOnce();
+      expect(
+        upload.mock.calls.filter(
+          ([command]) =>
+            command instanceof PutObjectCommand && command.input.Key?.endsWith('/job.tar.gz'),
+        ),
+      ).toHaveLength(1);
       expect(send).toHaveBeenCalledOnce();
     });
   });
 
-  test('resumes an uncertain external send using the prepared job and counts replayed results once', async () => {
+  test('reuses prepared inputs and queue settings after an uncertain send and course sync', async () => {
     const draft = await seedDraft();
     await withExternalGrading(draft, async () => {
       const observer = new PostgresPool();
@@ -742,10 +753,18 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
           throw err;
         },
       );
-      const upload = vi
-        .spyOn(S3.prototype, 'send')
-        .mockImplementation(async () => ({ $metadata: {}, ETag: 'test' }));
+      let storedRequest = '';
+      const upload = vi.spyOn(S3.prototype, 'send').mockImplementation(async (command) => {
+        if (command instanceof PutObjectCommand && command.input.Key?.endsWith('/request.json')) {
+          storedRequest = String(command.input.Body);
+        }
+        if (command instanceof GetObjectCommand) {
+          return { $metadata: {}, Body: { transformToString: async () => storedRequest } };
+        }
+        return { $metadata: {}, ETag: 'test' };
+      });
       let preparedLocation: Pick<GradingJob, 's3_bucket' | 's3_root_key'> | undefined;
+      let requestAtPublication: string | undefined;
       const send = vi
         .spyOn(SQSClient.prototype, 'send')
         .mockImplementationOnce(async () => {
@@ -756,6 +775,7 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
             { grading_job_id: job.id },
             GradingJobSchema.pick({ s3_bucket: true, s3_root_key: true }),
           );
+          requestAtPublication = storedRequest;
           throw new Error('Interrupted while publishing');
         })
         .mockImplementation(async () => ({ $metadata: {} }));
@@ -775,12 +795,34 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
           s3_bucket: 'recovery-test',
           s3_root_key: `job_${job.id}`,
         });
+        expect(requestAtPublication).toBe(storedRequest);
+        expect(JSON.parse(storedRequest)).toMatchObject({
+          image: 'grader-test',
+          entrypoint: '/grade/tests/original.sh',
+          environment: { VERSION: 'original' },
+        });
         expect(job).toMatchObject({ graded_at: null, grading_submitted_at: null });
         const gradingJobId = job.id;
+        await execute(sql.set_question_external_grading, {
+          question_id: draft.question.id,
+          grading_method: 'External',
+          external_grading_files: [],
+          external_grading_image: 'grader-after-sync',
+          external_grading_entrypoint: '/grade/tests/after-sync.sh',
+          external_grading_environment: { VERSION: 'after-sync' },
+        });
         await autoFinishExams();
         await autoFinishExams();
-        expect(upload).toHaveBeenCalledOnce();
+        expect(
+          upload.mock.calls.filter(
+            ([command]) =>
+              command instanceof PutObjectCommand &&
+              command.input.Key === `job_${job.id}/job.tar.gz`,
+          ),
+        ).toHaveLength(1);
         expect(send).toHaveBeenCalledTimes(2);
+        expect(send.mock.calls[0][0]).toMatchObject({ input: { MessageBody: storedRequest } });
+        expect(send.mock.calls[1][0]).toMatchObject({ input: { MessageBody: storedRequest } });
         expect(await selectLatestGradingJobForSubmission(saved.id)).toMatchObject({
           id: gradingJobId,
           grading_submitted_at: expect.any(Date),

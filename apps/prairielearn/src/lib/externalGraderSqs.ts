@@ -51,10 +51,39 @@ export class ExternalGraderSqs implements Grader {
     const s3RootKey = grading_job.s3_root_key ?? getS3RootKey(grading_job.id);
     const s3Bucket = grading_job.s3_bucket ?? config.externalGradingS3Bucket;
     const prepared = grading_job.s3_bucket !== null && grading_job.s3_root_key !== null;
+    const recovered = submission.recovered_from_user_id !== null;
 
     void (async () => {
+      // Let the caller attach listeners before preparation can emit an error.
+      await Promise.resolve();
       let stage: GradingRequestErrorContext['stage'] = 'preparation';
       try {
+        const s3 = new S3(makeS3ClientConfig());
+        let messageBody: string;
+        if (prepared && recovered) {
+          const request = await s3.getObject({
+            Bucket: s3Bucket,
+            Key: `${s3RootKey}/request.json`,
+          });
+          if (!request.Body) throw new Error('Prepared external grading request has no body');
+          messageBody = await request.Body.transformToString();
+        } else {
+          messageBody = JSON.stringify({
+            jobId: grading_job.id,
+            image: question.external_grading_image,
+            entrypoint: question.external_grading_entrypoint,
+            s3Bucket,
+            s3RootKey,
+            ...(recovered ? { recovered: true } : {}),
+            timeout: Math.min(
+              question.external_grading_timeout ?? config.externalGradingDefaultTimeout,
+              config.externalGradingMaximumTimeout,
+            ),
+            enableNetworking: question.external_grading_enable_networking || false,
+            environment: question.external_grading_environment,
+          });
+        }
+
         // A recovered dispatch reuses its committed payload after a process interruption.
         if (!prepared) {
           try {
@@ -73,8 +102,17 @@ export class ExternalGraderSqs implements Grader {
               Body: passthrough,
             };
 
-            const s3 = new S3(makeS3ClientConfig());
             await new Upload({ client: s3, params }).done();
+
+            // Keep the archive and its worker settings together across course syncs.
+            if (recovered) {
+              await s3.putObject({
+                Bucket: s3Bucket,
+                Key: `${s3RootKey}/request.json`,
+                Body: messageBody,
+                ContentType: 'application/json',
+              });
+            }
 
             // Store S3 info for this job
             await sqldb.execute(sql.update_s3_info, {
@@ -93,11 +131,8 @@ export class ExternalGraderSqs implements Grader {
         stage = 'publication';
         await sendJobToQueue({
           jobId: grading_job.id,
-          question,
           config,
-          s3Bucket,
-          s3RootKey,
-          recovered: submission.recovered_from_user_id !== null,
+          messageBody,
         });
         emitter.emit('submit');
       } catch (err) {
@@ -119,18 +154,12 @@ function getS3RootKey(jobId: string) {
 
 async function sendJobToQueue({
   jobId,
-  question,
   config,
-  s3Bucket,
-  s3RootKey,
-  recovered,
+  messageBody,
 }: {
   jobId: string;
-  question: Question;
   config: Config;
-  s3Bucket: string;
-  s3RootKey: string;
-  recovered: boolean;
+  messageBody: string;
 }) {
   const sqs = new SQSClient(makeAwsClientConfig());
 
@@ -138,24 +167,10 @@ async function sendJobToQueue({
     QUEUE_URL = await getQueueUrl(sqs, config.externalGradingJobsQueueName);
   }
 
-  const messageBody = {
-    jobId,
-    image: question.external_grading_image,
-    entrypoint: question.external_grading_entrypoint,
-    s3Bucket,
-    s3RootKey,
-    ...(recovered ? { recovered: true } : {}),
-    timeout: Math.min(
-      question.external_grading_timeout ?? config.externalGradingDefaultTimeout,
-      config.externalGradingMaximumTimeout,
-    ),
-    enableNetworking: question.external_grading_enable_networking || false,
-    environment: question.external_grading_environment,
-  };
   await sqs.send(
     new SendMessageCommand({
       QueueUrl: QUEUE_URL,
-      MessageBody: JSON.stringify(messageBody),
+      MessageBody: messageBody,
     }),
   );
   logger.verbose('Queued external grading job', {
