@@ -4,9 +4,12 @@ import json
 import os
 import pathlib
 import re
+import select
 import shlex
 import subprocess
 import tempfile
+import threading
+import time
 from collections.abc import Iterable
 from typing import Any, Literal, TypedDict, TypeGuard
 
@@ -62,6 +65,14 @@ could also mean that scanf does not support the input provided
 (e.g., reading an int if the input is a double).
 """
 
+OUTPUT_LIMIT_MESSAGE = """
+
+OUTPUT LIMIT EXCEEDED! The program was stopped because it produced
+too much output. Typically this means an infinite loop was found.
+"""
+
+ReadStatus = Literal["eof", "timeout", "output_limit"]
+
 
 class UngradableError(Exception):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -76,6 +87,42 @@ UngradableException = UngradableError
 def is_str_list(val: list[float | str | int]) -> TypeGuard[list[str]]:
     """Determines whether all objects in the list are strings"""
     return all(isinstance(x, str) for x in val)
+
+
+def write_input(proc: subprocess.Popen[bytes], data: bytes | None) -> None:
+    assert proc.stdin is not None
+    try:
+        if data is not None:
+            proc.stdin.write(data)
+        proc.stdin.close()
+    except OSError:
+        # The program exited or was stopped before reading all of its input.
+        pass
+
+
+def read_output(
+    proc: subprocess.Popen[bytes],
+    output: bytearray,
+    deadline: float | None,
+    max_output_size: int | None,
+) -> ReadStatus:
+    """Reads the program output into `output` until the output is closed,
+    the deadline passes, or the output exceeds `max_output_size` bytes."""
+    assert proc.stdout is not None
+    fd = proc.stdout.fileno()
+    while True:
+        remaining = None if deadline is None else deadline - time.monotonic()
+        if remaining is not None and remaining <= 0:
+            return "timeout"
+        ready, _, _ = select.select([fd], [], [], remaining)
+        if not ready:
+            return "timeout"
+        chunk = os.read(fd, 65536)
+        if not chunk:
+            return "eof"
+        output += chunk
+        if max_output_size is not None and len(output) > max_output_size:
+            return "output_limit"
 
 
 # TODO: in version 3.11 we can use `Required` to mark properties as such.
@@ -102,6 +149,7 @@ class CGrader:
         sandboxed: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument]
         timeout: float | None = None,
         env: dict[str, str] | None = None,
+        max_output_size: int | None = None,
     ) -> str:
         if isinstance(command, str):
             command = shlex.split(command)
@@ -125,26 +173,47 @@ class CGrader:
             )
         except Exception:
             return ""
-        out = ""
-        tostr = ""
         if isinstance(input, bytearray):
             input = bytes(input)  # ruff:ignore[builtin-variable-shadowing]
         if input is not None and not isinstance(input, bytes):
             input = str(input).encode("utf-8")  # ruff:ignore[builtin-variable-shadowing]
-        try:
-            proc.communicate(input=input, timeout=timeout)[0]
-        except subprocess.TimeoutExpired:
-            tostr = TIMEOUT_MESSAGE
-        finally:
-            proc.kill()
+
+        # Write the input in a separate thread, so a program that does not read
+        # all of its input cannot block the output from being read.
+        threading.Thread(target=write_input, args=(proc, input), daemon=True).start()
+
+        output = bytearray()
+        deadline = None if timeout is None else time.monotonic() + timeout
+        status = read_output(proc, output, deadline, max_output_size)
+        if status == "eof":
             try:
-                out = proc.communicate(timeout=timeout)[0].decode(
-                    "utf-8", "backslashreplace"
+                proc.wait(
+                    timeout=None
+                    if deadline is None
+                    else max(deadline - time.monotonic(), 0)
                 )
             except subprocess.TimeoutExpired:
-                tostr = TIMEOUT_MESSAGE
+                status = "timeout"
+        if status != "eof":
+            proc.kill()
+        if status == "timeout":
+            if max_output_size is None:
+                # Without a size limit, the output of a program that did not
+                # finish can be too large to use, so it is discarded.
+                output.clear()
+            else:
+                # Keep output that was written before the program was stopped.
+                read_output(proc, output, time.monotonic() + 1, max_output_size)
+        assert proc.stdout is not None
+        proc.stdout.close()
+        proc.wait()
 
-        return out + tostr
+        out = output[:max_output_size].decode("utf-8", "backslashreplace")
+        if status == "timeout":
+            out += TIMEOUT_MESSAGE
+        elif status == "output_limit":
+            out += OUTPUT_LIMIT_MESSAGE
+        return out
 
     def compile_file(
         self,
@@ -487,6 +556,9 @@ class CGrader:
             input,
             sandboxed=True,
             timeout=timeout,
+            # A character takes at most 4 bytes in UTF-8, so stopping after this
+            # many bytes still detects any output longer than size_limit.
+            max_output_size=4 * size_limit if size_limit else None,
         )
 
         outcmp = out
@@ -553,6 +625,17 @@ class CGrader:
             r.search(outcmp) is not None for _, r in exp_output_with_regex
         ):
             points = 0
+
+        # The results page shows only the first few dozen lines of the output
+        # without scrolling, so the TIMEOUT and TRUNCATED notes at its end are
+        # easy to miss. Repeat the reason at the start of the message.
+        reason = None
+        if timeout and outcmp.endswith(TIMEOUT_MESSAGE):
+            reason = "TIMEOUT: the program did not finish within the time limit."
+        elif size_limit and len(outcmp) > size_limit:
+            reason = "TRUNCATED: the program produced too much output."
+        if reason:
+            msg = f"{reason}\n\n{msg}" if msg else reason
 
         return self.add_test_result(
             name,
