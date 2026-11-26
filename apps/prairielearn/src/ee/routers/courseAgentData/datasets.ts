@@ -10,7 +10,7 @@ import {
   EnumInstanceQuestionStatusSchema,
   EnumModeSchema,
 } from '../../../lib/db-types.js';
-import type { CourseAgentRequiredRoles } from '../../lib/course-agent/access.js';
+import { type CourseAgentRole, isCourseInstanceRole } from '../../lib/course-agent/access.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -38,36 +38,37 @@ const JsonObjectSchema = z.record(z.string(), z.unknown());
 
 function dataset<Shape extends Record<string, z.ZodType>>({
   description,
-  requiredRoles,
+  requiredRole,
   query,
   schema,
   largeColumns = [],
 }: {
   description: string;
   /**
-   * The roles the PrairieLearn page that shows these rows requires. A course instance role limits
-   * the rows to course instances where the user has it.
+   * The roles that can read these rows, as model functions take them: any one is enough. Match the
+   * PrairieLearn page that shows the rows. A model function checks a course instance role in its
+   * record's course instance; a dataset spans every course instance, so it checks the role in each
+   * one and returns only rows from course instances where it passes.
    */
-  requiredRoles: CourseAgentRequiredRoles;
+  requiredRole: CourseAgentRole[];
   query: string;
   schema: z.ZodObject<Shape>;
   /** Columns whose values can be large, so rows that include them are read a few at a time. */
   largeColumns?: (keyof Shape & string)[];
 }) {
+  const studentData = requiredRole.some(isCourseInstanceRole);
   // Rows are limited by course instance, so a dataset without the column, or with nulls in it,
   // would silently lose rows. The shape's type allows any column name, so it may be missing.
   const courseInstanceId = schema.shape.course_instance_id as z.ZodType | undefined;
-  if (
-    requiredRoles.courseInstanceRole &&
-    (!courseInstanceId || courseInstanceId.safeParse(null).success)
-  ) {
+  if (studentData && (!courseInstanceId || courseInstanceId.safeParse(null).success)) {
     throw new Error(
-      'A dataset that needs a course instance role needs a non-null course_instance_id column.',
+      'A dataset that requires a course instance role needs a non-null course_instance_id column.',
     );
   }
   return {
     description,
-    requiredRoles,
+    requiredRole,
+    studentData,
     query,
     schema,
     largeColumns: new Set<string>(largeColumns),
@@ -85,7 +86,7 @@ function dataset<Shape extends Record<string, z.ZodType>>({
 export const COURSE_DATA_DATASETS = {
   course_instances: dataset({
     description: 'Offerings of the course, each with its own students and assessments.',
-    requiredRoles: { courseRole: 'Previewer' },
+    requiredRole: ['Previewer'],
     query: sql.select_course_instances_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -106,7 +107,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   assessments: dataset({
     description: 'Assessments in each course instance.',
-    requiredRoles: { courseRole: 'Previewer' },
+    requiredRole: ['Previewer'],
     query: sql.select_assessments_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -145,7 +146,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   questions: dataset({
     description: 'Questions in the course question bank.',
-    requiredRoles: { courseRole: 'Previewer' },
+    requiredRole: ['Previewer'],
     query: sql.select_questions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -165,7 +166,7 @@ export const COURSE_DATA_DATASETS = {
   assessment_questions: dataset({
     description:
       'Questions as placed on an assessment, with their points and statistics. The statistics cover attempts that count in statistics and are recalculated every few minutes, so the latest activity may be missing.',
-    requiredRoles: { courseRole: 'Previewer' },
+    requiredRole: ['Previewer'],
     query: sql.select_assessment_questions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -199,7 +200,7 @@ export const COURSE_DATA_DATASETS = {
   assessment_instances: dataset({
     description:
       'Attempts at assessments by students or teams, with totals. An assessment with multiple_instance can have several attempts per student.',
-    requiredRoles: { courseInstanceRole: 'Student Data Viewer' },
+    requiredRole: ['Student Data Viewer'],
     query: sql.select_assessment_instances_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -239,7 +240,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   instance_questions: dataset({
     description: "Questions in a student's assessment attempt, with their scores.",
-    requiredRoles: { courseInstanceRole: 'Student Data Viewer' },
+    requiredRole: ['Student Data Viewer'],
     query: sql.select_instance_questions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -286,7 +287,7 @@ export const COURSE_DATA_DATASETS = {
   variants: dataset({
     description:
       'Generated versions of a question that students saw. Instructor previews are excluded.',
-    requiredRoles: { courseInstanceRole: 'Student Data Viewer' },
+    requiredRole: ['Student Data Viewer'],
     query: sql.select_variants_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -325,7 +326,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   submissions: dataset({
     description: 'Student answer submissions. Instructor previews are excluded.',
-    requiredRoles: { courseInstanceRole: 'Student Data Viewer' },
+    requiredRole: ['Student Data Viewer'],
     query: sql.select_submissions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -423,7 +424,7 @@ export function courseDataSchema() {
         name,
         {
           description: dataset.description,
-          student_data: dataset.requiredRoles.courseInstanceRole !== undefined,
+          student_data: dataset.studentData,
           schema: toJsonSchema(dataset.schema),
         },
       ]),

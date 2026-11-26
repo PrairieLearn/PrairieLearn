@@ -113,7 +113,7 @@ async function courseInstanceId(shortName: string) {
 }
 
 const STUDENT_DATA_DATASETS = Object.entries(COURSE_DATA_DATASETS)
-  .filter(([, dataset]) => dataset.requiredRoles.courseInstanceRole)
+  .filter(([, dataset]) => dataset.studentData)
   .map(([name]) => name);
 
 describe('course agent course data', { timeout: 60_000, concurrent: false }, function () {

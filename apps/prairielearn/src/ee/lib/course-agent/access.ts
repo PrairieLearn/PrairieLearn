@@ -35,23 +35,25 @@ export async function courseAgentEnabled(context: CourseAgentAccessContext): Pro
   });
 }
 
-/**
- * The roles a course agent read or action needs, in PrairieLearn's two kinds: a course role, which
- * applies to the whole course, and a course instance role (student data access), which is granted
- * in each course instance. When both are given, both are needed, as some PrairieLearn pages
- * require.
- */
-export type CourseAgentRequiredRoles =
-  | { courseRole: CourseRole; courseInstanceRole?: InstructorCourseInstanceRole }
-  | { courseRole?: CourseRole; courseInstanceRole: InstructorCourseInstanceRole };
+/** A role a course agent read or action can require: one of PrairieLearn's staff roles. */
+export type CourseAgentRole = CourseRole | InstructorCourseInstanceRole;
+
+export function isCourseInstanceRole(role: CourseAgentRole): role is InstructorCourseInstanceRole {
+  return role === 'Student Data Viewer' || role === 'Student Data Editor';
+}
 
 /**
- * Why the course agent was refused for lacking a role, in words it can pass on to the instructor.
+ * Why the course agent was refused for lacking all of `requiredRole`, in words it can pass on to
+ * the instructor.
  */
-export function missingRoleMessage(role: CourseRole | InstructorCourseInstanceRole) {
-  const access =
-    role === 'Student Data Viewer' || role === 'Student Data Editor'
-      ? `${role} access in at least one course instance`
-      : `${role} access to the course`;
+export function missingRoleMessage(requiredRole: CourseAgentRole[]) {
+  const courseRoles = requiredRole.filter((role) => !isCourseInstanceRole(role));
+  const courseInstanceRoles = requiredRole.filter(isCourseInstanceRole);
+  const access = [
+    ...(courseRoles.length > 0 ? [`${courseRoles.join(' or ')} access to the course`] : []),
+    ...(courseInstanceRoles.length > 0
+      ? [`${courseInstanceRoles.join(' or ')} access in at least one course instance`]
+      : []),
+  ].join(', or ');
   return `The instructor needs ${access} for this, which they do not have. Tell them, and do not retry. A course Owner can grant it on the Staff page.`;
 }
