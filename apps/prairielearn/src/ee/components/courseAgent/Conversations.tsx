@@ -733,26 +733,26 @@ function Chat({
       {autoApproveOffered && (
         <Alert
           variant="warning"
-          className="course-agent-auto-approve-offer small mb-0 rounded-0 border-start-0 border-end-0 border-bottom-0 d-flex align-items-center gap-2"
+          className="course-agent-auto-approve-offer small mb-0 rounded-0 border-start-0 border-end-0 border-bottom-0"
         >
-          <div className="d-flex flex-wrap align-items-center column-gap-3 row-gap-2 flex-grow-1">
-            <span className="course-agent-auto-approve-offer-text">
-              Don't want to approve every request manually?
-            </span>
-            <Button
-              variant="primary"
-              size="sm"
-              className="text-nowrap"
-              onClick={() => setConfirmingAutoApprove(true)}
-            >
-              Turn on auto-approve
-            </Button>
+          <div className="course-agent-auto-approve-offer-body">
+            <div className="course-agent-auto-approve-offer-content">
+              <span>Don't want to approve every request manually?</span>
+              <Button
+                variant="primary"
+                size="sm"
+                className="text-nowrap"
+                onClick={() => setConfirmingAutoApprove(true)}
+              >
+                Turn on auto-approve
+              </Button>
+            </div>
+            <CloseButton
+              className="flex-shrink-0"
+              aria-label="Dismiss"
+              onClick={() => setAutoApproveOffered(false)}
+            />
           </div>
-          <CloseButton
-            className="flex-shrink-0"
-            aria-label="Dismiss"
-            onClick={() => setAutoApproveOffered(false)}
-          />
         </Alert>
       )}
       <Composer

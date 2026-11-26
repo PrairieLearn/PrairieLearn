@@ -129,18 +129,53 @@ textarea.course-agent-composer-input {
 }
 
 /*
- * A short offer above the message box, so it is tighter than a page alert. The question's line
- * spacing adds room above it, so the bottom gets more padding to match.
+ * A short offer above the message box. A narrow panel stacks the button under the question; a wide
+ * one puts it beside the question, which may wrap to two lines. The alert is the size container,
+ * so its padding lives on the body.
  */
 .alert.course-agent-auto-approve-offer {
-  --bs-alert-padding-x: 1rem;
-  --bs-alert-padding-y: 0.5rem;
-  padding-bottom: 0.75rem;
+  --bs-alert-padding-x: 0;
+  --bs-alert-padding-y: 0;
+  container-type: inline-size;
 }
 
-/* The question and button share a line when they fit; otherwise the button wraps below. */
-.course-agent-auto-approve-offer-text {
-  flex: 1 1 auto;
+/* The question's line spacing adds room above it, so the stacked layout pads the bottom more. */
+.course-agent-auto-approve-offer-body {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 1rem 0.75rem;
+}
+
+.course-agent-auto-approve-offer-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+/* Offsets the extra bottom padding, so the close button stays centred on the strip. */
+.course-agent-auto-approve-offer-body .btn-close {
+  margin-bottom: -0.25rem;
+}
+
+@container (min-width: 30rem) {
+  .course-agent-auto-approve-offer-body {
+    padding-bottom: 0.5rem;
+  }
+
+  .course-agent-auto-approve-offer-body .btn-close {
+    margin-bottom: 0;
+  }
+
+  .course-agent-auto-approve-offer-content {
+    flex-direction: row;
+    column-gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 .course-agent-auto-approve-offer .btn-close {
