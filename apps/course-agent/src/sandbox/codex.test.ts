@@ -313,7 +313,7 @@ describe('course agent turns', () => {
     ]);
   });
 
-  it("shows the end of a running command's output as a part replaced in place", async () => {
+  it("shows the plan and the end of a running command's output as parts replaced in place", async () => {
     const { sandbox, native, emit } = runner();
     const accepted = Promise.withResolvers<undefined>();
     const turn = new SandboxTurn(
@@ -323,6 +323,22 @@ describe('course agent turns', () => {
     );
     await accepted.promise;
     const ids = { threadId: 'thread', turnId: 'turn' };
+    emit({
+      id: 99,
+      method: 'item/tool/call',
+      params: {
+        ...ids,
+        callId: 'plan',
+        namespace: null,
+        tool: 'show_plan',
+        arguments: {
+          steps: [
+            { step: 'Read the question', status: 'completed' },
+            { step: 'Run the tests', status: 'in_progress' },
+          ],
+        },
+      },
+    });
     emit({
       method: 'item/started',
       params: {
@@ -356,6 +372,18 @@ describe('course agent turns', () => {
     await turn.finished;
     const chunks: UIMessageChunk[] = [];
     for await (const chunk of turn.stream) chunks.push(chunk);
+    const plan = {
+      v: 1,
+      steps: [
+        { text: 'Read the question', status: 'completed' },
+        { text: 'Run the tests', status: 'inProgress' },
+      ],
+    };
+    // The turn's end marks its plan as over, so a later turn in the same message does not show it.
+    expect(chunks.filter((chunk) => chunk.type === 'data-plan')).toEqual([
+      { type: 'data-plan', id: 'plan:turn', data: plan },
+      { type: 'data-plan', id: 'plan:turn', data: { ...plan, ended: true } },
+    ]);
     expect(chunks.filter((chunk) => chunk.type === 'data-tool')).toMatchObject([
       { id: 'tool:tests', data: { status: 'running', output: null } },
       {
@@ -384,6 +412,7 @@ describe('course agent turns', () => {
       dynamicTools: [
         { name: 'list_course_datasets' },
         { name: 'get_course_data' },
+        { name: 'show_plan' },
         { name: 'offer_page' },
         { name: 'offer_reload' },
       ],
@@ -560,6 +589,7 @@ describe('course agent turns', () => {
         dynamicTools: [
           { name: 'list_course_datasets' },
           { name: 'get_course_data' },
+          { name: 'show_plan' },
           {
             name: 'offer_page',
             inputSchema: {

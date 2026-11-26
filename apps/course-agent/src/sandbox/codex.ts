@@ -10,6 +10,7 @@ import {
   type NavigationTarget,
   NavigationTargetSchema,
   type PageCatalog,
+  type PlanPart,
   type ToolCall,
 } from '@prairielearn/course-agent-types';
 
@@ -26,13 +27,15 @@ import type { TurnStartParams } from '../../generated/types/v2/TurnStartParams.j
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
-import { MESSAGE_TOOL_CHARS, toolCallFromItem } from './tool-calls.js';
+import { MESSAGE_TOOL_CHARS, clip, toolCallFromItem } from './tool-calls.js';
 
 /** How much of a running command's latest output the chat shows, and how often it is refreshed. */
 const LIVE_OUTPUT_CHARS = 600;
 const LIVE_OUTPUT_INTERVAL_MS = 1000;
 /** Marks a text part as an update, which the chat folds in with the agent's work. */
 const UPDATE_METADATA = { courseAgent: { update: true } };
+const MAX_PLAN_STEPS = 30;
+const PLAN_STEP_CHARS = 200;
 
 // Validate only fields consumed by this adapter; Codex may return additional data.
 const EmptyResult = z.object({});
@@ -65,12 +68,12 @@ const ItemEvent = z.object({
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
 /**
- * `request_changes` shows as a review card, and an offered page or reload as its own part; only a
- * failed call needs a tool entry.
+ * `request_changes` shows as a review card, and an offered page, a reload, and the plan as their
+ * own parts; only a failed call needs a tool entry.
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'offer_page', 'offer_reload']),
+  tool: z.enum(['request_changes', 'offer_page', 'offer_reload', 'show_plan']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -83,6 +86,17 @@ const DynamicToolCall = z.object({
   arguments: z.unknown(),
 });
 const RequestChangesArguments = z.strictObject({});
+const ShowPlanArguments = z.strictObject({
+  steps: z
+    .array(
+      z.strictObject({
+        step: z.string().describe('A few plain words that staff would understand.'),
+        status: z.enum(['pending', 'in_progress', 'completed']),
+      }),
+    )
+    .min(1)
+    .max(MAX_PLAN_STEPS),
+});
 const ListCourseDatasetsArguments = z.strictObject({});
 const CourseDataArguments = CourseDataQuerySchema.extend({
   dataset: z.string().describe('Dataset to download, from list_course_datasets.'),
@@ -159,6 +173,8 @@ export class CodexAppServerClient {
   /** The latest output of running commands, by history part ID, and what has yet to be shown. */
   private liveOutput = new Map<string, { tail: string; total: number; shown: number }>();
   private liveOutputTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The plan this turn is showing, which the turn's end marks as over. */
+  private plan: { id: string; data: PlanPart } | null = null;
   /** Tool call characters in the open message, which continuation turns append to. */
   private toolChars = { messageId: '', used: 0 };
   private failure: Error | null = null;
@@ -179,6 +195,7 @@ export class CodexAppServerClient {
     this.updates.clear();
     this.runningTools.clear();
     this.clearLiveOutput();
+    this.plan = null;
     if (this.toolChars.messageId !== messageId) this.toolChars = { messageId, used: 0 };
     this.onReview = onReview;
     void this.terminal.promise.catch(() => {});
@@ -339,6 +356,23 @@ export class CodexAppServerClient {
           success: true,
           text: 'The instructor sees a "Reload this page" button; do not describe it.',
         };
+      case showPlanTool.name: {
+        const request = ShowPlanArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        // One part per turn, replaced each time the agent sends its plan again.
+        this.plan = {
+          id: `plan:${call.data.turnId}`,
+          data: {
+            v: 1,
+            steps: request.data.steps.map(({ step, status }) => ({
+              text: clip(step, PLAN_STEP_CHARS, PLAN_STEP_CHARS).text,
+              status: status === 'in_progress' ? 'inProgress' : status,
+            })),
+          },
+        };
+        this.emit({ type: 'data-plan', ...this.plan });
+        return { success: true, text: 'Staff see the plan as a checklist while you work.' };
+      }
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
@@ -425,6 +459,7 @@ export class CodexAppServerClient {
               ...(this.onReview ? [requestChangesTool] : []),
               listCourseDatasetsTool,
               courseDataTool,
+              showPlanTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
               offerReloadTool,
             ],
@@ -630,6 +665,16 @@ export class CodexAppServerClient {
     }
     this.runningTools.clear();
     this.clearLiveOutput();
+    // The plan was this turn's. A later turn continues the same message, and the chat would
+    // otherwise take the plan for that turn's until it wrote something.
+    if (this.plan) {
+      this.controller.enqueue({
+        type: 'data-plan',
+        id: this.plan.id,
+        data: { ...this.plan.data, ended: true } satisfies PlanPart,
+      });
+    }
+    this.plan = null;
     if (error) {
       this.controller.enqueue({
         type: 'error',
@@ -685,6 +730,15 @@ const courseDataTool = {
   description:
     "Download the selected columns of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. To narrow results to a course instance, assessment, or question, filter by course_instance_short_name, assessment_tid, or qid, the directory names in the course files; there is no need to look up IDs first. The reply gives the file's path and row count, and says if the file does not hold every matching row.",
   inputSchema: toolInputSchema(CourseDataArguments),
+} satisfies DynamicToolSpec;
+
+// Codex has its own plan tool, but does not offer it to every model.
+const showPlanTool = {
+  type: 'function',
+  name: 'show_plan',
+  description:
+    'Show staff your plan for work that takes more than a few steps, as a checklist they see while you work. Send the whole plan every time it changes: every step with its status, with at most one step in_progress.',
+  inputSchema: toolInputSchema(ShowPlanArguments),
 } satisfies DynamicToolSpec;
 
 const requestChangesTool = {

@@ -73,6 +73,8 @@ Text the agent writes along the way is an update, not its reply, and the chat fo
 
 While a command runs, the Worker rewrites its `data-tool` part about once a second with the end of the output so far, so the chat can show that a long command is getting somewhere. Completion replaces that with the clipped full output.
 
+The agent keeps a plan for longer work with the `show_plan` dynamic tool, which takes the whole plan each time. The Worker shows it as a `data-plan` part matching `PlanPartSchema`, with ID `plan:<Codex turn ID>`, replaced on every call. When the turn ends, the Worker replaces it once more with `ended` set, because a later turn can continue the same message. The chat pins a plan above the message box while the agent works and the plan has not ended.
+
 History keeps a bounded copy: command text up to 2,000 characters, output up to 4,000 (its start and end), arguments up to 1,000, each diff up to 4,000, and 50 files per change. Paths in the course checkout are stored relative to the course root. Once a message's tool calls exceed 300,000 characters, later calls in it keep their labels but no output, diffs, or arguments, so the message stays well within a Durable Object row; Codex's own thread keeps the full record. A successful `request_changes` call has no part, because its review card shows it; a failed one does, so the instructor sees why. Catch-up omits tool calls except a one-line list of the files each completed change touched.
 
 ## Page location
