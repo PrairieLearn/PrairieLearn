@@ -6,6 +6,9 @@ import { IdSchema } from '@prairielearn/zod';
 
 import {
   EnumAssessmentTypeSchema,
+  EnumCourseInstanceRoleSchema,
+  EnumCourseRoleSchema,
+  EnumEnrollmentStatusSchema,
   EnumGradingMethodSchema,
   EnumInstanceQuestionStatusSchema,
   EnumModeSchema,
@@ -62,6 +65,9 @@ function dataset<Shape extends Record<string, z.ZodType>>({
  * returns exactly its schema's columns. Within v1, only add datasets and columns; a removal,
  * rename, or change in meaning needs a new version, since a running conversation may still use
  * an older Worker.
+ *
+ * No dataset returns a column that identifies a person, such as a name, UID, email, or UIN, so
+ * identities never leave the database. People appear only as IDs, which join rows across datasets.
  */
 export const COURSE_DATA_DATASETS = {
   course_instances: dataset({
@@ -363,6 +369,152 @@ export const COURSE_DATA_DATASETS = {
       ),
     }),
     largeColumns: ['submitted_answer', 'partial_scores', 'feedback'],
+  }),
+  issues: dataset({
+    description:
+      "Problems reported on the course's questions, by students or by PrairieLearn when a question's code fails.",
+    query: sql.select_issues_by_course_id,
+    schema: z.object({
+      id: IdSchema,
+      course_instance_id: IdSchema.nullable().describe(
+        'Course instance the issue was reported in. Null when reported from a question preview.',
+      ),
+      course_instance_short_name: CourseInstanceShortNameSchema.nullable(),
+      assessment_id: IdSchema.nullable().describe(
+        'Assessment the issue was reported in. Null when reported outside an assessment.',
+      ),
+      assessment_tid: AssessmentTidSchema,
+      question_id: IdSchema.nullable(),
+      qid: QidSchema,
+      instance_question_id: IdSchema.nullable(),
+      variant_id: IdSchema.nullable().describe(
+        'Version of the question the reporter was looking at, as in the variants dataset when a student reported it.',
+      ),
+      user_id: IdSchema.nullable().describe('User who was working on the question.'),
+      reported_at: TimestampSchema.nullable().describe('When the issue was reported.'),
+      open: z.boolean().describe('Whether the issue still waits for staff to resolve it.'),
+      manually_reported: z
+        .boolean()
+        .describe(
+          "True when a person reported it with the question's report button. False when PrairieLearn reported it because the question's code failed.",
+        ),
+      student_message: z
+        .string()
+        .nullable()
+        .describe("The reporter's description, or a short description of the failure."),
+      instructor_message: z
+        .string()
+        .nullable()
+        .describe("Detail for staff, such as the error the question's code raised."),
+    }),
+  }),
+  sharing_sets: dataset({
+    description:
+      "The course's sharing sets, which group questions to share with other courses. They are defined in infoCourse.json, and a question joins one in its info.json.",
+    query: sql.select_sharing_sets_by_course_id,
+    schema: z.object({
+      id: IdSchema,
+      name: z.string().describe('Name of the sharing set, as in infoCourse.json.'),
+      description: z.string().nullable().describe('What the sharing set is for.'),
+    }),
+  }),
+  sharing_set_courses: dataset({
+    description: "Other courses that can use the questions in one of this course's sharing sets.",
+    query: sql.select_sharing_set_courses_by_course_id,
+    schema: z.object({
+      sharing_set_id: IdSchema,
+      sharing_set_name: z.string().describe('Name of the sharing set.'),
+      course_short_name: z
+        .string()
+        .nullable()
+        .describe('Short name of the course that has access, such as CS 101.'),
+      course_title: z.string().nullable().describe('Title of the course that has access.'),
+    }),
+  }),
+  students: dataset({
+    description:
+      'People enrolled in or invited to each course instance. Course staff are not listed. Students are identified only by enrollment_id and user_id; their names, UIDs, and emails are not available.',
+    query: sql.select_students_by_course_id,
+    schema: z.object({
+      enrollment_id: IdSchema,
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      user_id: IdSchema.nullable().describe(
+        'The user, as user_id in other datasets. Null for an invitation not yet accepted.',
+      ),
+      status: EnumEnrollmentStatusSchema.describe(
+        'invited: invited but not yet joined. joined: enrolled. rejected: declined the invitation. left: left on their own. removed: removed by staff. blocked: blocked by staff.',
+      ),
+      first_joined_at: TimestampSchema.nullable().describe('When the student first joined.'),
+    }),
+  }),
+  student_label_members: dataset({
+    description:
+      'Which students are in which student labels. Labels are defined in "studentLabels" in infoCourseInstance.json.',
+    query: sql.select_student_label_members_by_course_id,
+    schema: z.object({
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      label_name: z.string().describe('Name of the label.'),
+      enrollment_id: IdSchema.describe('The student, as enrollment_id in students.'),
+      user_id: IdSchema.nullable().describe(
+        'The student, as user_id in other datasets. Null for an invitation not yet accepted.',
+      ),
+    }),
+  }),
+  publishing_extension_students: dataset({
+    description:
+      'Students with extended access to a course instance after it closes for everyone else, one row per student per extension.',
+    query: sql.select_publishing_extension_students_by_course_id,
+    schema: z.object({
+      extension_id: IdSchema.describe('The extension. A student can be in several.'),
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      extension_name: z.string().nullable().describe('Name of the extension.'),
+      end_date: TimestampSchema.describe("When the extension's access ends."),
+      enrollment_id: IdSchema.describe('The student, as enrollment_id in students.'),
+      user_id: IdSchema.nullable().describe(
+        'The student, as user_id in other datasets. Null for an invitation not yet accepted.',
+      ),
+    }),
+  }),
+  group_members: dataset({
+    description:
+      'Which students are in which group, for assessments that use group work. One row per student per group.',
+    query: sql.select_group_members_by_course_id,
+    schema: z.object({
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      assessment_id: IdSchema,
+      assessment_tid: AssessmentTidSchema,
+      team_id: IdSchema.describe('The group, as team_id in assessment_instances.'),
+      group_name: z.string().describe('Name of the group, unique in the assessment.'),
+      user_id: IdSchema.describe('The student, as user_id in other datasets.'),
+    }),
+  }),
+  staff: dataset({
+    description:
+      "People on the course's staff and their course roles. Staff are identified only by user_id; their names, UIDs, and emails are not available.",
+    query: sql.select_staff_by_course_id,
+    schema: z.object({
+      user_id: IdSchema,
+      course_role: EnumCourseRoleSchema.describe(
+        'Previewer, Viewer, Editor, or Owner, each with the access of the one before and more. None means the person only has access to student data in some course instances.',
+      ),
+    }),
+  }),
+  staff_student_data_access: dataset({
+    description:
+      'Staff who can see or edit student data in each course instance. A course role, even Owner, gives no access to student data on its own. Grading, changing scores, and managing students need Student Data Editor.',
+    query: sql.select_staff_student_data_access_by_course_id,
+    schema: z.object({
+      user_id: IdSchema.describe('The staff member, as user_id in staff.'),
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      access: EnumCourseInstanceRoleSchema.exclude(['None']).describe(
+        'Student Data Viewer: can see students and their work. Student Data Editor: can also change them.',
+      ),
+    }),
   }),
 };
 
