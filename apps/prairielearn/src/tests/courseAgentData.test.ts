@@ -21,6 +21,7 @@ import {
 import { insertCourse } from '../models/course.js';
 import {
   generateAndEnrollUsers,
+  inviteStudentByUid,
   selectUsersAndEnrollmentsByUidsInCourseInstance,
 } from '../models/enrollment.js';
 import {
@@ -263,13 +264,49 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
       authn_user_id: '1',
       authzData: dangerousFullSystemAuthz(),
     });
+    const invitedUid = 'invited-student@example.com';
+    await inviteStudentByUid({
+      uid: invitedUid,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    const returned: string[] = [];
     for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${dataUrl}/${name}`, owner, {
         select: Object.keys(dataset.schema.shape),
       });
       assert.isNotEmpty(rows, name);
       for (const row of rows) dataset.schema.strict().parse(row);
+      returned.push(JSON.stringify(rows));
     }
+    // The exam taker, a student in a label, an extension, and a group, an invited student, and a
+    // staff member: people appear in course data only by ID.
+    const identities = z
+      .array(z.string())
+      .parse([
+        config.authUid,
+        config.authName,
+        student.uid,
+        student.name,
+        student.email,
+        invitedUid,
+        'owner@example.com',
+      ]);
+    for (const identity of identities) assert.notInclude(returned.join('\n'), identity);
+  });
+
+  test('no dataset has a column that identifies a person', function () {
+    for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
+      for (const column of Object.keys(dataset.schema.shape)) {
+        assert.notMatch(column, /(^|_)(uid|uin|email)$/, name);
+      }
+    }
+    assert.doesNotHaveAnyKeys(COURSE_DATA_DATASETS.students.schema.shape, ['name']);
+    assert.doesNotHaveAnyKeys(COURSE_DATA_DATASETS.staff.schema.shape, ['name']);
+    assert.doesNotHaveAnyKeys(COURSE_DATA_DATASETS.staff_student_data_access.schema.shape, [
+      'name',
+    ]);
   });
 
   test('filters, select, order, and limit narrow the rows', async function () {

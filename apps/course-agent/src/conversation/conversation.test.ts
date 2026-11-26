@@ -773,7 +773,7 @@ it('asks the instructor before reading course data, then reads once it is approv
         label: 'students',
         icon: 'people',
         description: 'Students in each course instance.',
-        schema: { properties: { uid: { type: 'string' }, status: { type: 'string' } } },
+        schema: { properties: { user_id: { type: 'string' }, status: { type: 'string' } } },
       },
     },
   };
@@ -786,7 +786,7 @@ it('asks the instructor before reading course data, then reads once it is approv
         failNextDownload = false;
         return Response.json({ message: 'The query timed out.' }, { status: 500 });
       }
-      return new Response('{"uid":"a@example.com","status":"joined"}\n');
+      return new Response('{"user_id":"1","status":"joined"}\n');
     }
     return modelResponse();
   });
@@ -816,7 +816,7 @@ it('asks the instructor before reading course data, then reads once it is approv
     .native;
   const request = {
     dataset: 'students',
-    select: ['uid', 'status'],
+    select: ['user_id', 'status'],
     filters: [{ column: 'status', op: 'eq' as const, value: 'joined' }],
   };
   expect(await courseData.getCourseData({ ...request, select: ['nope'] })).toMatchObject({
@@ -867,7 +867,7 @@ it('asks the instructor before reading course data, then reads once it is approv
   failNextDownload = true;
   expect(await courseData.getCourseData(request)).toMatchObject({ success: false });
   // The approval covers that read once, whatever order the columns are named in.
-  const read = await courseData.getCourseData({ ...request, select: ['status', 'uid'] });
+  const read = await courseData.getCourseData({ ...request, select: ['status', 'user_id'] });
   expect(read).toMatchObject({ success: true, text: expect.stringContaining('Wrote 1 rows') });
   expect(downloads()).toBe(2);
   expect((await courseData.getCourseData(request)).text).toContain('nothing was downloaded yet');
@@ -877,7 +877,9 @@ it('asks the instructor before reading course data, then reads once it is approv
 it('reads course data without asking when the instructor chose to always approve', async () => {
   const fetch = vi.fn(async (url: string | URL) => {
     if (String(url).endsWith('/usage')) return decision();
-    if (String(url).endsWith('/course_agent/data/students')) return new Response('{"uid":"a"}\n');
+    if (String(url).endsWith('/course_agent/data/students')) {
+      return new Response('{"user_id":"1"}\n');
+    }
     return modelResponse();
   });
   vi.stubGlobal('fetch', fetch);
@@ -898,7 +900,9 @@ it('reads course data without asking when the instructor chose to always approve
   options.onReady();
   const { courseData } = (conversation as unknown as { native: { courseData: CourseDataTools } })
     .native;
-  expect(await courseData.getCourseData({ dataset: 'students', select: ['uid'] })).toMatchObject({
+  expect(
+    await courseData.getCourseData({ dataset: 'students', select: ['user_id'] }),
+  ).toMatchObject({
     success: true,
     text: expect.stringContaining('Wrote 1 rows'),
   });

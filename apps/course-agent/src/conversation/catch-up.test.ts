@@ -212,7 +212,7 @@ describe('describeReviewResult', () => {
 
   it('tells the agent to make an approved read itself, and not to repeat a denied one', () => {
     const dataRead = { icon: 'people', title: 'View students', subtitle: 'All students' };
-    const request = { dataset: 'students', select: ['uid'] };
+    const request = { dataset: 'students', select: ['user_id'] };
     const approved = describeReviewResult({ decision: 'approved', dataRead }, 'github', request);
     expect(approved).toContain('The instructor approved the request "View students".');
     expect(approved).toContain(JSON.stringify(request));
