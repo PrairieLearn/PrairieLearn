@@ -15,6 +15,7 @@ import {
 } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { insertSharedQuestionUsagesForSubmission } from '../models/shared-question-usages.js';
+import { selectOptionalSubmissionById } from '../models/submission.js';
 import { deleteUnsavedSubmissions } from '../models/unsaved-submission.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -382,6 +383,16 @@ async function selectSubmissionForGrading(
     if (submission == null) return null;
 
     if (check_submission_id != null && !idsEqual(submission.id, check_submission_id)) {
+      // A newer Save can supersede a recovery after its submission has committed.
+      const expectedSubmission = await selectOptionalSubmissionById({
+        submission_id: check_submission_id,
+      });
+      if (
+        expectedSubmission?.recovered_from_user_id != null &&
+        idsEqual(expectedSubmission.variant_id, variant_id)
+      ) {
+        return null;
+      }
       throw new error.AugmentedError('Submission ID mismatch', {
         status: 400,
         data: {
