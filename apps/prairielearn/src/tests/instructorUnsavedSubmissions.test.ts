@@ -45,7 +45,10 @@ import * as sqs from '../lib/sqs.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { insertCourseInstancePermissions } from '../models/course-permissions.js';
+import {
+  insertCourseInstancePermissions,
+  updateCourseInstancePermissionsRole,
+} from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import {
@@ -306,6 +309,29 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
           ).rejects.toMatchObject({
             data: { code: 'FORBIDDEN' },
           });
+          const viewerPermission = {
+            course_id: '1',
+            course_instance_id: courseInstanceId,
+            user_id: viewer.id,
+            authn_user_id: student.id,
+          };
+          await updateCourseInstancePermissionsRole({
+            ...viewerPermission,
+            course_instance_role: 'None',
+          });
+          try {
+            // The signed viewer's access applies even when another staff account is active.
+            await withUser(editor, async () => {
+              expect(
+                (await fetch(`${siteUrl}${previewPrefix}/clientFilesCourse/data.txt`)).status,
+              ).toBe(403);
+            });
+          } finally {
+            await updateCourseInstancePermissionsRole({
+              ...viewerPermission,
+              course_instance_role: 'Student Data Viewer',
+            });
+          }
           await seedDraft(student, 'newer work');
           expect(
             (await fetch(`${siteUrl}${previewPrefix}/clientFilesCourse/data.txt`)).status,

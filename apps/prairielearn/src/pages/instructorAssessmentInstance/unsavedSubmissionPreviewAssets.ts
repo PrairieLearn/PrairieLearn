@@ -5,6 +5,8 @@ import { HttpStatusError } from '@prairielearn/error';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 
+import { calculateCourseInstanceRolePermissions } from '../../lib/authz-data-lib.js';
+import { selectCourseInstanceRole } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
 import type { Course, Question } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -17,6 +19,7 @@ import {
   selectOptionalUnsavedSubmissionForAssessment,
   selectOptionalUnsavedSubmissionMetadataForAssessment,
 } from '../../models/unsaved-submission.js';
+import { selectUserIsAdministrator } from '../../models/user.js';
 import * as questionServers from '../../question-servers/index.js';
 import clientFilesCourse from '../clientFilesCourse/clientFilesCourse.js';
 import clientFilesQuestion from '../clientFilesQuestion/clientFilesQuestion.js';
@@ -73,6 +76,17 @@ router.use(
       draftData.unsaved_submission.variant_id !== scope.variant_id
     ) {
       throw new HttpStatusError(404, 'Unsaved submission preview is no longer available');
+    }
+    // The sandbox cannot use session cookies to recheck the viewer's current access.
+    const role = await selectCourseInstanceRole({
+      courseInstanceId: scope.course_instance_id,
+      userId: scope.authn_user_id,
+    });
+    if (
+      !calculateCourseInstanceRolePermissions(role).has_course_instance_permission_view &&
+      !(await selectUserIsAdministrator(scope.authn_user_id))
+    ) {
+      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const course = await selectCourseById(scope.course_id);
     if (
