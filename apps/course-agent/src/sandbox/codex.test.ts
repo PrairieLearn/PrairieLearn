@@ -1,7 +1,12 @@
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CodexAppServerClient, type CourseDataRequest, type ToolReply } from './codex.js';
+import {
+  CodexAppServerClient,
+  type CourseActionRequest,
+  type CourseDataRequest,
+  type ToolReply,
+} from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
@@ -15,6 +20,16 @@ function runner({
       text: 'Not used in this test',
     }),
     getCourseData: async (_request: CourseDataRequest): Promise<ToolReply> => ({
+      success: false,
+      text: 'Not used in this test',
+    }),
+  },
+  courseActions = {
+    listCourseActions: async (): Promise<ToolReply> => ({
+      success: false,
+      text: 'Not used in this test',
+    }),
+    runCourseAction: async (_request: CourseActionRequest): Promise<ToolReply> => ({
       success: false,
       text: 'Not used in this test',
     }),
@@ -63,16 +78,21 @@ function runner({
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox, courseData, async (target) => {
-    if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
-    const { assessment } = target.params;
-    if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
-    return {
-      url: '/pl/course_instance/1/instructor/assessment/2/settings',
-      label: 'Settings',
-      subtitle: 'Assessment · Fa25 / hw1',
-    };
-  });
+  const native = new CodexAppServerClient(
+    sandbox,
+    courseData,
+    async (target) => {
+      if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
+      const { assessment } = target.params;
+      if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
+      return {
+        url: '/pl/course_instance/1/instructor/assessment/2/settings',
+        label: 'Settings',
+        subtitle: 'Assessment · Fa25 / hw1',
+      };
+    },
+    courseActions,
+  );
   return { sandbox, native, commands, emit, disconnect: () => socket.close() };
 }
 
@@ -327,6 +347,8 @@ describe('course agent turns', () => {
       dynamicTools: [
         { name: 'list_course_datasets' },
         { name: 'get_course_data' },
+        { name: 'list_course_actions' },
+        { name: 'run_course_action' },
         { name: 'offer_page' },
         { name: 'offer_reload' },
       ],
@@ -375,6 +397,58 @@ describe('course agent turns', () => {
     });
     expect(byId[13]).toMatchObject({ success: false });
     expect(courseData.getCourseData).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes course action calls to their handlers and returns their replies to the model', async () => {
+    const courseActions = {
+      listCourseActions: vi.fn(async () => ({ success: true, text: 'Course actions' })),
+      runCourseAction: vi.fn(async ({ action }: CourseActionRequest) => {
+        if (action === 'missing') throw new Error('404: Unknown action "missing"');
+        return { success: true, text: 'Closed 2 issues.' };
+      }),
+    };
+    const { native, commands, emit } = runner({ courseActions });
+    await native.connect();
+    await native.thread(thread);
+    const call = (id: number, tool: string, args: unknown) =>
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: `call-${id}`,
+          namespace: null,
+          tool,
+          arguments: args,
+        },
+      });
+    call(10, 'list_course_actions', {});
+    call(11, 'run_course_action', { action: 'issues_close', input: { issue_ids: ['3', '4'] } });
+    call(12, 'run_course_action', { action: 'missing', input: {} });
+    call(13, 'run_course_action', { action: 'issues_close' });
+    const replies = () => commands.filter((command) => 'result' in command);
+    await vi.waitFor(() => expect(replies()).toHaveLength(4));
+    expect(courseActions.listCourseActions).toHaveBeenCalledOnce();
+    expect(courseActions.runCourseAction).toHaveBeenCalledWith({
+      action: 'issues_close',
+      input: { issue_ids: ['3', '4'] },
+    });
+    const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
+    expect(byId[10]).toEqual({
+      success: true,
+      contentItems: [{ type: 'inputText', text: 'Course actions' }],
+    });
+    expect(byId[11]).toEqual({
+      success: true,
+      contentItems: [{ type: 'inputText', text: 'Closed 2 issues.' }],
+    });
+    expect(byId[12]).toEqual({
+      success: false,
+      contentItems: [{ type: 'inputText', text: '404: Unknown action "missing"' }],
+    });
+    expect(byId[13]).toMatchObject({ success: false });
+    expect(courseActions.runCourseAction).toHaveBeenCalledTimes(2);
   });
 
   it('shows input the agent requests as an input request part', async () => {
@@ -467,6 +541,8 @@ describe('course agent turns', () => {
         dynamicTools: [
           { name: 'list_course_datasets' },
           { name: 'get_course_data' },
+          { name: 'list_course_actions' },
+          { name: 'run_course_action' },
           {
             name: 'offer_page',
             inputSchema: {
