@@ -137,7 +137,7 @@ export async function resumeCourseAgentConversation(agentConversationId: string)
         : 'Could not recover the course agent.',
     );
   }
-  return z.strictObject({ recovered: z.literal(true) }).parse(await response.json());
+  return z.object({ recovered: z.literal(true) }).parse(await response.json());
 }
 
 /** The review and its snapshot, or null once the agent has received its result. */
@@ -174,5 +174,5 @@ export async function deliverCourseAgentReviewResult(
       'Could not deliver the review result.',
     );
   }
-  z.strictObject({ outcomeRecorded: z.literal(true) }).parse(await response.json());
+  z.object({ outcomeRecorded: z.literal(true) }).parse(await response.json());
 }

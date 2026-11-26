@@ -2,6 +2,15 @@ import { z } from 'zod';
 
 export * from './usage.js';
 
+/*
+ * PrairieLearn and the course agent Worker deploy separately, and conversations that are active
+ * during a Worker deploy keep the old Durable Object code for hours, so each side must accept
+ * what the other side's previous and next releases send. Schemas for data that crosses between
+ * them therefore use `z.object`, which strips fields the reader does not know, and new fields are
+ * optional. Model tool arguments stay strict, because their JSON Schema tells the model which
+ * fields exist. See "Compatibility between releases" in apps/course-agent/CONTRACT.md.
+ */
+
 export type ConversationLifecycle =
   // No live container. The next message initializes a sandbox or restores the committed checkpoint.
   | { status: 'offline' }
@@ -54,12 +63,12 @@ export const COURSE_DIR = '/workspace/session/course';
  */
 export const PageCatalogSchema = z
   .array(
-    z.strictObject({
+    z.object({
       key: z.string().min(1).max(100),
       label: z.string().min(1).max(100),
       params: z
         .array(
-          z.strictObject({
+          z.object({
             name: z.string().min(1).max(50),
             description: z.string().min(1).max(300),
             required: z.boolean(),
@@ -72,7 +81,7 @@ export const PageCatalogSchema = z
 
 export type PageCatalog = z.infer<typeof PageCatalogSchema>;
 
-export const CreateConversationInput = z.strictObject({
+export const CreateConversationInput = z.object({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
   // Optional so the Worker can deploy before PrairieLearn starts sending it.
@@ -113,24 +122,24 @@ export const reviewTag = (reviewId: string) => `review:${reviewId}`;
  * may or may not have been saved.
  */
 export const RequestChangesResultSchema = z
-  .strictObject({
+  .object({
     decision: z.enum(['approved', 'denied']),
     publication: z.discriminatedUnion('status', [
-      z.strictObject({ status: z.literal('not_attempted') }),
-      z.strictObject({ status: z.literal('saved_locally') }),
-      z.strictObject({
+      z.object({ status: z.literal('not_attempted') }),
+      z.object({ status: z.literal('saved_locally') }),
+      z.object({
         status: z.literal('conflict'),
         paths: z.array(ReviewPathSchema).min(1).max(100),
       }),
-      z.strictObject({ status: z.literal('published') }),
-      z.strictObject({ status: z.literal('failed'), error: z.string() }),
-      z.strictObject({ status: z.literal('unknown') }),
+      z.object({ status: z.literal('published') }),
+      z.object({ status: z.literal('failed'), error: z.string() }),
+      z.object({ status: z.literal('unknown') }),
     ]),
     sync: z.discriminatedUnion('status', [
-      z.strictObject({ status: z.literal('not_attempted') }),
-      z.strictObject({ status: z.literal('succeeded') }),
-      z.strictObject({ status: z.literal('failed'), error: z.string() }),
-      z.strictObject({ status: z.literal('unknown') }),
+      z.object({ status: z.literal('not_attempted') }),
+      z.object({ status: z.literal('succeeded') }),
+      z.object({ status: z.literal('failed'), error: z.string() }),
+      z.object({ status: z.literal('unknown') }),
     ]),
     /**
      * The instructor denied by sending a chat message. The agent receives the denial with that
@@ -162,23 +171,21 @@ export const RequestChangesResultSchema = z
 export type RequestChangesResult = z.infer<typeof RequestChangesResultSchema>;
 
 const ReviewFilesShape = {
-  additions: z
-    .array(z.strictObject({ path: ReviewPathSchema, contents: ReviewContentsSchema }))
-    .max(100),
-  deletions: z.array(z.strictObject({ path: ReviewPathSchema })).max(100),
+  additions: z.array(z.object({ path: ReviewPathSchema, contents: ReviewContentsSchema })).max(100),
+  deletions: z.array(z.object({ path: ReviewPathSchema })).max(100),
 };
 
 /** Captured file contents for instructor review, independent of the live sandbox. */
 export const ReviewSnapshotSchema = z
   .discriminatedUnion('type', [
-    z.strictObject({
+    z.object({
       ...ReviewFilesShape,
       type: z.literal('github'),
       repository: CreateConversationInput.shape.repository,
       branch: CreateConversationInput.shape.branch,
       baseCommit: z.string().regex(/^[0-9a-f]{40}$/),
     }),
-    z.strictObject({ ...ReviewFilesShape, type: z.literal('local') }),
+    z.object({ ...ReviewFilesShape, type: z.literal('local') }),
   ])
   .refine((snapshot) => {
     const paths = [...snapshot.additions, ...snapshot.deletions].map((file) => file.path);
@@ -195,7 +202,7 @@ export type ReviewSnapshot = z.infer<typeof ReviewSnapshotSchema>;
  * A review the agent requested and whose outcome it has not yet received. PrairieLearn owns the
  * decision and outcome; the agent service owns the snapshot and delivery to the agent.
  */
-export const ReviewSchema = z.strictObject({
+export const ReviewSchema = z.object({
   id: z.uuid(),
   snapshot: ReviewSnapshotSchema,
 });
@@ -294,7 +301,7 @@ export const INLINE_IMAGE_TYPES: readonly string[] = [
   'image/webp',
 ];
 
-export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
+export const UploadedAttachmentSchema = z.object({ id: z.uuid() });
 
 // Conversation and upload IDs are lowercase UUIDs that the Worker generates.
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';

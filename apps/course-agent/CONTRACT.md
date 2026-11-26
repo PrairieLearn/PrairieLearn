@@ -6,6 +6,16 @@ This document describes implementation invariants for maintainers. For configura
 
 `SandboxTurn` is an in-memory execution helper in the Conversation DO. It owns one turn's setup, cancellation, and output stream. The Conversation DO retains the Codex adapter across normal turns, so finishing a reply does not restart the native process. `CourseSandbox` is a separate DO that owns the container and private process channel. Keeping execution in one helper avoids making the conversation's lifecycle depend on individual native protocol commands.
 
+## Compatibility between releases
+
+PrairieLearn and the Worker deploy separately, normally the Worker first, and a conversation that is active during a Worker deploy keeps the old Durable Object code for up to seven hours. Rolling back either side also pairs it with the other side's newer release. Each side must therefore work with the other side's previous and next releases:
+
+- Data that crosses between them uses `z.object` schemas, which strip fields the reader does not know. A new field is optional, and a field one side can't trust from an older release uses `.optional().catch(undefined)`. Model tool arguments stay strict, because their JSON Schema tells the model which fields exist.
+- A side does not call a route or send a new kind of value (a new union variant, a larger limit) until the other side's deployed release accepts it. Gate the new behavior on something the other side sends, as the page catalog gates `offer_page`, or ship the receiving side in an earlier release.
+- A Worker route that calls a new Durable Object method must handle a Durable Object still running the previous release.
+
+A change that cannot meet these says so in its pull request, with the order in which to deploy each side.
+
 ## State ownership
 
 The conversation's private `conversation` storage record is authoritative. It contains lifecycle, course source/model configuration, sandbox and native thread IDs, the latest committed checkpoint reference, the current deadline, and the review whose result the agent has not yet received. Updates synchronously save a replacement record before publishing status, `deadlineAt` (an ISO timestamp or `null`), and the review ID to browsers through SDK state. SDK public state is a projection, republished on wake; it is not a second source of lifecycle decisions. Chat history displays reviews but holds none of their state.
@@ -81,7 +91,7 @@ The agent asks staff for decisions or missing information with Codex's `request_
 
 ## Opening pages for the instructor
 
-PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conversation: the instructor navigation tabs a course owner always sees, each with its key (the same vocabulary as the page location), label, and params. PrairieLearn defines each param's name, description, and whether it is required, so a page that takes a new kind of name needs no Worker change. It travels in the JSON body for GitHub conversations and in the `X-PL-Pages` header for local ones, whose body is the course archive. `CreateConversationInput` is strict, so the Worker must deploy before a PrairieLearn that sends a catalog. A conversation created without one has no `offer_page` tool.
+PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conversation: the instructor navigation tabs a course owner always sees, each with its key (the same vocabulary as the page location), label, and params. PrairieLearn defines each param's name, description, and whether it is required, so a page that takes a new kind of name needs no Worker change. It travels in the JSON body for GitHub conversations and in the `X-PL-Pages` header for local ones, whose body is the course archive. A conversation created without one has no `offer_page` tool, so a Worker can be deployed before or after the PrairieLearn that sends it.
 
 `offer_page` is a native dynamic tool, registered when a thread starts, with the catalog's keys as its `page` enum and the catalog's params as its `params` object. The DO resolves a target with `POST /pl/api/v1/course/:course_id/agent_navigation`, authenticated with `PL_SERVICE_TOKEN` and the conversation's ID, so PrairieLearn looks the names up as the conversation's user. A page or name PrairieLearn does not know fails the tool call with PrairieLearn's message. Otherwise the DO emits a `data-navigation` part (`NavigationPartSchema`) carrying the resolved URL, label, and subtitle, which the chat shows as a link. The page changes only when the instructor follows it.
 
