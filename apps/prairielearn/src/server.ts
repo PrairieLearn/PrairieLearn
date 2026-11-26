@@ -397,12 +397,14 @@ export async function initExpress(): Promise<Express> {
     if (req.path === '/pl/webhooks/stripe') return next();
     // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
     if (isMultipartRequest(req)) return next();
+    // The OAuth authorization server reads request bodies itself.
+    if (req.path.startsWith('/pl/oauth/')) return next();
 
     // Limit to 5MB of JSON
     bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
   });
   app.use((req, res, next) => {
-    if (isMultipartRequest(req)) return next();
+    if (isMultipartRequest(req) || req.path.startsWith('/pl/oauth/')) return next();
     bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 })(req, res, next);
   });
   app.use(cookieParser());
@@ -522,6 +524,8 @@ export async function initExpress(): Promise<Express> {
   if (isEnterprise()) {
     // Service authentication is handled by this router, independently of browser sessions.
     app.use('/pl/api/course-agent', (await import('./ee/routers/courseAgentUsage.js')).default);
+    // The MCP server and its OAuth authorization server authenticate with access tokens.
+    app.use((await import('./ee/mcp/router.js')).default);
   }
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
@@ -586,6 +590,13 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl', (await import('./pages/home/home.js')).default);
   app.use('/pl/user/trpc', userTrpcRouter);
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
+  // Where a signed-in user approves an agent that wants to connect to the MCP server.
+  app.use(
+    '/pl/agent_approval',
+    await enterpriseOnly(
+      async () => (await import('./ee/pages/agentApproval/agentApproval.js')).default,
+    ),
+  );
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/end-exam', (await import('./pages/endExam/endExam.js')).default);

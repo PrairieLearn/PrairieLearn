@@ -314,7 +314,7 @@ importers:
     dependencies:
       '@cloudflare/ai-chat':
         specifier: 0.12.2
-        version: 0.12.2(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(agents@0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7))(ai@7.0.118(zod@4.6.7))(react@19.3.0)
+        version: 0.12.2(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(agents@0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/server@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7))(ai@7.0.118(zod@4.6.7))(react@19.3.0)
       '@cloudflare/sandbox':
         specifier: 1.0.2
         version: 1.0.2
@@ -326,7 +326,7 @@ importers:
         version: 11.16.0(@cloudflare/workers-types@5.20261030.1)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(wrangler@4.156.0(@cloudflare/workers-types@5.20261030.1)(@types/node@24.19.0))
       agents:
         specifier: 0.33.0
-        version: 0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
+        version: 0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/server@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
       ai:
         specifier: ^7.0.116
         version: 7.0.118(zod@4.6.7)
@@ -535,7 +535,7 @@ importers:
         version: 3.1141.0(@aws-sdk/client-s3@3.1141.0)
       '@cloudflare/ai-chat':
         specifier: 0.12.2
-        version: 0.12.2(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(agents@0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7))(ai@7.0.118(zod@4.6.7))(react@19.3.0)
+        version: 0.12.2(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(agents@0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/server@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7))(ai@7.0.118(zod@4.6.7))(react@19.3.0)
       '@cortex-js/compute-engine':
         specifier: ^0.102.0
         version: 0.102.0
@@ -557,6 +557,15 @@ importers:
       '@mathjax/mathjax-newcm-font':
         specifier: ^4.1.3
         version: 4.1.3
+      '@modelcontextprotocol/express':
+        specifier: ^2.0.2
+        version: 2.0.2(@modelcontextprotocol/server@2.4.0)(express@4.22.3(supports-color@10.2.2))
+      '@modelcontextprotocol/node':
+        specifier: ^2.1.2
+        version: 2.1.2(@modelcontextprotocol/server@2.4.0)
+      '@modelcontextprotocol/server':
+        specifier: ^2.4.0
+        version: 2.4.0
       '@node-saml/passport-saml':
         specifier: ^5.1.0
         version: 5.1.0(supports-color@10.2.2)
@@ -829,7 +838,7 @@ importers:
         version: 8.3.5
       agents:
         specifier: 0.33.0
-        version: 0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
+        version: 0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/server@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
       ai:
         specifier: ^7.0.116
         version: 7.0.118(zod@4.6.7)
@@ -1018,7 +1027,7 @@ importers:
         version: 1.4.0
       jose:
         specifier: ^6.2.12
-        version: 6.2.12
+        version: 6.2.18
       jquery:
         specifier: ^3.7.1 <4
         version: 3.7.1
@@ -1091,6 +1100,9 @@ importers:
       object-hash:
         specifier: ^3.0.0
         version: 3.0.0
+      oidc-provider:
+        specifier: ^9.15.1
+        version: 9.15.1(supports-color@10.2.2)
       on-finished:
         specifier: ^2.4.1
         version: 2.4.1
@@ -1284,6 +1296,9 @@ importers:
         specifier: ^4.6.5
         version: 4.6.7
     devDependencies:
+      '@modelcontextprotocol/client':
+        specifier: ^2.4.0
+        version: 2.4.0
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -1386,6 +1401,9 @@ importers:
       '@types/object-hash':
         specifier: ^3.0.6
         version: 3.0.6
+      '@types/oidc-provider':
+        specifier: ^9.13.1
+        version: 9.13.1
       '@types/on-finished':
         specifier: ^2.3.5
         version: 2.3.5
@@ -4228,6 +4246,12 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  '@hono/node-server@2.1.11':
+    resolution: {integrity: sha512-KzKz9vl4vvr1vgLHamj+g5uonbrj5NwAdO3yzOS6cd2HjALVeOgTgeZOyAzNxejbkfOOPIcvuf/Tg8l1pEFLog==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
+
   '@html-eslint/core@0.66.1':
     resolution: {integrity: sha512-Rxog7sJUrBQsDObqrsSyuJNggLx5nqLKpx47/OIkut1qTpjWLUmtarcKTHjfNXidX2g5Hq7mr7rhrQJIglNhHg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -4523,6 +4547,23 @@ packages:
 
   '@modelcontextprotocol/core@2.4.0':
     resolution: {integrity: sha512-z8QBKqdfXLPzkLQuG4xp8hrVEMm1PZ1IgxMN2sMbJiFiAKOWXnAzogXn2W4aqIBlP1ea6U5yiqVquvUNM1Cj6Q==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/express@2.0.2':
+    resolution: {integrity: sha512-lUvfV7gT/tgP8nLRs0ajUtgL+MlMNWWHAls5c9cf4PyBexq3EgmhWWrS4irQOC9OoKuUsHHcNjUw9urhHz542g==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@modelcontextprotocol/server': ^2.3.0
+      express: ^4.18.0 || ^5.0.0
+
+  '@modelcontextprotocol/node@2.1.2':
+    resolution: {integrity: sha512-IIcIqBpr6NCQQs5DgJTgvbSOAw+3iaR/uquqg+e0nXCdudfjPg/80x0TseUnQx14AUAtE4fsJCEpJKPyb6WPVA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@modelcontextprotocol/server': ^2.4.0
+
+  '@modelcontextprotocol/server@2.4.0':
+    resolution: {integrity: sha512-rgR9yxSaAJ+bcsi/XroT/S2AfPiIWloXAnrdfYSCms9ivVju0ishu/wW0J21Ho6+ZOR1r7RyeRbjiRuF87ix5Q==}
     engines: {node: '>=20'}
 
   '@napi-rs/wasm-runtime@1.2.2':
@@ -6210,6 +6251,9 @@ packages:
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
 
+  '@types/accepts@1.3.7':
+    resolution: {integrity: sha512-Pay9fq2lM2wXPWbteBsRAGiWH2hig4ZE2asK+mm7kUzlxRTfL961rj89I6zV/E3PcIkDqyuBEcMxFT7rccugeQ==}
+
   '@types/archiver@8.0.0':
     resolution: {integrity: sha512-YpXPbEuv9+eUIPPQWUPahj3cvs9isWRuF+J4z+KbdYVDO3rWorWQFxUVHnwPu2AgKwvgpki5F2VMX0Xx+mX45A==}
 
@@ -6240,6 +6284,9 @@ packages:
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
 
+  '@types/content-disposition@0.5.9':
+    resolution: {integrity: sha512-8uYXI3Gw35MhiVYhG3s295oihrxRyytcRHjSjqnqZVDDy/xcGBRny7+Xj1Wgfhv5QzRtN2hB2dVRBUX9XW3UcQ==}
+
   '@types/cookie-parser@1.4.10':
     resolution: {integrity: sha512-B4xqkqfZ8Wek+rCOeRxsjMS9OgvzebEzzLYw7NHYuvzb7IdxOkI0ZHGgeEBX4PUM7QGVvNSK60T3OvWj3YfBRg==}
     peerDependencies:
@@ -6250,6 +6297,9 @@ packages:
 
   '@types/cookie@0.6.0':
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
+
+  '@types/cookies@0.9.2':
+    resolution: {integrity: sha512-1AvkDdZM2dbyFybL4fxpuNCaWyv//0AwsuUk2DWeXyM1/5ZKm6W3z6mQi24RZ4l2ucY+bkSHzbDVpySqPGuV8A==}
 
   '@types/cors@2.8.19':
     resolution: {integrity: sha512-mFNylyeyqN93lfe/9CSxOGREz8cpzAhH+E93xJ4xWQf62V8sQ/24reV2nyzUWM6H6Xji+GGHpkbLe7pVoUEskg==}
@@ -6395,6 +6445,9 @@ packages:
   '@types/he@1.2.3':
     resolution: {integrity: sha512-q67/qwlxblDzEDvzHhVkwc1gzVWxaNxeyHUBF4xElrvjL11O+Ytze+1fGpBHlr/H9myiBUaUXNnNPmBHxxfAcA==}
 
+  '@types/http-assert@1.5.6':
+    resolution: {integrity: sha512-TTEwmtjgVbYAzZYWyeHPrrtWnfVkm8tQkP8P21uQifPgMRgjrow3XDEYqucuC8SKZJT7pUnhU/JymvjggxO9vw==}
+
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
 
@@ -6425,8 +6478,17 @@ packages:
   '@types/katex@0.16.8':
     resolution: {integrity: sha512-trgaNyfU+Xh2Tc+ABIb44a5AYUpicB3uwirOioeOkNPPbmgRNtcWyDeeFRzjPZENO9Vq8gvVqfhaaXWLlevVwg==}
 
+  '@types/keygrip@1.0.6':
+    resolution: {integrity: sha512-lZuNAY9xeJt7Bx4t4dx0rYCDqGPW8RXhQZK1td7d4H6E9zYbLoOtjBvfwdTKpsyxQI/2jv+armjX/RW+ZNpXOQ==}
+
   '@types/klaw@3.0.7':
     resolution: {integrity: sha512-ooZ+dVfTfg8RIUzwCBnHR6NirCB0amo1MNneUbL+Votca1H/eaMwkB31uDU9O6yKWNY5ngdYP3ywduOxm4KtMg==}
+
+  '@types/koa-compose@3.2.9':
+    resolution: {integrity: sha512-BroAZ9FTvPiCy0Pi8tjD1OfJ7bgU1gQf0eR6e1Vm+JJATy9eKOG3hQMFtMciMawiSOVnLMdmUOC46s7HBhSTsA==}
+
+  '@types/koa@3.0.3':
+    resolution: {integrity: sha512-TdtNEJ7sYSrFQcVuS2ySsVqnq5EyE3oJbnfFJvkC9UtGP4Kpem5KE7r+ivHIbIAQAofSqnlB5D3vkfYO69TQpg==}
 
   '@types/loopbench@1.2.4':
     resolution: {integrity: sha512-ZwPq/vnlIrpNx/YCofE8GSEXzfzsU6QeTHqCtDFmy7dW2/QlgC1SQKSFZSIWE/onZGfPXUAKpaH9WDB7RGZr5w==}
@@ -6466,6 +6528,9 @@ packages:
 
   '@types/object-hash@3.0.6':
     resolution: {integrity: sha512-fOBV8C1FIu2ELinoILQ+ApxcUKz4ngq+IWUYrxSGjXzzjUALijilampwkMgEtJ+h2njAW3pi853QpzNVCHB73w==}
+
+  '@types/oidc-provider@9.13.1':
+    resolution: {integrity: sha512-RZqzlnjeU1py4ujgP3Q5eZkcGQyyCj4Dt2x8B9rw0QP2u1L4f3xnH8Buj2JyOrbCAdRa2QM6ylmW2TupemjpUQ==}
 
   '@types/on-finished@2.3.5':
     resolution: {integrity: sha512-XUaCx9tVIC577KsOZxKbnvGlyPt2ogNXQEq/bOQpAfPwH9sH0FbzrRsK1961jpjKlK5V+Owmw55dVjukWhwH0w==}
@@ -7642,6 +7707,10 @@ packages:
   content-disposition@0.5.4:
     resolution: {integrity: sha512-FveZTNuGw04cxlAiWbzi6zTAL/lhehaWbTtgluJh4/E95DqMwTmha3KZN1aAWA8cFIhHzMZUvLevkw5Rqk+tSQ==}
     engines: {node: '>= 0.6'}
+
+  content-disposition@1.0.1:
+    resolution: {integrity: sha512-oIXISMynqSqm241k6kcQ5UwttDILMK4BiurCfGEREw6+X9jkkpEe5T9FZaApyLGGOnFuyMWZpdolTXMtvEJ08Q==}
+    engines: {node: '>=18'}
 
   content-type@1.0.5:
     resolution: {integrity: sha512-nTjqfcBFEipKdXCv4YDQWCfmcLZKm81ldF0pAopTvyrFGVbcR6P/VAAd5G7N+0tTr8QqiU0tFadD6FK4NtJwOA==}
@@ -9202,8 +9271,8 @@ packages:
   jju@1.4.0:
     resolution: {integrity: sha512-8wb9Yw966OSxApiCt0K3yNJL8pnNeIv+OEq2YMidz4FKP6nonSRoOXc80iXY4JaN2FC11B9qsNmDsm+ZOfMROA==}
 
-  jose@6.2.12:
-    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
+  jose@6.2.18:
+    resolution: {integrity: sha512-doV4thUwgkrycJH4yLeqwTGIIZphHl+pk7CPReuMIhYhncmgzdko85MaCG4YQFTxqMFr1/oEH32tZuKKovcDEg==}
 
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
@@ -9385,6 +9454,10 @@ packages:
   koa@2.16.4:
     resolution: {integrity: sha512-3An0GCLDSR34tsCO4H8Tef8Pp2ngtaZDAZnsWJYelqXUK5wyiHvGItgK/xcSkmHLSTn1Jcho1mRQs2ehRzvKKw==}
     engines: {node: ^4.8.4 || ^6.10.1 || ^7.10.1 || >= 8.1.4}
+
+  koa@3.3.0:
+    resolution: {integrity: sha512-NdsWJYxVzUuYt718DtEQRhUXqqsAPA4VlaUGrlidjh/T2TP/4OQXqQg4ouUHfHD9f+tgmwLZWPm+JQLgqM9YbA==}
+    engines: {node: '>= 18'}
 
   kuler@2.0.0:
     resolution: {integrity: sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A==}
@@ -9690,6 +9763,10 @@ packages:
     resolution: {integrity: sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==}
     engines: {node: '>= 0.6'}
 
+  media-typer@1.1.1:
+    resolution: {integrity: sha512-yz3xRaG20c6/BOzvYoDaGtPmGscs7YivItZEEqe6GbwNfHuxu9YNmvnEkMzKldAGY4/80pRcQRZSEnhquk9XuQ==}
+    engines: {node: '>= 0.8'}
+
   memorystream@0.3.1:
     resolution: {integrity: sha512-S3UwM3yj5mtUSEfP41UZmt/0SCoVYUcU1rkXv+BQ5Ig8ndL4sPoJNBUJERafdPb5jjHJGuMgytgKvKIf58XNBw==}
     engines: {node: '>= 0.10.0'}
@@ -9820,9 +9897,17 @@ packages:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
     engines: {node: '>= 0.6'}
 
+  mime-db@1.54.0:
+    resolution: {integrity: sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ==}
+    engines: {node: '>= 0.6'}
+
   mime-types@2.1.35:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
+
+  mime-types@3.0.2:
+    resolution: {integrity: sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==}
+    engines: {node: '>=18'}
 
   mime@1.6.0:
     resolution: {integrity: sha512-x0Vn8spI+wuJ1O6S7gnbaQg8Pxh4NNHb7KSINmEWKiPE4RKOplvijn+NkmYmmRgP68mc70j2EbeTFRsrswaQeg==}
@@ -10058,6 +10143,9 @@ packages:
   obug@3.0.0:
     resolution: {integrity: sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw==}
     engines: {node: '>=12.20.0'}
+
+  oidc-provider@9.15.1:
+    resolution: {integrity: sha512-27bW0bbGdw+kC36uISUohDBgvQ0CjTbbZyyvP9JtLpSR22+YYjc5gqxG0RVWqK5tgVfodLO0nxtXTMhTIiLkdw==}
 
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
@@ -11433,6 +11521,10 @@ packages:
   type-is@1.6.18:
     resolution: {integrity: sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==}
     engines: {node: '>= 0.6'}
+
+  type-is@2.1.0:
+    resolution: {integrity: sha512-faYHw0anBbc/kWF3zFTEnxSFOAGUX9GFbOBthvDdLsIlEoWOFOtS0zgCiQYwIskL9iGXZL3kAXD8OoZ4GmMATA==}
+    engines: {node: '>= 18'}
 
   typescript-cp@0.1.11:
     resolution: {integrity: sha512-LF7Mp0qMuYweByCBdxuDSB/HfPPJfWBRA5GHYjwnMFjiMz/kSrBn6vN/bu1WcInJKczs9eOINGeIcEYagVmKsg==}
@@ -12823,9 +12915,9 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@cloudflare/ai-chat@0.12.2(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(agents@0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7))(ai@7.0.118(zod@4.6.7))(react@19.3.0)':
+  '@cloudflare/ai-chat@0.12.2(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(agents@0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/server@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7))(ai@7.0.118(zod@4.6.7))(react@19.3.0)':
     dependencies:
-      agents: 0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
+      agents: 0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/server@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7)
       ai: 7.0.118(zod@4.6.7)
       nanoid: 5.1.16
     optionalDependencies:
@@ -13348,6 +13440,10 @@ snapshots:
       protobufjs: 7.6.5
       yargs: 17.7.3
 
+  '@hono/node-server@2.1.11(hono@4.13.16)':
+    dependencies:
+      hono: 4.13.16
+
   '@html-eslint/core@0.66.1':
     dependencies:
       '@html-eslint/types': 0.66.1
@@ -13609,12 +13705,29 @@ snapshots:
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.0
-      jose: 6.2.12
+      jose: 6.2.18
       pkce-challenge: 5.0.1
       zod: 4.6.7
 
   '@modelcontextprotocol/core@2.4.0':
     dependencies:
+      zod: 4.6.7
+
+  '@modelcontextprotocol/express@2.0.2(@modelcontextprotocol/server@2.4.0)(express@4.22.3(supports-color@10.2.2))':
+    dependencies:
+      '@modelcontextprotocol/server': 2.4.0
+      cors: 2.8.6
+      express: 4.22.3(supports-color@10.2.2)
+
+  '@modelcontextprotocol/node@2.1.2(@modelcontextprotocol/server@2.4.0)':
+    dependencies:
+      '@hono/node-server': 2.1.11(hono@4.13.16)
+      '@modelcontextprotocol/server': 2.4.0
+      hono: 4.13.16
+
+  '@modelcontextprotocol/server@2.4.0':
+    dependencies:
+      '@modelcontextprotocol/core': 2.4.0
       zod: 4.6.7
 
   '@napi-rs/wasm-runtime@1.2.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)':
@@ -15008,6 +15121,10 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  '@types/accepts@1.3.7':
+    dependencies:
+      '@types/node': 24.19.0
+
   '@types/archiver@8.0.0':
     dependencies:
       '@types/node': 24.19.0
@@ -15049,6 +15166,8 @@ snapshots:
     dependencies:
       '@types/node': 24.19.0
 
+  '@types/content-disposition@0.5.9': {}
+
   '@types/cookie-parser@1.4.10(@types/express@4.17.25)':
     dependencies:
       '@types/express': 4.17.25
@@ -15058,6 +15177,13 @@ snapshots:
       '@types/node': 24.19.0
 
   '@types/cookie@0.6.0': {}
+
+  '@types/cookies@0.9.2':
+    dependencies:
+      '@types/connect': 3.4.38
+      '@types/express': 4.17.25
+      '@types/keygrip': 1.0.6
+      '@types/node': 24.19.0
 
   '@types/cors@2.8.19':
     dependencies:
@@ -15238,6 +15364,8 @@ snapshots:
 
   '@types/he@1.2.3': {}
 
+  '@types/http-assert@1.5.6': {}
+
   '@types/http-errors@2.0.5': {}
 
   '@types/jju@1.4.5': {}
@@ -15267,8 +15395,25 @@ snapshots:
 
   '@types/katex@0.16.8': {}
 
+  '@types/keygrip@1.0.6': {}
+
   '@types/klaw@3.0.7':
     dependencies:
+      '@types/node': 24.19.0
+
+  '@types/koa-compose@3.2.9':
+    dependencies:
+      '@types/koa': 3.0.3
+
+  '@types/koa@3.0.3':
+    dependencies:
+      '@types/accepts': 1.3.7
+      '@types/content-disposition': 0.5.9
+      '@types/cookies': 0.9.2
+      '@types/http-assert': 1.5.6
+      '@types/http-errors': 2.0.5
+      '@types/keygrip': 1.0.6
+      '@types/koa-compose': 3.2.9
       '@types/node': 24.19.0
 
   '@types/loopbench@1.2.4':
@@ -15312,6 +15457,12 @@ snapshots:
       undici-types: 8.9.0
 
   '@types/object-hash@3.0.6': {}
+
+  '@types/oidc-provider@9.13.1':
+    dependencies:
+      '@types/keygrip': 1.0.6
+      '@types/koa': 3.0.3
+      '@types/node': 24.19.0
 
   '@types/on-finished@2.3.5':
     dependencies:
@@ -15826,7 +15977,7 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  agents@0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7):
+  agents@0.33.0(@ai-sdk/provider@4.0.26)(@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.6.7))(@babel/core@8.0.6)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/server@2.4.0)(ai@7.0.118(zod@4.6.7))(react@19.3.0)(rolldown@1.2.16)(vite@8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.6.7):
     dependencies:
       '@babel/plugin-proposal-decorators': 8.0.2(@babel/core@8.0.6)
       '@cfworker/json-schema': 4.1.1
@@ -15844,6 +15995,7 @@ snapshots:
     optionalDependencies:
       '@ai-sdk/provider': 4.0.26
       '@ai-sdk/react': 4.0.121(react@19.3.0)(zod@4.6.7)
+      '@modelcontextprotocol/server': 2.4.0
       ai: 7.0.118(zod@4.6.7)
       react: 19.3.0
       vite: 8.3.5(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.105.0)(tsx@4.23.15)(yaml@2.9.1)
@@ -16347,6 +16499,8 @@ snapshots:
   content-disposition@0.5.4:
     dependencies:
       safe-buffer: 5.2.1
+
+  content-disposition@1.0.1: {}
 
   content-type@1.0.5: {}
 
@@ -18151,7 +18305,7 @@ snapshots:
 
   jju@1.4.0: {}
 
-  jose@6.2.12: {}
+  jose@6.2.18: {}
 
   joycon@3.1.1: {}
 
@@ -18366,6 +18520,27 @@ snapshots:
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
+
+  koa@3.3.0:
+    dependencies:
+      accepts: 1.3.8
+      content-disposition: 1.0.1
+      content-type: 1.0.5
+      cookies: 0.9.1
+      delegates: 1.0.0
+      destroy: 1.2.0
+      encodeurl: 2.0.0
+      escape-html: 1.0.3
+      fresh: 0.5.2
+      http-assert: 1.5.0
+      http-errors: 2.0.1
+      koa-compose: 4.1.0
+      mime-types: 3.0.2
+      on-finished: 2.4.1
+      parseurl: 1.3.3
+      statuses: 2.0.2
+      type-is: 2.1.0
+      vary: 1.1.2
 
   kuler@2.0.0: {}
 
@@ -18778,6 +18953,8 @@ snapshots:
 
   media-typer@0.3.0: {}
 
+  media-typer@1.1.1: {}
+
   memorystream@0.3.1: {}
 
   meow@13.2.0: {}
@@ -19037,9 +19214,15 @@ snapshots:
 
   mime-db@1.52.0: {}
 
+  mime-db@1.54.0: {}
+
   mime-types@2.1.35:
     dependencies:
       mime-db: 1.52.0
+
+  mime-types@3.0.2:
+    dependencies:
+      mime-db: 1.54.0
 
   mime@1.6.0: {}
 
@@ -19240,6 +19423,14 @@ snapshots:
 
   obug@3.0.0: {}
 
+  oidc-provider@9.15.1(supports-color@10.2.2):
+    dependencies:
+      debug: 4.4.3(supports-color@10.2.2)
+      jose: 6.2.18
+      koa: 3.3.0
+    transitivePeerDependencies:
+      - supports-color
+
   on-exit-leak-free@2.1.2: {}
 
   on-finished@2.4.1:
@@ -19268,7 +19459,7 @@ snapshots:
 
   openid-client@6.8.8:
     dependencies:
-      jose: 6.2.12
+      jose: 6.2.18
       oauth4webapi: 3.8.8
 
   optionator@0.9.4:
@@ -20905,6 +21096,12 @@ snapshots:
     dependencies:
       media-typer: 0.3.0
       mime-types: 2.1.35
+
+  type-is@2.1.0:
+    dependencies:
+      content-type: 2.1.0
+      media-typer: 1.1.1
+      mime-types: 3.0.2
 
   typescript-cp@0.1.11:
     dependencies:
