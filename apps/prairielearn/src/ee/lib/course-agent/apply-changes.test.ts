@@ -232,7 +232,7 @@ it('approves automatically as the owner, only while they can use the course agen
         courseAgentServiceToken: ['token'],
         features: { 'course-agent': true },
       },
-      () => approveReviewAutomatically(conversation.agent_conversation_id, review.id),
+      () => approveReviewAutomatically(conversation.agent_conversation_id, review),
     );
   await expect(approve()).rejects.toMatchObject({ status: 403 });
   expect(await storedReview()).toBeNull();
@@ -244,6 +244,7 @@ it('approves automatically as the owner, only while they can use the course agen
     authn_user_id: '1',
   });
   await expect(approve()).resolves.toEqual({ decision: 'approved' });
+  expect(getCourseAgentReview).not.toHaveBeenCalled();
   await vi.waitFor(async () => expect((await storedReview())?.result_delivered_at).toBeTruthy());
   expect(FileUploadEditor).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({

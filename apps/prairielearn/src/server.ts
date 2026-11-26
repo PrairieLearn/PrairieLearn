@@ -397,6 +397,8 @@ export async function initExpress(): Promise<Express> {
     if (req.path === '/pl/webhooks/stripe') return next();
     // Leave multipart bodies untouched for multer routes and tRPC FormData inputs.
     if (isMultipartRequest(req)) return next();
+    // The course agent service router authenticates first, then parses with its own limit.
+    if (req.path.startsWith('/pl/api/course-agent/')) return next();
 
     // Limit to 5MB of JSON
     bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);

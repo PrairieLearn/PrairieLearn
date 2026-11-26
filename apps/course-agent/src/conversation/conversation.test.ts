@@ -543,7 +543,7 @@ it('marks reviews for automatic approval from the latest message that chose a mo
   expect((await submitReview(turn.options)).part).toHaveProperty('data.autoApprove', true);
 });
 
-it('asks PrairieLearn to approve, retrying only while it is unreachable', async () => {
+it('sends an approved review to PrairieLearn, retrying only while it is unreachable', async () => {
   const approvals: number[] = [];
   const { fetch } = stubFetch({
     usage: async () => decision(),
@@ -572,7 +572,20 @@ it('asks PrairieLearn to approve, retrying only while it is unreachable', async 
     new URL(
       `https://pl.test/pl/api/course-agent/conversations/test-conversation/reviews/${reviewId}/approve`,
     ),
-    expect.objectContaining({ method: 'POST' }),
+    expect.objectContaining({
+      method: 'POST',
+      // The changes travel with the approval, so PrairieLearn does not fetch them back.
+      body: JSON.stringify({
+        snapshot: {
+          type: 'github',
+          repository: 'PrairieLearn/course',
+          branch: 'master',
+          baseCommit: 'a'.repeat(40),
+          additions: [],
+          deletions: [{ path: 'question.html' }],
+        },
+      }),
+    }),
   );
   expect(conversation.schedule).toHaveBeenCalledWith(15, 'approveReview', { reviewId, attempt: 1 });
   // PrairieLearn refused, for example because the instructor can no longer edit the course.

@@ -12,6 +12,7 @@ import { dir as temporaryDirectory } from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
+  MAX_REVIEW_FILE_BYTES,
   PageCatalogSchema,
   UsageDecisionSchema,
   type UsageReport,
@@ -169,6 +170,34 @@ describe('Course agent access and conversation privacy', () => {
     expect(response.status).toBe(200);
     return UsageDecisionSchema.parse(await response.json());
   }
+
+  test('accepts an approved review above the shared JSON limit, after authenticating', async () => {
+    const body = JSON.stringify({
+      snapshot: {
+        type: 'github',
+        repository: 'PrairieLearn/course',
+        branch: 'master',
+        baseCommit: 'a'.repeat(40),
+        additions: Array.from({ length: 6 }, (_, index) => ({
+          path: `file${index}.txt`,
+          contents: 'A'.repeat(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3)),
+        })),
+        deletions: [],
+      },
+    });
+    const approve = (token: string) =>
+      fetch(
+        `${siteUrl}/pl/api/course-agent/conversations/${crypto.randomUUID()}/reviews/${crypto.randomUUID()}/approve`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body,
+        },
+      );
+    expect((await approve('wrong-token')).status).toBe(401);
+    // No conversation has this ID. Reaching that check means the body was parsed and validated.
+    expect((await approve('test-token')).status).toBe(404);
+  });
 
   test('records each report once and prices it', async () => {
     const conversation = await createConversation(owner);

@@ -101,10 +101,13 @@ const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
 // Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
 // within one decision.
 const MAX_PROVIDER_REQUESTS = 4;
-// A review submitted under `always_approve` is approved by PrairieLearn. While PrairieLearn is
-// unreachable the request is retried with backoff, then the review waits for the instructor.
+// A review submitted under `always_approve` is approved here and sent to PrairieLearn to save.
+// While PrairieLearn is unreachable the request is retried with backoff, then the review waits
+// for the instructor.
 const AUTO_APPROVAL_RETRY_SECONDS = 15;
 const MAX_AUTO_APPROVAL_ATTEMPTS = 6;
+// The request carries the changed files, so it gets longer than other service requests.
+const AUTO_APPROVAL_TIMEOUT_MS = 30_000;
 
 const OPENAI_API = 'https://api.openai.com';
 
@@ -702,7 +705,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /** Calls PrairieLearn's service API, relative to its configured URL so a path prefix is kept. */
-  private postToPrairieLearn(path: string, body: unknown) {
+  private postToPrairieLearn(path: string, body: unknown, timeoutMs = 10_000) {
     const base = this.env.PL_SERVICE_URL.endsWith('/')
       ? this.env.PL_SERVICE_URL
       : `${this.env.PL_SERVICE_URL}/`;
@@ -713,7 +716,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   }
 
@@ -724,17 +727,23 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Asks PrairieLearn to approve a review submitted under `always_approve`. PrairieLearn checks
-   * that the instructor can still edit the course and saves the changes as their approval, so no
-   * browser needs to be open. A refusal leaves the review for the instructor to decide.
+   * Approves a review submitted under `always_approve` and sends its changes to PrairieLearn to
+   * save. The decision is made here, where the mode is known, so no browser needs to be open and
+   * PrairieLearn does not fetch the changes back. PrairieLearn still refuses to save for an
+   * instructor who can no longer edit the course, which leaves the review for them to decide.
    */
   async approveReview({ reviewId, attempt }: { reviewId: string; attempt: number }) {
-    const review = this.record.review;
-    if (review?.id !== reviewId || review.result) return;
+    if (this.record.review?.result) return;
+    const review = this.getReview(reviewId);
+    if (!review) return;
     let status: number;
     try {
       status = (
-        await this.postToPrairieLearn(`conversations/${this.name}/reviews/${reviewId}/approve`, {})
+        await this.postToPrairieLearn(
+          `conversations/${this.name}/reviews/${reviewId}/approve`,
+          { snapshot: review.snapshot },
+          AUTO_APPROVAL_TIMEOUT_MS,
+        )
       ).status;
     } catch {
       status = 0;

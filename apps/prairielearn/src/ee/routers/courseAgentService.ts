@@ -1,9 +1,13 @@
 import { timingSafeEqual } from 'node:crypto';
 
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { z } from 'zod';
 
-import { UsageReportSchema } from '@prairielearn/course-agent-types';
+import {
+  MAX_REVIEW_BYTES,
+  ReviewSnapshotSchema,
+  UsageReportSchema,
+} from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { parseRequest } from '@prairielearn/zod';
 
@@ -26,6 +30,10 @@ router.use((req, _res, next) => {
   next();
 });
 
+// The server's shared body parser skips these routes, so a body is parsed only once the service
+// token is accepted. An automatic approval carries the review's files, which need a higher limit.
+router.use(express.json({ limit: MAX_REVIEW_BYTES + 1024 * 1024 }));
+
 const UsageRequestSchemas = {
   params: z.strictObject({ agentId: z.uuid() }),
   query: z.strictObject({}),
@@ -44,15 +52,21 @@ router.post(
 const ApproveRequestSchemas = {
   params: z.strictObject({ agentId: z.uuid(), reviewId: z.uuid() }),
   query: z.strictObject({}),
-  body: z.strictObject({}),
+  body: z.strictObject({ snapshot: ReviewSnapshotSchema }),
 };
 
-// The conversation approves a review submitted while its owner chose "Always approve".
+// The conversation approved a review submitted while its owner chose "Always approve", and sends
+// the changes to save.
 router.post(
   '/conversations/:agentId/reviews/:reviewId/approve',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const { params } = parseRequest(req, ApproveRequestSchemas);
-    res.json(await approveReviewAutomatically(params.agentId, params.reviewId));
+    const { params, body } = parseRequest(req, ApproveRequestSchemas);
+    res.json(
+      await approveReviewAutomatically(params.agentId, {
+        id: params.reviewId,
+        snapshot: body.snapshot,
+      }),
+    );
   }),
 );
 

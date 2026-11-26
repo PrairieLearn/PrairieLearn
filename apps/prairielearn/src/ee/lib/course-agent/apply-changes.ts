@@ -190,6 +190,7 @@ export async function postReviewDecision({
   reviewId,
   decision,
   viaMessage = false,
+  review: suppliedReview,
 }: {
   course: Pick<Course, 'id'>;
   conversation: CourseAgentConversation;
@@ -199,6 +200,8 @@ export async function postReviewDecision({
   decision: 'approved' | 'denied';
   /** The browser sends a chat message once this denial is recorded, which delivers it. */
   viaMessage?: boolean;
+  /** The review, when the conversation sent it with its own approval; otherwise it is fetched. */
+  review?: Review;
 }) {
   const key = { course_agent_conversation_id: conversation.id, agent_review_id: reviewId };
   const existing = await selectOptionalCourseAgentReview(key);
@@ -207,7 +210,8 @@ export async function postReviewDecision({
     if (viaMessage) await deliverDenialByMessage(conversation, existing);
     return { decision };
   }
-  const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
+  const review =
+    suppliedReview ?? (await getCourseAgentReview(conversation.agent_conversation_id, reviewId));
   if (!review) throw new HttpStatusError(409, 'This review is no longer pending.');
   if (decision === 'denied') {
     const result = viaMessage ? { ...DENIED, viaMessage: true as const } : DENIED;
@@ -269,11 +273,12 @@ export async function postReviewDecision({
 }
 
 /**
- * Approve a review the conversation submitted while its owner chose "Always approve". The owner
- * must still be able to use the course agent in the course; the approval is then theirs, with the
- * same checks and saving as when they click "Approve once".
+ * Save a review the conversation approved because its owner chose "Always approve". The owner
+ * must still be able to use the course agent in the course; the approval is then recorded as
+ * theirs, with the same checks and saving as when they click "Approve once". The conversation
+ * sends the review, so it is not fetched back.
  */
-export async function approveReviewAutomatically(agentConversationId: string, reviewId: string) {
+export async function approveReviewAutomatically(agentConversationId: string, review: Review) {
   const conversation = await selectOptionalCourseAgentConversationByAgentId(agentConversationId);
   if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
   const user = await selectUserById(conversation.user_id);
@@ -309,8 +314,9 @@ export async function approveReviewAutomatically(agentConversationId: string, re
       has_course_permission_edit: authzData.has_course_permission_edit,
       authn_user: user,
     },
-    reviewId,
+    reviewId: review.id,
     decision: 'approved',
+    review,
   });
 }
 
