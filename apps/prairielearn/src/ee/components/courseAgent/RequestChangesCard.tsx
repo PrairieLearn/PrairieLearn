@@ -11,6 +11,8 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import type { ReviewDiffFile } from '../../lib/course-agent/review-diff.js';
 
+import { AlwaysApproveModal } from './AlwaysApproveModal.js';
+
 // The diff renderer and its syntax highlighter are only needed once the review is opened.
 const LazyReviewDiff = lazy(() =>
   import('./ReviewDiff.js').then(
@@ -46,6 +48,7 @@ export function RequestChangesCard({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [showChanges, setShowChanges] = useState(false);
+  const [confirmingAlways, setConfirmingAlways] = useState(false);
   const [shownAt] = useState(Date.now);
   const reviewInput = { conversationId, reviewId };
   const review = useQuery({
@@ -103,7 +106,7 @@ export function RequestChangesCard({
           files={files}
           onViewChanges={() => setShowChanges(true)}
           onDecision={decide}
-          onApproveAlways={approveAlways}
+          onApproveAlways={() => setConfirmingAlways(true)}
         />
       )}
       {/* The buttons stay in case the automatic approval is refused. */}
@@ -164,8 +167,16 @@ export function RequestChangesCard({
           setShowChanges(false);
         }}
         onApproveAlways={() => {
-          approveAlways();
           setShowChanges(false);
+          setConfirmingAlways(true);
+        }}
+      />
+      <AlwaysApproveModal
+        show={confirmingAlways}
+        onHide={() => setConfirmingAlways(false)}
+        onConfirm={() => {
+          setConfirmingAlways(false);
+          approveAlways();
         }}
       />
       {failure && (

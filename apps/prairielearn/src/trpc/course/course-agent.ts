@@ -31,6 +31,7 @@ import {
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
 
@@ -180,6 +181,24 @@ export const courseAgentRouter = t.router({
       await setCourseAgentApprovalMode(conversation.agent_conversation_id, input.approvalMode);
     }),
 
+  // The course agent acts with its user's permissions, and student data access is granted per
+  // course instance, so this is what the agent can and cannot reach there.
+  studentDataAccess: courseAgentProcedure
+    .output(
+      z.array(z.strictObject({ name: z.string(), canView: z.boolean(), canEdit: z.boolean() })),
+    )
+    .query(async ({ ctx }) => {
+      const courseInstances = await selectCourseInstancesWithStaffAccess({
+        course: ctx.course,
+        authzData: ctx.authz_data,
+      });
+      return courseInstances.map((courseInstance) => ({
+        name: courseInstance.short_name,
+        canView: courseInstance.has_course_instance_permission_view,
+        canEdit: courseInstance.has_course_instance_permission_edit,
+      }));
+    }),
+
   // The agent service generates a title from the first message and publishes it to the
   // conversation's owner, whose browser saves it here.
   setTitle: courseAgentProcedure
@@ -208,4 +227,5 @@ export interface CourseAgentError {
   PostReviewDecision: never;
   SetTitle: never;
   SetApprovalMode: never;
+  StudentDataAccess: never;
 }

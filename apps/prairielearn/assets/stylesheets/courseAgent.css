@@ -180,19 +180,19 @@ textarea.course-agent-composer-input {
 }
 
 .course-agent-approval-menu {
-  width: 21rem;
+  width: 19rem;
   max-width: calc(100vw - 2rem);
 }
 
-.course-agent-approval-menu .dropdown-item {
-  white-space: normal;
+.course-agent-approval-menu .dropdown-item.course-agent-approval-warning:not(:active) {
+  color: var(--bs-warning-text-emphasis);
 }
 
-/* The description takes the item's own color while the item is selected or pressed. */
-.course-agent-approval-menu
-  .dropdown-item:not(.active, :active)
-  .course-agent-approval-description {
-  color: var(--bs-secondary-color);
+.btn.course-agent-composer-button.course-agent-approval-warning {
+  --bs-btn-color: var(--bs-warning-text-emphasis);
+  --bs-btn-hover-color: var(--bs-warning-text-emphasis);
+  --bs-btn-active-color: var(--bs-warning-text-emphasis);
+  background-color: var(--bs-warning-bg-subtle);
 }
 
 .course-agent-attachment {

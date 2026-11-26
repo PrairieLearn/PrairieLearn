@@ -39,6 +39,7 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import { AlwaysApproveModal } from './AlwaysApproveModal.js';
 import {
   type DraftAttachment,
   DraftAttachmentList,
@@ -855,50 +856,10 @@ function Composer({
   );
 }
 
-const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
-  approval_required: {
-    label: 'Ask first',
-    description: 'You approve each change and each read of course data.',
-    icon: 'bi-hand-index-thumb',
-  },
-  always_approve: {
-    label: 'Always approve',
-    description: 'The course agent goes ahead without asking.',
-    icon: 'bi-shield-exclamation',
-  },
+const APPROVAL_MODES: Record<ApprovalMode, { label: string; icon: string }> = {
+  approval_required: { label: 'Ask first', icon: 'bi-hand-index-thumb' },
+  always_approve: { label: 'Always approve', icon: 'bi-exclamation-triangle' },
 };
-
-/**
- * What the course agent can reach in a course. Each says what the agent does there in each mode,
- * so the menu shows what the current mode allows.
- */
-const ACCESS_AREAS: { label: string; icon: string; access: Record<ApprovalMode, string> }[] = [
-  {
-    label: 'Course files',
-    icon: 'bi-folder',
-    access: {
-      approval_required: 'Reads every file. Asks before saving changes.',
-      always_approve: 'Reads every file and saves changes without asking.',
-    },
-  },
-  {
-    label: 'Course data',
-    icon: 'bi-table',
-    access: {
-      approval_required: 'Asks before reading students, scores, or submissions.',
-      always_approve: 'Reads students, scores, and submissions without asking.',
-    },
-  },
-  {
-    label: 'Course actions',
-    icon: 'bi-lightning',
-    access: {
-      approval_required: 'Asks before changes like closing issues or regrading.',
-      always_approve:
-        'Makes changes like closing issues or regrading without asking, except ones that are hard to undo.',
-    },
-  },
-];
 
 function ApprovalModePicker({
   mode,
@@ -907,57 +868,63 @@ function ApprovalModePicker({
   mode: ApprovalMode;
   onChange: (mode: ApprovalMode) => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
   const current = APPROVAL_MODES[mode];
   return (
-    <Dropdown drop="up" className="course-agent-composer-shrink">
-      <Dropdown.Toggle
-        variant="link"
-        size="sm"
-        className="course-agent-composer-button mw-100"
-        aria-label={`Approval mode: ${current.label}`}
-      >
-        <i className={clsx('bi', current.icon)} aria-hidden="true" />
-        <span className="course-agent-composer-wide-only text-truncate">{current.label}</span>
-        <i className="bi bi-chevron-down" aria-hidden="true" />
-      </Dropdown.Toggle>
-      <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
-        <Dropdown.Header>Course agent access</Dropdown.Header>
-        <ul className="list-unstyled mb-0">
-          {ACCESS_AREAS.map(({ label, icon, access }) => (
-            <li key={label} className="dropdown-item-text d-flex align-items-start gap-2 py-1">
-              <i className={clsx('bi lh-1 mt-1 text-body-secondary', icon)} aria-hidden="true" />
-              <span className="small">
-                <span className="d-block">{label}</span>
-                <span className="d-block text-body-secondary">{access[mode]}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-        <Dropdown.Divider />
-        <Dropdown.Header>Approval</Dropdown.Header>
-        {ApprovalModeSchema.options.map((option) => {
-          const { label, description, icon } = APPROVAL_MODES[option];
-          return (
-            <Dropdown.Item
-              key={option}
-              as="button"
-              type="button"
-              className="d-flex align-items-start gap-2 py-2"
-              active={option === mode}
-              onClick={() => onChange(option)}
-            >
-              <i className={clsx('bi fs-5 lh-1 mt-1', icon)} aria-hidden="true" />
-              <span className="flex-grow-1">
-                <span className="d-block">{label}</span>
-                <span className="course-agent-approval-description d-block small">
-                  {description}
-                </span>
-              </span>
-            </Dropdown.Item>
-          );
-        })}
-      </Dropdown.Menu>
-    </Dropdown>
+    <>
+      <Dropdown drop="up" className="course-agent-composer-shrink">
+        <Dropdown.Toggle
+          variant="link"
+          size="sm"
+          className={clsx(
+            'course-agent-composer-button mw-100',
+            mode === 'always_approve' && 'course-agent-approval-warning',
+          )}
+          aria-label={`Approval mode: ${current.label}`}
+        >
+          <i className={clsx('bi', current.icon)} aria-hidden="true" />
+          <span className="course-agent-composer-wide-only text-truncate">{current.label}</span>
+          <i className="bi bi-chevron-down" aria-hidden="true" />
+        </Dropdown.Toggle>
+        <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
+          <Dropdown.Header className="text-wrap">
+            Before editing files, reading student data, or taking actions
+          </Dropdown.Header>
+          {ApprovalModeSchema.options.map((option) => {
+            const { label, icon } = APPROVAL_MODES[option];
+            return (
+              <Dropdown.Item
+                key={option}
+                as="button"
+                type="button"
+                className={clsx(
+                  'd-flex align-items-center gap-2 py-2',
+                  option === 'always_approve' && 'course-agent-approval-warning',
+                )}
+                aria-current={option === mode}
+                onClick={() => {
+                  if (option === mode) return;
+                  if (option === 'always_approve') setConfirming(true);
+                  else onChange(option);
+                }}
+              >
+                <i className={clsx('bi fs-5 lh-1', icon)} aria-hidden="true" />
+                <span className="flex-grow-1">{label}</span>
+                {option === mode && <i className="bi bi-check-lg" aria-hidden="true" />}
+              </Dropdown.Item>
+            );
+          })}
+        </Dropdown.Menu>
+      </Dropdown>
+      <AlwaysApproveModal
+        show={confirming}
+        onHide={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          onChange('always_approve');
+        }}
+      />
+    </>
   );
 }
 
