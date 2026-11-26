@@ -55,7 +55,7 @@ const ApproveRequestSchemas = {
   body: z.strictObject({ snapshot: ReviewSnapshotSchema }),
 };
 
-// The conversation approved a review submitted while its owner chose "Always approve", and sends
+// The conversation approved a review submitted while its owner chose "Auto-approve", and sends
 // the changes to save.
 router.post(
   '/conversations/:agentId/reviews/:reviewId/approve',

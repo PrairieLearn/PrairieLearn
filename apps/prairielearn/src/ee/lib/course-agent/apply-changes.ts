@@ -273,7 +273,7 @@ export async function postReviewDecision({
 }
 
 /**
- * Save a review the conversation approved because its owner chose "Always approve". The owner
+ * Save a review the conversation approved because its owner chose "Auto-approve". The owner
  * must still be able to use the course agent in the course; the approval is then recorded as
  * theirs, with the same checks and saving as when they click "Approve once". The conversation
  * sends the review, so it is not fetched back.
