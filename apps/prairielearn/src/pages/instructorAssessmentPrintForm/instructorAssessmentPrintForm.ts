@@ -2,6 +2,8 @@ import { type ErrorRequestHandler, type RequestHandler, Router, raw } from 'expr
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 import {
   IdSchema,
   JsonFromStringSchema,
@@ -41,6 +43,7 @@ import {
   getPrintFooter,
 } from '../../lib/printing/print-cover.js';
 import { queuePrintExport } from '../../lib/printing/print-exports.js';
+import { PrintablePageError } from '../../lib/printing/print-renderer.js';
 import { startPrintRequest } from '../../lib/printing/print-request.js';
 import {
   checkPrintSnapshotId,
@@ -57,7 +60,10 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { requirePrintingAvailable } from '../../middlewares/requirePrintingAvailable.js';
 import { selectOptionalPrintForm } from '../../models/print-form.js';
 
-import { InstructorAssessmentPrintForm } from './instructorAssessmentPrintForm.html.js';
+import {
+  InstructorAssessmentPrintForm,
+  InstructorAssessmentPrintFormError,
+} from './instructorAssessmentPrintForm.html.js';
 
 const PrintFormParamsSchema = z.object({ print_form_id: IdSchema });
 
@@ -225,9 +231,6 @@ router.get(
         'Print previews and downloads are unavailable right now. Contact PrairieLearn support.',
       );
     }
-
-    res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
     const printingResult = await renderPrintFormQuestions(res.locals, {
       signal,
@@ -456,9 +459,32 @@ router.post(
 
 // A disconnected print request, e.g. a preview reloaded after a layout change, has nobody left
 // to answer, so its cancellation isn't an error worth reporting.
-router.use(((err, _req, res, next) => {
+router.use(((err, req, res, next) => {
   if (res.destroyed) return;
-  next(err);
+  if (req.path !== '/preview' || res.headersSent) {
+    next(err);
+    return;
+  }
+
+  // The preparation page shows previews in an iframe and reads errors from the framed page.
+  const status = err.status ?? 500;
+  logger[status >= 500 ? 'error' : 'verbose']('Print preview error', {
+    err,
+    url: req.originalUrl,
+    response_id: res.locals.response_id,
+  });
+  if (status >= 500) Sentry.captureException(err);
+  const message =
+    err instanceof PrintablePageError
+      ? err.pageMessage
+      : err instanceof HttpStatusError
+        ? err.message
+        : 'The preview could not be created. Try again or contact support if this issue persists.';
+  res.status(status);
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'self';");
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.send(InstructorAssessmentPrintFormError({ message }).toString());
 }) satisfies ErrorRequestHandler);
 
 export default router;

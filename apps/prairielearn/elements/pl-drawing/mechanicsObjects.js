@@ -1015,25 +1015,27 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
 
     const base64svg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgSource)));
 
-    fabric.Image.fromURL(
-      base64svg,
-      (img) => {
-        this.width = Math.ceil(width);
-        this.height = Math.ceil(height);
-        img.width = this.width;
-        img.height = this.height;
+    const img = await new Promise((resolve, reject) => {
+      fabric.Image.fromURL(
+        base64svg,
+        (img, isError) =>
+          isError ? reject(new Error('Could not load label image')) : resolve(img),
+        options,
+      );
+    });
+    this.width = Math.ceil(width);
+    this.height = Math.ceil(height);
+    img.width = this.width;
+    img.height = this.height;
 
-        this.setCoords(false, false);
-        this.image = img;
-        this.dirty = true;
+    this.setCoords(false, false);
+    this.image = img;
+    this.dirty = true;
 
-        // Force re-rendering the canvas otherwise the text will not show up
-        if ('canvas' in this) {
-          this['canvas'].renderAll();
-        }
-      },
-      options,
-    );
+    // Force re-rendering the canvas otherwise the text will not show up
+    if ('canvas' in this) {
+      this['canvas'].renderAll();
+    }
   },
   initialize(text, options) {
     options = options || {};
@@ -1045,9 +1047,8 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.image = null;
     this.label = text;
 
-    if (text && text.trim()) {
-      this.gen_text(this.label, options);
-    }
+    // `setupCanvas` waits for the initial labels before marking the drawing as rendered.
+    this.rendered = text && text.trim() ? this.gen_text(this.label, options) : Promise.resolve();
 
     if (options.selectable) {
       this.on('dblclick', function () {
@@ -1105,6 +1106,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
 
     this.label1obj = new mechanicsObjects.LatexText(this.label1, {});
     this.label2obj = new mechanicsObjects.LatexText(this.label2, {});
+    this.rendered = Promise.all([this.label1obj.rendered, this.label2obj.rendered]);
 
     this.arrowheadOffsetRatio = options.arrowheadOffsetRatio || 3;
     this.arrowheadWidthRatio = options.arrowheadWidthRatio || 2;

@@ -35,6 +35,7 @@ async function loadPrintClient(page: Page) {
     content:
       ':root { --assessment-print-page-width: 8.5in; --assessment-print-page-height: 11in; } @page { size: Letter; }',
   });
+  await page.addScriptTag({ path: fileURLToPath(import.meta.resolve('jquery')) });
   await page.addScriptTag({
     path: fileURLToPath(new URL('../dist/paged.polyfill.min.js', import.meta.resolve('pagedjs'))),
   });
@@ -98,7 +99,6 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   `);
   await page.evaluate(() => {
     Reflect.set(window, 'PagedConfig', { auto: false });
-    Reflect.set(window, '__PL_PRINT_READINESS_PROMISES__', []);
     const shadow = document
       .querySelector('#xss-test')!
       .attachShadow({ mode: 'open', clonable: true });
@@ -181,7 +181,6 @@ test('keeps printing when an equation cannot become editable Word math', async (
   `);
   await page.evaluate(() => {
     Reflect.set(window, 'PagedConfig', { auto: false });
-    Reflect.set(window, '__PL_PRINT_READINESS_PROMISES__', []);
     Reflect.set(window, 'MathJax', {
       startup: {
         document: {

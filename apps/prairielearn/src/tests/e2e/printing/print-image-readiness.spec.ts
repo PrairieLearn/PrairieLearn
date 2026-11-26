@@ -1,10 +1,7 @@
 import { type ServerResponse, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import {
-  waitForExcalidrawCanvases,
-  waitForPrintImages,
-} from '../../../lib/client/printing/print-image-layout.js';
+import { waitForPrintImages } from '../../../lib/client/printing/print-image-layout.js';
 import { expect, test } from '../fixtures.js';
 
 // These browser-only tests do not need the application server.
@@ -39,9 +36,10 @@ test('waits for regular, lazy, and shadow-root images', async ({ page }) => {
     let complete = false;
     const waiting = page
       .locator('#source')
-      .evaluate(waitForPrintImages)
-      .then(() => {
+      .evaluate(waitForPrintImages, 30_000)
+      .then((failedImages) => {
         complete = true;
+        return failedImages;
       });
     await expect.poll(() => responses.has('/lazy.svg')).toBe(true);
     sendImage(responses.get('/light.svg')!);
@@ -61,7 +59,7 @@ test('waits for regular, lazy, and shadow-root images', async ({ page }) => {
     expect(complete).toBe(false);
 
     sendImage(responses.get('/lazy.svg')!);
-    await waiting;
+    expect(await waiting).toHaveLength(0);
     expect(complete).toBe(true);
   } finally {
     server.closeAllConnections();
@@ -69,45 +67,4 @@ test('waits for regular, lazy, and shadow-root images', async ({ page }) => {
       server.close((error) => (error ? reject(error) : resolve())),
     );
   }
-});
-
-test('waits for each Excalidraw canvas to render', async ({ page }) => {
-  await page.setContent(
-    '<div id="source"><div class="excalidraw-root"></div><div class="excalidraw-root"></div></div>',
-  );
-
-  let complete = false;
-  const waiting = page
-    .locator('#source')
-    .evaluate(waitForExcalidrawCanvases)
-    .then(() => {
-      complete = true;
-    });
-
-  const drawings = page.locator('.excalidraw-root');
-  await drawings.first().evaluate((drawing) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 0;
-    canvas.height = 0;
-    drawing.append(canvas);
-  });
-  expect(complete).toBe(false);
-
-  await drawings
-    .first()
-    .locator('canvas')
-    .evaluate((canvas) => {
-      canvas.setAttribute('width', '100');
-      canvas.setAttribute('height', '100');
-    });
-  expect(complete).toBe(false);
-
-  await drawings.last().evaluate((drawing) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 100;
-    canvas.height = 100;
-    drawing.append(canvas);
-  });
-  await waiting;
-  expect(complete).toBe(true);
 });

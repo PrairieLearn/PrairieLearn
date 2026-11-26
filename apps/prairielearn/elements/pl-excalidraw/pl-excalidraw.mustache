@@ -15,7 +15,7 @@
     {{/errors}}
     {{#show_widget}}
     <input type="hidden"{{#name}} name="{{name}}"{{/name}} id="excalidraw-input-{{uuid}}" data-deferred-initial-value="true"/>
-    <div class="excalidraw-root">
+    <div class="excalidraw-root" data-pl-render-status="pending">
         <div id="excalidraw-{{uuid}}"></div>
     </div>
     {{/show_widget}}

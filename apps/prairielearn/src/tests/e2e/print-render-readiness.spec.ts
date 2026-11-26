@@ -12,9 +12,10 @@ test('waits for rendered elements before printing', async ({ page }) => {
   let complete = false;
   const waiting = page
     .locator('#source')
-    .evaluate(waitForPrintableElements)
-    .then(() => {
+    .evaluate(waitForPrintableElements, 30_000)
+    .then((failedElements) => {
       complete = true;
+      return failedElements;
     });
 
   await page.locator('#first').evaluate((host) => {
@@ -24,9 +25,15 @@ test('waits for rendered elements before printing', async ({ page }) => {
   expect(complete).toBe(false);
 
   await page.locator('#second').evaluate((host) => {
+    host.insertAdjacentHTML('afterend', '<div id="late" data-pl-render-status="pending"></div>');
     host.setAttribute('data-pl-render-status', 'ready');
   });
-  await waiting;
+  expect(complete).toBe(false);
+
+  await page.locator('#late').evaluate((host) => {
+    host.setAttribute('data-pl-render-status', 'ready');
+  });
+  expect(await waiting).toHaveLength(0);
   expect(complete).toBe(true);
   expect(
     await page
@@ -35,14 +42,11 @@ test('waits for rendered elements before printing', async ({ page }) => {
   ).toBe('Rendered content');
 });
 
-test('reports element rendering failures', async ({ page }) => {
-  await page.setContent('<div id="source"><div data-pl-render-status="pending"></div></div>');
+test('reports failed and stuck elements when the time runs out', async ({ page }) => {
+  await page.setContent(
+    '<div id="source"><div data-pl-render-status="error"></div><div data-pl-render-status="pending"></div><div data-pl-render-status="ready"></div></div>',
+  );
 
-  const waiting = expect(
-    page.locator('#source').evaluate(waitForPrintableElements),
-  ).rejects.toThrow('A printable element could not be rendered');
-  await page.locator('[data-pl-render-status]').evaluate((host) => {
-    host.setAttribute('data-pl-render-status', 'error');
-  });
-  await waiting;
+  const failedElements = await page.locator('#source').evaluate(waitForPrintableElements, 100);
+  expect(failedElements).toHaveLength(2);
 });

@@ -96,13 +96,6 @@ export function InstructorAssessmentPrintForm({
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
           window.PagedConfig = { auto: false };
-          window.__PL_PRINT_READINESS_PROMISES__ = [];
-          window.PrairieLearnAssessmentPrinting = {
-            waitUntil(promise) {
-              void promise.catch(() => undefined);
-              window.__PL_PRINT_READINESS_PROMISES__.push(promise);
-            },
-          };
         </script>
         ${compiledScriptTag('assessment-printing-client.ts')}
         <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>
@@ -211,11 +204,11 @@ export function InstructorAssessmentPrintForm({
                     <dl class="assessment-cover-summary">
                       <div>
                         <dt>Questions</dt>
-                        <dd>${questionHtmls.length}</dd>
+                        <dd data-print-cover-question-count>${questionHtmls.length}</dd>
                       </div>
                       <div>
                         <dt>Points</dt>
-                        <dd>${maxPoints}</dd>
+                        <dd data-print-cover-max-points>${maxPoints}</dd>
                       </div>
                       <div>
                         <dt>Form</dt>
@@ -293,6 +286,20 @@ export function InstructorAssessmentPrintForm({
           </div>
         </div>
         <main id="assessment-print-pages"></main>
+      </body>
+    </html>`;
+}
+
+/** A preview that failed as a whole, in the form the preparation page reads from its iframe. */
+export function InstructorAssessmentPrintFormError({ message }: { message: string }) {
+  return html`<!doctype html>
+    <html lang="en" data-print-status="error" data-print-error="${message}">
+      <head>
+        <meta charset="utf-8" />
+        <title>Print preview error</title>
+      </head>
+      <body>
+        <p>${message}</p>
       </body>
     </html>`;
 }

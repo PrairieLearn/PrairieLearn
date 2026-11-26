@@ -148,7 +148,7 @@ window.PLDrawingApi = {
    * @param elem_options Any options to give to the element
    * @param existing_answer_submission Existing submission to place on the canvas.
    */
-  setupCanvas(root_elem, elem_options, existing_answer_submission) {
+  async setupCanvas(root_elem, elem_options, existing_answer_submission) {
     const canvas_elem = $(root_elem).find('canvas')[0];
     const canvas_width = Number.parseFloat(elem_options.width);
     const canvas_height = Number.parseFloat(elem_options.height);
@@ -268,6 +268,18 @@ window.PLDrawingApi = {
     if (existing_answer_submission != null) {
       submittedAnswer._set(existing_answer_submission);
       window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
+    }
+
+    // Report the drawing as rendered once its LaTeX labels are drawn. Fabric otherwise redraws on
+    // the next animation frame, and labels drawn by a parent object, such as a distributed load,
+    // don't redraw the canvas at all.
+    try {
+      await Promise.all(canvas.getObjects().map((obj) => obj.rendered));
+      canvas.renderAll();
+      root_elem.dataset.plRenderStatus = 'ready';
+    } catch (error) {
+      root_elem.dataset.plRenderStatus = 'error';
+      throw error;
     }
   },
 };

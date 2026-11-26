@@ -193,6 +193,22 @@ test('prints representative controls, editable Word content, and an ordered answ
     })),
   ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
 
+  // The drawing's only content is an asynchronously rendered LaTeX label.
+  const drawingPixels = await questions
+    .filter({ hasText: 'Use the labelled drawing below.' })
+    .locator('img.printing-canvas-image')
+    .evaluate(async (image: HTMLImageElement) => {
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d')!;
+      context.drawImage(image, 0, 0);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      return data.filter((value, index) => index % 4 === 3 && value > 0).length;
+    });
+  expect(drawingPixels).toBeGreaterThan(0);
+
   const response = await downloadPrintableWord(page, printUrl);
   expect(response.status()).toBe(200);
   const archive = await unzipper.Open.buffer(await response.body());
@@ -328,4 +344,104 @@ test('omits failed question and answer-key renders and recovers after a correcti
   await expect(page.getByText('Consider two numbers')).toBeVisible();
   const recovered = await downloadPrintableWord(page, printUrl, 'answer_key');
   expect(recovered.status()).toBe(200);
+});
+
+test('omits questions whose content does not finish loading', async ({
+  page,
+  courseInstance,
+  testCoursePath,
+}) => {
+  const questions = {
+    printingAsyncElements:
+      '<pl-question-panel><p>Sketch your answer.</p><pl-xss-safe language="markdown" contents="Markdown with **bold reference text**."></pl-xss-safe></pl-question-panel><pl-excalidraw answers-name="sketch" width="400px" height="200px"></pl-excalidraw>',
+    printingStuckElement:
+      '<pl-question-panel><p>Stuck element.</p><div data-pl-render-status="pending">Never ready</div></pl-question-panel>',
+    printingExternalImage:
+      '<pl-question-panel><p>External image.</p><img src="https://example.com/image.png" alt="External"></pl-question-panel>',
+  };
+  const assessmentPath = path.join(
+    testCoursePath,
+    'courseInstances/Sp15/assessments/exam99-printingIncomplete',
+  );
+  const questionPaths = Object.keys(questions).map((qid) =>
+    path.join(testCoursePath, 'questions', qid),
+  );
+  try {
+    for (const [qid, questionHtml] of Object.entries(questions)) {
+      const questionPath = path.join(testCoursePath, 'questions', qid);
+      await fs.mkdir(questionPath, { recursive: true });
+      await fs.writeFile(
+        path.join(questionPath, 'info.json'),
+        JSON.stringify({ uuid: crypto.randomUUID(), title: qid, topic: 'Printing', type: 'v3' }),
+      );
+      await fs.writeFile(path.join(questionPath, 'question.html'), questionHtml);
+    }
+    await fs.mkdir(assessmentPath, { recursive: true });
+    await fs.writeFile(
+      path.join(assessmentPath, 'infoAssessment.json'),
+      JSON.stringify({
+        uuid: crypto.randomUUID(),
+        type: 'Exam',
+        title: 'Incomplete printing content',
+        set: 'Exam',
+        number: '99',
+        shuffleQuestions: false,
+        zones: [
+          {
+            // The blank drawing's canvas becomes an image only after the stuck element times out.
+            questions: Object.keys(questions).map((id) => ({
+              id,
+              autoPoints: 1,
+            })),
+          },
+        ],
+      }),
+    );
+    await syncCourse(testCoursePath);
+
+    const { printUrl, printForm } = await createPrintableForm(
+      courseInstance,
+      'exam99-printingIncomplete',
+    );
+    const search = await savePrintSettings(printForm, { includeCoverPage: false });
+    const response = await page.goto(`${printUrl}/preview?${search}`);
+    expect(response!.status()).toBe(200);
+    await waitForPrintablePage(page);
+    expect(await readWarnings(page)).toEqual([
+      expect.objectContaining({
+        code: 'incomplete_render',
+        question_number: '2',
+        message: 'Question 2 has content that did not finish rendering.',
+      }),
+      expect.objectContaining({
+        code: 'incomplete_render',
+        question_number: '3',
+        message: 'Question 3 uses an image from another website, which printing cannot include.',
+      }),
+    ]);
+    await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
+    await expect(page.locator(':root')).toHaveAttribute('data-print-max-points', '1');
+    await expect(page.locator('.printing-excalidraw img.printing-canvas-image')).toHaveCount(1);
+    await expect(page.getByText('bold reference text')).toBeVisible();
+    await expect(page.getByText('Stuck element.')).toHaveCount(0);
+
+    const download = await downloadPrintableWord(page, printUrl);
+    expect(download.status()).toBe(400);
+    expect((await download.json()).error).toContain('has missing or unprintable questions');
+  } finally {
+    await fs.rm(assessmentPath, { recursive: true, force: true });
+    for (const questionPath of questionPaths) {
+      await fs.rm(questionPath, { recursive: true, force: true });
+    }
+    await syncCourse(testCoursePath);
+  }
+});
+
+test('returns a frameable error page when the preview fails', async ({ page, courseInstance }) => {
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam25-printingAutomated');
+  const response = await page.goto(`${printUrl}/preview?paper_size=Tabloid`);
+  expect(response!.status()).toBe(400);
+  expect(response!.headers()['x-frame-options']).toBe('SAMEORIGIN');
+  await expect(page.locator(':root')).toHaveAttribute('data-print-status', 'error');
+  await expect(page.locator(':root')).toHaveAttribute('data-print-error', /.+/);
 });

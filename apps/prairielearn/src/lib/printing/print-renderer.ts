@@ -16,6 +16,14 @@ import {
 import type { PrintablePageOutput } from './printable-page-output.js';
 import { RenderQueue } from './render-queue.js';
 
+/** The printable page set `data-print-status="error"`, e.g. because pagination failed. */
+export class PrintablePageError extends Error {
+  constructor(readonly pageMessage: string) {
+    super(`The printable page failed: ${pageMessage}`);
+    this.name = 'PrintablePageError';
+  }
+}
+
 const DEFAULT_RENDER_TIMEOUT_MS = 45_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
 const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 64;
@@ -437,9 +445,7 @@ export class PrintRenderer {
         error: document.documentElement.dataset.printError ?? null,
       }));
       if (printState.status === 'error') {
-        throw new Error(
-          `The printable page failed: ${printState.error ?? 'No pagination error was provided'}`,
-        );
+        throw new PrintablePageError(printState.error ?? 'No pagination error was provided');
       }
       if (printState.status !== 'ready') {
         throw new Error(`The printable page reported an unexpected status: ${printState.status}`);

@@ -1,6 +1,5 @@
 import {
   fitPrintChoiceImages,
-  waitForExcalidrawCanvases,
   waitForPrintImages,
 } from '../../src/lib/client/printing/print-image-layout.js';
 import { planPrintQuestionPages } from '../../src/lib/client/printing/print-question-layout.js';
@@ -14,6 +13,10 @@ import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docx
 import { parseQuestionBlockSize } from '../../src/lib/printing/question-block-size.js';
 
 import { layoutPrintGradingTable } from './lib/print-cover-layout.js';
+
+// Each readiness wait gets this long, so that a stuck element doesn't leave images no time. Both
+// waits together stay well inside the preview request's 45-second deadline.
+const READINESS_TIMEOUT_MS = 10_000;
 
 interface PagedFlow {
   total: number;
@@ -29,7 +32,6 @@ declare global {
         renderTo?: HTMLElement,
       ) => Promise<PagedFlow>;
     };
-    __PL_PRINT_READINESS_PROMISES__?: Promise<unknown>[];
     __PL_PRINT_READY__: Promise<{ totalPages: number }>;
     __PL_PRINT_DOCX_SOURCE__?: ReturnType<typeof captureDocxSource>;
   }
@@ -40,6 +42,15 @@ function waitForDocumentReady(): Promise<void> {
   return new Promise((resolve) => {
     document.addEventListener('DOMContentLoaded', () => resolve(), { once: true });
   });
+}
+
+/**
+ * Elements initialize in jQuery ready callbacks, which run asynchronously after
+ * `DOMContentLoaded` in the order they were registered. Registering one after the document
+ * has loaded waits for all of the elements' callbacks.
+ */
+function waitForJQueryReadyCallbacks(): Promise<void> {
+  return new Promise((resolve) => $(() => resolve()));
 }
 
 function waitForAnimationFrame(): Promise<void> {
@@ -232,6 +243,51 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
     image.height = bounds.height || canvas.height;
     canvas.replaceWith(image);
   }
+}
+
+/**
+ * Omits questions whose elements or images did not finish rendering, and reports them the same
+ * way as questions that the server could not render, so downloads stay blocked until they are
+ * fixed or excluded. Failures outside a question, such as on the cover, fail the whole page.
+ */
+function omitIncompleteQuestions(failures: Element[], message: string): void {
+  const omitted = new Set<HTMLElement>();
+  for (const element of failures) {
+    // A widget may have replaced the element, or an earlier failure already omitted its question.
+    if (!element.isConnected) continue;
+    let question = element.closest<HTMLElement>('.printing-question');
+    let root = element.getRootNode();
+    while (!question && root instanceof ShadowRoot) {
+      question = root.host.closest<HTMLElement>('.printing-question');
+      root = root.host.getRootNode();
+    }
+    if (!question) throw new Error(`The cover page ${message}`);
+    omitted.add(question);
+  }
+  if (omitted.size === 0) return;
+
+  const data = document.documentElement.dataset;
+  const warnings = JSON.parse(data.printWarnings ?? '[]');
+  let omittedPoints = 0;
+  for (const question of omitted) {
+    omittedPoints += Number(question.dataset.maxPoints);
+    const number = question.dataset.questionNumber;
+    warnings.push({
+      code: 'incomplete_render',
+      question_number: number,
+      qid: null,
+      message: `Question ${number} ${message}.`,
+    });
+    question.remove();
+  }
+  data.printWarnings = JSON.stringify(warnings);
+  data.printOmittedQuestionCount = String(Number(data.printOmittedQuestionCount) + omitted.size);
+  data.printQuestionCount = String(Number(data.printQuestionCount) - omitted.size);
+  data.printMaxPoints = String(Number(data.printMaxPoints) - omittedPoints);
+  const coverQuestionCount = document.querySelector('[data-print-cover-question-count]');
+  if (coverQuestionCount) coverQuestionCount.textContent = data.printQuestionCount;
+  const coverMaxPoints = document.querySelector('[data-print-cover-max-points]');
+  if (coverMaxPoints) coverMaxPoints.textContent = data.printMaxPoints;
 }
 
 /** Convert details to regular blocks so closed content prints and long content can span pages. */
@@ -500,20 +556,16 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
  */
 async function paginateAssessment(): Promise<{ totalPages: number }> {
   await waitForDocumentReady();
-  const extraReadinessPromises = window.__PL_PRINT_READINESS_PROMISES__;
-  if (!extraReadinessPromises) throw new Error('Assessment printing bootstrap is missing');
   const source = document.querySelector<HTMLElement>('#assessment-print-source');
   const output = document.querySelector<HTMLElement>('#assessment-print-pages');
   if (!source || !output) throw new Error('Printable assessment containers are missing');
 
-  await Promise.all(extraReadinessPromises);
-  await waitForPrintableElements(source);
-  await waitForExcalidrawCanvases(source);
+  await waitForJQueryReadyCallbacks();
+  omitIncompleteQuestions(
+    await waitForPrintableElements(source, READINESS_TIMEOUT_MS),
+    'has content that did not finish rendering',
+  );
   materializePrintableDetails(source);
-  // One animation frame may run before the app is painted, so wait for a second
-  // before copying styles from shadow roots.
-  await waitForAnimationFrame();
-  await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);
   const mathJax = window.MathJax as
     | {
@@ -529,7 +581,17 @@ async function paginateAssessment(): Promise<{ totalPages: number }> {
   annotateDocxMath(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
-  await waitForPrintImages(source);
+  const failedImages = await waitForPrintImages(source, READINESS_TIMEOUT_MS);
+  // The renderer blocks requests to other sites, so those images can never load.
+  const isFromOtherSite = (image: HTMLImageElement) => {
+    const url = URL.parse(image.currentSrc || image.src, location.href);
+    return url?.protocol.startsWith('http') === true && url.origin !== location.origin;
+  };
+  omitIncompleteQuestions(
+    failedImages.filter(isFromOtherSite),
+    'uses an image from another website, which printing cannot include',
+  );
+  omitIncompleteQuestions(failedImages, 'has an image that could not be loaded');
   const { height: pageHeight } = measurePrintablePage(source);
   layoutPrintGradingTable(source, pageHeight);
   if (document.documentElement.dataset.printDocument === 'answer_key') {
