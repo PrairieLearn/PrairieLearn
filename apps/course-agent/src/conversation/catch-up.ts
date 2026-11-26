@@ -4,6 +4,7 @@ import {
   InputRequestPartSchema,
   NavigationPartSchema,
   type RequestChangesResult,
+  SentFilePartSchema,
   ToolCallSchema,
   UserMessageMetadataSchema,
 } from '@prairielearn/course-agent-types';
@@ -196,6 +197,10 @@ function describePart(part: UIMessage['parts'][number]) {
       return describeInputRequest(part.data);
     case 'data-tool':
       return describeFileChange(part.data);
+    case 'data-file': {
+      const file = SentFilePartSchema.safeParse(part.data);
+      return file.success ? `[Sent the instructor the file ${file.data.filename}.]` : '';
+    }
     case 'data-navigation': {
       const navigation = NavigationPartSchema.safeParse(part.data).data;
       return navigation ? `[Offered to open ${navigation.label} (${navigation.subtitle}).]` : '';

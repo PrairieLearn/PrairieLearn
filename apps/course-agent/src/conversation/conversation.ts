@@ -44,6 +44,7 @@ import {
   formatRequest,
   imageType,
   keepUploadReferences,
+  sentFilePrefix,
   uploadKey,
   uploadPrefix,
 } from './attachments.js';
@@ -62,6 +63,7 @@ import {
 import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
 import { resolveNavigation } from './navigation.js';
+import { sendFiles } from './sent-files.js';
 import { generateTitle } from './title.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
@@ -303,6 +305,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       prefix: uploadPrefix(this.name),
       delimiter: '/',
     });
+    return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
+  });
+  /** Sent files have the same cap as uploads, counted apart so neither crowds out the other. */
+  private readonly sentFileQuota = new UploadQuota(async () => {
+    const { objects } = await this.env.CHECKPOINTS.list({ prefix: sentFilePrefix(this.name) });
     return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
   });
 
@@ -1014,6 +1021,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           getCourseData({ ...this.prairieLearnContext(), sandbox: this.sandbox, request }),
       },
       (target) => resolveNavigation(this.prairieLearnContext(), target),
+      (paths) => this.sendFiles(paths),
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
@@ -1371,6 +1379,25 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       success: true,
       text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.',
     };
+  }
+
+  private sendFiles(paths: string[]) {
+    const turn = this.active;
+    return sendFiles({
+      paths,
+      conversationId: this.name,
+      sandbox: this.sandbox,
+      bucket: this.env.CHECKPOINTS,
+      quota: this.sentFileQuota,
+      show: (files) => {
+        // A turn that stopped or failed while the files were stored can no longer show them.
+        if (!turn || this.active !== turn || turn.stop || !this.native?.streaming) return false;
+        for (const file of files) {
+          this.native.emit({ type: 'data-file', id: `file:${file.id}`, data: file });
+        }
+        return true;
+      },
+    });
   }
 
   private reviewFiles(review: ReviewRecord) {

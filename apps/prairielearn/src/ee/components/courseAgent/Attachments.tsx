@@ -8,6 +8,7 @@ import {
   INLINE_IMAGE_TYPES,
   MAX_ATTACHMENTS_PER_MESSAGE,
   MAX_ATTACHMENT_BYTES,
+  type SentFilePart,
   THUMBNAIL_PIXELS,
   UploadedAttachmentSchema,
   attachmentIdOf,
@@ -233,14 +234,14 @@ function AttachmentTile({
   percent?: number | null;
   previewUrl?: string | null;
   downloadUrl?: string | null;
-  /** Opens a sent image in the viewer; an image without a preview downloads instead. */
+  /** Opens a sent image in the viewer; an image whose preview fails to load downloads instead. */
   onView?: () => void;
   onRemove?: () => void;
 }) {
   // Uploads from before previews existed, and images the browser couldn't decode, have none.
   const [previewFailed, setPreviewFailed] = useState(false);
   const previewing = previewUrl !== null && !problem && !previewFailed;
-  const viewable = previewing && onView !== undefined;
+  const viewable = onView !== undefined && !problem && !previewFailed;
   // Spans, since a viewable tile's content sits inside a button.
   const content = (
     <span className="d-block position-relative h-100 overflow-hidden rounded-3">
@@ -407,6 +408,19 @@ function ImageViewer({
   );
 }
 
+function useImageViewer() {
+  // The image stays set while the viewer fades out, so it doesn't empty first.
+  const [viewed, setViewed] = useState<ViewedImage | null>(null);
+  const [viewing, setViewing] = useState(false);
+  return {
+    view: (image: ViewedImage) => {
+      setViewed(image);
+      setViewing(true);
+    },
+    viewer: <ImageViewer image={viewed} show={viewing} onHide={() => setViewing(false)} />,
+  };
+}
+
 /**
  * A sent message's attachments, shown above its text. An image with a preview opens in a viewer,
  * and anything else downloads when clicked.
@@ -423,9 +437,7 @@ export function SentAttachments({
     const id = attachmentIdOf(part.url);
     return id ? [{ part, url: `${uploadsUrl}/${id}` }] : [];
   });
-  // The image stays set while the viewer fades out, so it doesn't empty first.
-  const [viewed, setViewed] = useState<ViewedImage | null>(null);
-  const [viewing, setViewing] = useState(false);
+  const { view, viewer } = useImageViewer();
   if (files.length === 0) return null;
   return (
     <>
@@ -445,19 +457,53 @@ export function SentAttachments({
               label={typeLabel(part.mediaType, part.filename ?? '')}
               previewUrl={image ? `${url}/thumbnail` : null}
               downloadUrl={url}
-              onView={
-                viewable
-                  ? () => {
-                      setViewed({ filename, url });
-                      setViewing(true);
-                    }
-                  : undefined
-              }
+              onView={viewable ? () => view({ filename, url }) : undefined}
             />
           );
         })}
       </ul>
-      <ImageViewer image={viewed} show={viewing} onHide={() => setViewing(false)} />
+      {viewer}
+    </>
+  );
+}
+
+/**
+ * The largest image the agent sent whose tile shows the image itself, since the agent's images
+ * have no thumbnail. A larger one shows its name, so history doesn't load many large images.
+ */
+const MAX_AGENT_PREVIEW_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Files the agent sent, shown where it sent them in its reply. An image the browser can display
+ * opens in a viewer, and anything else downloads when clicked.
+ */
+export function AgentFiles({
+  files,
+  sentFilesUrl,
+}: {
+  files: SentFilePart[];
+  sentFilesUrl: string;
+}) {
+  const { view, viewer } = useImageViewer();
+  return (
+    <>
+      <ul className="list-unstyled d-flex flex-wrap gap-2 m-0" aria-label="Files from the agent">
+        {files.map((file) => {
+          const url = `${sentFilesUrl}/${file.id}`;
+          const image = file.mediaType !== undefined && INLINE_IMAGE_TYPES.includes(file.mediaType);
+          return (
+            <AttachmentTile
+              key={file.id}
+              filename={file.filename}
+              label={typeLabel(file.mediaType ?? '', file.filename)}
+              previewUrl={image && file.size <= MAX_AGENT_PREVIEW_BYTES ? url : null}
+              downloadUrl={url}
+              onView={image ? () => view({ filename: file.filename, url }) : undefined}
+            />
+          );
+        })}
+      </ul>
+      {viewer}
     </>
   );
 }

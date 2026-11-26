@@ -424,3 +424,19 @@ export const NavigationPartSchema = z.object({
 });
 
 export type NavigationPart = z.infer<typeof NavigationPartSchema>;
+
+export const MAX_SENT_FILES_PER_CALL = 10;
+
+/**
+ * A file the agent sent to the instructor with `send_files`, in a `data-file` part. The contents
+ * are stored apart from chat history and downloaded by ID.
+ */
+export const SentFilePartSchema = z.object({
+  id: z.uuid(),
+  filename: z.string(),
+  size: z.number(),
+  /** Set for an image the browser can display, recognized by its contents. */
+  mediaType: z.string().optional(),
+});
+
+export type SentFilePart = z.infer<typeof SentFilePartSchema>;

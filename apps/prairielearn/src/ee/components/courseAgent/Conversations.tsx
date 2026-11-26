@@ -23,6 +23,8 @@ import {
   type ConversationState,
   type InputRequestPart,
   InputRequestPartSchema,
+  type SentFilePart,
+  SentFilePartSchema,
   type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
@@ -37,6 +39,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import {
+  AgentFiles,
   type DraftAttachment,
   DraftAttachmentList,
   FileDropArea,
@@ -571,6 +574,7 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               uploadsUrl={uploadsUrl}
+              sentFilesUrl={`/pl/course/${courseId}/course_agent/conversations/${conversationId}/sent-files`}
               awaitingReviewId={awaitingReviewId}
               hiddenReviewId={hiddenReviewId}
               turnRunning={turnRunning && index === messages.length - 1}
@@ -804,11 +808,17 @@ function toolCallOf(part: UIMessage['parts'][number]) {
   return ToolCallSchema.safeParse(part.data).data ?? null;
 }
 
+function sentFileOf(part: UIMessage['parts'][number]) {
+  if (part.type !== 'data-file') return null;
+  return SentFilePartSchema.safeParse(part.data).data ?? null;
+}
+
 function Message({
   message,
   live,
   conversationId,
   uploadsUrl,
+  sentFilesUrl,
   awaitingReviewId,
   hiddenReviewId,
   turnRunning,
@@ -827,6 +837,7 @@ function Message({
   live: boolean;
   conversationId: string;
   uploadsUrl: string;
+  sentFilesUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
   /** A review requested by the running turn, whose card waits for the turn to end. */
@@ -846,14 +857,28 @@ function Message({
       </div>
     );
   }
-  // Consecutive tool calls render together so runs of the same kind can be grouped.
-  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
+  // Consecutive tool calls render together so runs of the same kind can be grouped, and
+  // consecutive sent files share a row.
+  type Segment = { key: string } & (
+    | { calls: ToolCall[] }
+    | { files: SentFilePart[] }
+    | { part: UIMessage['parts'][number] }
+  );
   const segments: Segment[] = [];
   message.parts.forEach((part, index) => {
     const call = toolCallOf(part);
+    const file = sentFileOf(part);
     const last = segments.at(-1);
-    if (call && last && 'calls' in last) last.calls.push(call);
-    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
+    if (call && last && 'calls' in last) {
+      last.calls.push(call);
+    } else if (file && last && 'files' in last) {
+      last.files.push(file);
+    } else {
+      segments.push({
+        key: `part-${index}`,
+        ...(call ? { calls: [call] } : file ? { files: [file] } : { part }),
+      });
+    }
   });
   // Reviews and input requests end the agent's turn, so their cards go at the end of that turn:
   // before the marker of the turn that continues this message (a review result's delivery), or at
@@ -890,6 +915,12 @@ function Message({
           live={live}
           onExpand={onToolCallExpand}
         />,
+      );
+      continue;
+    }
+    if ('files' in segment) {
+      rendered.push(
+        <AgentFiles key={segment.key} files={segment.files} sentFilesUrl={sentFilesUrl} />,
       );
       continue;
     }

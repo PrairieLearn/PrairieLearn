@@ -6,6 +6,7 @@ import {
   COURSE_DIR,
   CourseDataQuerySchema,
   type InputRequestPart,
+  MAX_SENT_FILES_PER_CALL,
   type NavigationPart,
   type NavigationTarget,
   NavigationTargetSchema,
@@ -53,12 +54,12 @@ const ItemEvent = z.object({
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
 /**
- * `request_changes` shows as a review card, and an offered page or reload as its own part; only a
- * failed call needs a tool entry.
+ * `request_changes` shows as a review card, an offered page or reload as its own part, and
+ * `send_files` as the files themselves; only a failed call needs a tool entry.
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'offer_page', 'offer_reload']),
+  tool: z.enum(['request_changes', 'offer_page', 'offer_reload', 'send_files']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -71,6 +72,13 @@ const DynamicToolCall = z.object({
   arguments: z.unknown(),
 });
 const RequestChangesArguments = z.strictObject({});
+const SendFilesArguments = z.strictObject({
+  paths: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(MAX_SENT_FILES_PER_CALL)
+    .describe('Paths of the files to send, absolute or relative to the course directory.'),
+});
 const ListCourseDatasetsArguments = z.strictObject({});
 const CourseDataArguments = CourseDataQuerySchema.extend({
   dataset: z.string().describe('Dataset to download, from list_course_datasets.'),
@@ -152,6 +160,7 @@ export class CodexAppServerClient {
     private courseData: CourseDataTools,
     /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
     private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
+    private sendFiles: (paths: string[]) => Promise<ToolReply>,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -293,6 +302,11 @@ export class CodexAppServerClient {
         if (!request.success) return invalidArguments(request.error);
         return await replyWithError(() => this.courseData.getCourseData(request.data));
       }
+      case sendFilesTool.name: {
+        const request = SendFilesArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.sendFiles(request.data.paths));
+      }
       case requestChangesTool.name: {
         // The tool is offered only when reviews are handled, so this call is a protocol error.
         if (!this.onReview) throw new Error('Review handling is not configured');
@@ -397,6 +411,7 @@ export class CodexAppServerClient {
               courseDataTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
               offerReloadTool,
+              sendFilesTool,
             ],
           } satisfies ThreadStartParams,
           ThreadResult,
@@ -574,7 +589,7 @@ function invalidArguments(error: z.ZodError): ToolReply {
   return { success: false, text: `Invalid arguments: ${z.prettifyError(error)}` };
 }
 
-/** A failed PrairieLearn request is reported to the model rather than failing the turn. */
+/** A failed tool call is reported to the model rather than failing the turn. */
 async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply> {
   try {
     return await call();
@@ -604,6 +619,14 @@ const courseDataTool = {
   description:
     "Download the selected columns of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. To narrow results to a course instance, assessment, or question, filter by course_instance_short_name, assessment_tid, or qid, the directory names in the course files; there is no need to look up IDs first. The reply gives the file's path and row count, and says if the file does not hold every matching row.",
   inputSchema: toolInputSchema(CourseDataArguments),
+} satisfies DynamicToolSpec;
+
+const sendFilesTool = {
+  type: 'function',
+  name: 'send_files',
+  description:
+    'Send files from the sandbox to the instructor, who can download them from the chat. PNG, JPEG, GIF, and WebP images are also shown in the chat. Either every file is sent or none is; the reply says why a file could not be sent.',
+  inputSchema: toolInputSchema(SendFilesArguments),
 } satisfies DynamicToolSpec;
 
 const requestChangesTool = {
