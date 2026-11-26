@@ -134,8 +134,12 @@ textarea.course-agent-composer-input {
   --bs-alert-padding-y: 0.5rem;
 }
 
+/* The button stays beside the question until the question would be squeezed. */
+.course-agent-auto-approve-offer-text {
+  flex: 1 1 10rem;
+}
+
 .course-agent-auto-approve-offer .btn-close {
-  padding: 0.75rem;
   font-size: 0.625rem;
 }
 

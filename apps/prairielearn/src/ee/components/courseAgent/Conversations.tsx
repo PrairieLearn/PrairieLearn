@@ -14,7 +14,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
+import { Alert, Button, CloseButton, Dropdown, Form, Spinner } from 'react-bootstrap';
 import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -731,21 +731,26 @@ function Chat({
           autoApproveOffered && (
             <Alert
               variant="warning"
-              className="course-agent-auto-approve-offer small mb-2"
-              dismissible
-              onClose={() => setAutoApproveOffered(false)}
+              className="course-agent-auto-approve-offer small mb-2 d-flex align-items-center gap-2"
             >
-              <div className="d-flex flex-wrap align-items-center gap-2">
-                <span className="flex-grow-1">Don't want to approve every request manually?</span>
+              <div className="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                <span className="course-agent-auto-approve-offer-text">
+                  Don't want to approve every request manually?
+                </span>
                 <Button
                   variant="primary"
                   size="sm"
-                  className="text-nowrap"
+                  className="text-nowrap ms-auto"
                   onClick={() => setConfirmingAutoApprove(true)}
                 >
                   Turn on auto-approve
                 </Button>
               </div>
+              <CloseButton
+                className="flex-shrink-0"
+                aria-label="Dismiss"
+                onClick={() => setAutoApproveOffered(false)}
+              />
             </Alert>
           )
         }
