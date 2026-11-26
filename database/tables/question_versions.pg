@@ -1,0 +1,24 @@
+columns
+    commit_hash: text
+    created_at: timestamp with time zone not null
+    dependency_hash: text not null
+    id: bigint not null default nextval('question_versions_id_seq'::regclass)
+    question_id: bigint not null
+    source_hash: text not null
+    superseded_at: timestamp with time zone
+    uses_chunks: boolean not null
+
+indexes
+    question_versions_pkey: PRIMARY KEY (id) USING btree (id)
+    question_versions_current_question_id_key: UNIQUE USING btree (question_id) WHERE superseded_at IS NULL
+    question_versions_question_id_id_key: UNIQUE (question_id, id) USING btree (question_id, id)
+    question_versions_question_id_created_at_idx: USING btree (question_id, created_at)
+
+check constraints
+    question_versions_check: CHECK (superseded_at > created_at)
+
+foreign-key constraints
+    question_versions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    question_version_settings: FOREIGN KEY (question_version_id) REFERENCES question_versions(id) ON UPDATE CASCADE ON DELETE CASCADE

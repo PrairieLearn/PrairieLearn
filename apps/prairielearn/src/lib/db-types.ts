@@ -1561,6 +1561,49 @@ export const QuestionTagSchema = z.object({
 });
 export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 
+export const QuestionVersionSettingSchema = z.object({
+  client_files: z.array(z.string()).nullable(),
+  dependencies: z.any(),
+  directory: z.string(),
+  external_grading_enable_networking: z.boolean().nullable(),
+  external_grading_entrypoint: z.string().nullable(),
+  external_grading_environment: z.record(z.string(), z.string().nullable()),
+  external_grading_files: z.array(z.string()).nullable(),
+  external_grading_image: z.string().nullable(),
+  external_grading_timeout: z.number().nullable(),
+  grading_method: EnumGradingMethodSchema,
+  options: z.any().nullable(),
+  partial_credit: z.boolean().nullable(),
+  preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
+  question_version_id: IdSchema,
+  show_correct_answer: z.boolean().nullable(),
+  single_variant: z.boolean().nullable(),
+  template_directory: z.string().nullable(),
+  title: z.string(),
+  type: EnumQuestionTypeSchema,
+  workspace_args: z.string().nullable(),
+  workspace_enable_networking: z.boolean().nullable(),
+  workspace_environment: z.record(z.string(), z.string().nullable()),
+  workspace_graded_files: z.array(z.string()).nullable(),
+  workspace_home: z.string().nullable(),
+  workspace_image: z.string().nullable(),
+  workspace_port: z.number().nullable(),
+  workspace_url_rewrite: z.boolean().nullable(),
+});
+export type QuestionVersionSetting = z.infer<typeof QuestionVersionSettingSchema>;
+
+export const QuestionVersionSchema = z.object({
+  commit_hash: z.string().nullable(),
+  created_at: DateFromISOString,
+  dependency_hash: z.string(),
+  id: IdSchema,
+  question_id: IdSchema,
+  source_hash: z.string(),
+  superseded_at: DateFromISOString.nullable(),
+  uses_chunks: z.boolean(),
+});
+export type QuestionVersion = z.infer<typeof QuestionVersionSchema>;
+
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
@@ -1971,6 +2014,8 @@ export const TableNames = [
   'question_generation_context_embeddings',
   'question_score_logs',
   'question_tags',
+  'question_version_settings',
+  'question_versions',
   'questions',
   'rubric_grading_items',
   'rubric_gradings',
