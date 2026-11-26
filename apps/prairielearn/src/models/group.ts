@@ -21,6 +21,11 @@ const GroupUsersRowSchema = z.object({
 });
 export type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
 
+const GroupWithAssessmentInstanceSchema = GroupUsersRowSchema.extend({
+  assessment_instance_id: IdSchema.nullable(),
+});
+export type GroupWithAssessmentInstance = z.infer<typeof GroupWithAssessmentInstanceSchema>;
+
 export async function selectGroupConfigForAssessment(
   assessment_id: string,
 ): Promise<GroupConfig | null> {
@@ -39,8 +44,14 @@ export async function selectGroupRoleNamesForAssessment(assessment_id: string): 
   );
 }
 
-export async function selectGroupsForConfig(group_config_id: string): Promise<GroupUsersRow[]> {
-  return await queryRows(sql.select_groups_for_config, { group_config_id }, GroupUsersRowSchema);
+export async function selectGroupsForConfig(
+  group_config_id: string,
+): Promise<GroupWithAssessmentInstance[]> {
+  return await queryRows(
+    sql.select_groups_for_config,
+    { group_config_id },
+    GroupWithAssessmentInstanceSchema,
+  );
 }
 
 export async function selectGroupById({

@@ -23,9 +23,10 @@ import { useModalState } from '@prairielearn/ui';
 import type { StaffAssessment, StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
 import {
   getAssessmentDownloadUrl,
+  getAssessmentInstanceUrl,
   getCourseInstanceJobSequenceUrl,
 } from '../../../lib/client/url.js';
-import type { GroupUsersRow } from '../../../models/group.js';
+import type { GroupUsersRow, GroupWithAssessmentInstance } from '../../../models/group.js';
 import type { AssessmentGroupsError } from '../../../trpc/assessment/assessment-groups.js';
 import { useTRPC } from '../../../trpc/assessment/context.js';
 import type { AssessmentRouter } from '../../../trpc/assessment/trpc.js';
@@ -613,18 +614,33 @@ function DeleteAllGroupsModal({
 
 function GroupRow({
   row,
+  courseInstanceId,
   canEdit,
   onEdit,
   onDelete,
 }: {
-  row: GroupUsersRow;
+  row: GroupWithAssessmentInstance;
+  courseInstanceId: string;
   canEdit: boolean;
   onEdit: (row: GroupUsersRow) => void;
   onDelete: (row: GroupUsersRow) => void;
 }) {
   return (
     <tr>
-      <td className="pe-3 text-nowrap">{row.name}</td>
+      <td className="pe-3 text-nowrap">
+        {row.assessment_instance_id == null ? (
+          row.name
+        ) : (
+          <a
+            href={getAssessmentInstanceUrl({
+              courseInstanceId,
+              assessmentInstanceId: row.assessment_instance_id,
+            })}
+          >
+            {row.name}
+          </a>
+        )}
+      </td>
       <td className="pe-3 text-nowrap">
         <i className="bi bi-people text-muted me-1" aria-hidden="true" />
         {row.size}
@@ -915,6 +931,7 @@ export function GroupsCard({
                     <GroupRow
                       key={row.group_id}
                       row={row}
+                      courseInstanceId={courseInstanceId}
                       canEdit={canEdit}
                       onEdit={editModal.showWithData}
                       onDelete={deleteModal.showWithData}
