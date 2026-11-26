@@ -1,7 +1,12 @@
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CodexAppServerClient, type CourseDataRequest, type ToolReply } from './codex.js';
+import {
+  type AgentFeedback,
+  CodexAppServerClient,
+  type CourseDataRequest,
+  type ToolReply,
+} from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
@@ -63,17 +68,23 @@ function runner({
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox, courseData, async (target) => {
-    if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
-    const { assessment } = target.params;
-    if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
-    return {
-      url: '/pl/course_instance/1/instructor/assessment/2/settings',
-      label: 'Settings',
-      subtitle: 'Assessment · Fa25 / hw1',
-    };
-  });
-  return { sandbox, native, commands, emit, disconnect: () => socket.close() };
+  const feedback: AgentFeedback[] = [];
+  const native = new CodexAppServerClient(
+    sandbox,
+    courseData,
+    async (target) => {
+      if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
+      const { assessment } = target.params;
+      if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
+      return {
+        url: '/pl/course_instance/1/instructor/assessment/2/settings',
+        label: 'Settings',
+        subtitle: 'Assessment · Fa25 / hw1',
+      };
+    },
+    (report) => `feedback-${feedback.push(report)}`,
+  );
+  return { sandbox, native, commands, emit, feedback, disconnect: () => socket.close() };
 }
 
 const thread = {
@@ -329,6 +340,7 @@ describe('course agent turns', () => {
         { name: 'get_course_data' },
         { name: 'offer_page' },
         { name: 'offer_reload' },
+        { name: 'report_feedback' },
       ],
     });
     const call = (id: number, tool: string, args: unknown) =>
@@ -375,6 +387,57 @@ describe('course agent turns', () => {
     });
     expect(byId[13]).toMatchObject({ success: false });
     expect(courseData.getCourseData).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes on feedback the agent reports, turning away placeholders', async () => {
+    const { native, commands, emit, feedback } = runner();
+    await native.connect();
+    await native.thread(thread);
+    expect(commands.find((command) => command.method === 'thread/start')?.params).toMatchObject({
+      dynamicTools: expect.arrayContaining([
+        expect.objectContaining({
+          name: 'report_feedback',
+          inputSchema: expect.objectContaining({
+            required: ['task', 'kind', 'impact', 'description'],
+          }),
+        }),
+      ]),
+    });
+    const call = (id: number, args: unknown) =>
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: `call-${id}`,
+          namespace: null,
+          tool: 'report_feedback',
+          arguments: args,
+        },
+      });
+    const report = {
+      task: 'Add a figure to a question',
+      kind: 'missing',
+      impact: 'worked_around',
+      description: 'No image tool was available, so the figure was drawn with pl-drawing instead.',
+    };
+    call(10, { ...report, description: 'N/A' });
+    call(11, { ...report, task: 'x'.repeat(201) });
+    call(12, { ...report, task: ` ${report.task} ` });
+    const replies = () => commands.filter((command) => 'result' in command);
+    await vi.waitFor(() => expect(replies()).toHaveLength(3));
+    const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
+    expect(byId[10]).toMatchObject({
+      success: false,
+      contentItems: [{ text: expect.stringContaining('skip this tool') }],
+    });
+    expect(byId[11]).toMatchObject({ success: false });
+    expect(byId[12]).toMatchObject({
+      success: true,
+      contentItems: [{ text: expect.stringContaining('feedback-1') }],
+    });
+    expect(feedback).toEqual([report]);
   });
 
   it('shows input the agent requests as an input request part', async () => {
@@ -477,6 +540,7 @@ describe('course agent turns', () => {
             },
           },
           { name: 'offer_reload' },
+          { name: 'report_feedback' },
         ],
       },
     });

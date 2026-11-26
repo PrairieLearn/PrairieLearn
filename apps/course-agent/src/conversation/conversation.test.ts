@@ -74,11 +74,15 @@ vi.mock('@cloudflare/ai-chat', () => ({
     }
   },
 }));
-vi.mock('../monitoring.js', () => ({ logEvent: vi.fn(), reportError: vi.fn() }));
+vi.mock('../monitoring.js', () => ({
+  logEvent: vi.fn(),
+  reportError: vi.fn(),
+  feedbackReporter: vi.fn(() => ({ queue: vi.fn(() => 'feedback'), send: vi.fn() })),
+}));
 
 // Title generation calls the provider directly; model requests here are the agent's own.
 vi.mock('./title.js', () => ({ generateTitle: vi.fn(async () => null) }));
-const { reportError } = await import('../monitoring.js');
+const { feedbackReporter, reportError } = await import('../monitoring.js');
 const { generateTitle } = await import('./title.js');
 vi.mock('../sandbox/turn.js', () => ({
   SandboxTurn: vi.fn(
@@ -355,6 +359,21 @@ it('charges web search commands and refuses them as text once limited', async ()
   expect(await refused.json()).toEqual({ output: expect.stringContaining('usage limit') });
   expect(reports()[1].usage).toEqual({ ...emptyUsage(), webSearchCalls: 3 });
   expect(metering(state.saved).unreported).toEqual(emptyUsage());
+});
+
+it('sends feedback with the conversation once the SDK has saved the reply', async () => {
+  stubFetch({ usage: async () => decision() });
+  const { conversation } = await runningConversation();
+  const reporter = vi.mocked(feedbackReporter).mock.results[0].value;
+  sdk.finishTurn();
+  // Let finishTurn run up to where it waits for the SDK.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(reporter.send).not.toHaveBeenCalled();
+  const reply = { id: 'reply', role: 'assistant' as const, parts: [] };
+  await conversation.persistMessages([...conversation.messages, reply]);
+  await sdk.completeResponse('initial');
+  await vi.waitFor(() => expect(reporter.send).toHaveBeenCalledOnce());
+  expect(reporter.send.mock.calls[0][0]).toContainEqual(reply);
 });
 
 it('Stop aborts the running request and charges its estimate', async () => {
