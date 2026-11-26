@@ -22,15 +22,31 @@ WITH
       workspaces
     WHERE
       id = $workspace_id
+      AND (
+        NOT $launch_guarded::boolean
+        OR (
+          state = 'launching'
+          AND launch_uuid IS NOT DISTINCT FROM $expected_launch_uuid
+        )
+      )
+    FOR NO KEY UPDATE
   ),
+  -- An unguarded update can wait on the lock above for a transition that
+  -- committed after this transaction started, so clamp the elapsed time.
   deltas AS (
     SELECT
       CASE
-        WHEN old_workspace.state = 'launching' THEN now() - old_workspace.state_updated_at
+        WHEN old_workspace.state = 'launching' THEN GREATEST(
+          now() - old_workspace.state_updated_at,
+          '0 seconds'::interval
+        )
         ELSE '0 seconds'::interval
       END AS launching_delta,
       CASE
-        WHEN old_workspace.state = 'running' THEN now() - old_workspace.state_updated_at
+        WHEN old_workspace.state = 'running' THEN GREATEST(
+          now() - old_workspace.state_updated_at,
+          '0 seconds'::interval
+        )
         ELSE '0 seconds'::interval
       END AS running_delta
     FROM
@@ -40,57 +56,52 @@ WITH
     UPDATE workspaces AS w
     SET
       state = $state::enum_workspace_state,
+      -- Every launch gets a new identity, so writes from an earlier launch of
+      -- this workspace can never match the current one.
+      launch_uuid = CASE
+        WHEN $state = 'launching' THEN $new_launch_uuid
+        ELSE w.launch_uuid
+      END,
+      hostname = COALESCE($hostname, w.hostname),
       state_updated_at = now(),
       message = $message,
       message_updated_at = now(),
       launched_at = CASE
         WHEN $state = 'launching' THEN now()
-        ELSE launched_at
+        ELSE w.launched_at
       END,
       heartbeat_at = CASE
         WHEN $state = 'running' THEN now()
-        ELSE heartbeat_at
+        ELSE w.heartbeat_at
       END,
       running_at = CASE
         WHEN $state = 'running' THEN now()
-        ELSE running_at
+        ELSE w.running_at
       END,
       stopped_at = CASE
         WHEN $state = 'stopped' THEN now()
-        ELSE stopped_at
+        ELSE w.stopped_at
       END,
-      launching_duration = launching_duration + (
-        SELECT
-          launching_delta
-        FROM
-          deltas
-      ),
-      running_duration = running_duration + (
-        SELECT
-          running_delta
-        FROM
-          deltas
-      )
+      launching_duration = w.launching_duration + deltas.launching_delta,
+      running_duration = w.running_duration + deltas.running_delta
+    FROM
+      old_workspace
+      CROSS JOIN deltas
     WHERE
-      w.id = $workspace_id
+      w.id = old_workspace.id
     RETURNING
-      *
+      w.*
   )
 INSERT INTO
   workspace_logs (date, workspace_id, version, state, message)
-VALUES
-  (
-    now(),
-    $workspace_id,
-    (
-      SELECT
-        version
-      FROM
-        old_workspace
-    ),
-    $state,
-    $message
-  )
+SELECT
+  now(),
+  id,
+  version,
+  state,
+  message
+FROM
+  updated_workspace
 RETURNING
   (
     SELECT
@@ -98,6 +109,53 @@ RETURNING
     FROM
       deltas
   ) AS delta;
+
+-- BLOCK update_workspace_launch_message
+WITH
+  workspace AS (
+    UPDATE workspaces AS w
+    SET
+      message = $message,
+      message_updated_at = now()
+    WHERE
+      w.id = $workspace_id
+      AND w.state = 'launching'
+      AND w.launch_uuid = $launch_uuid
+    RETURNING
+      w.id,
+      w.version
+  ),
+  workspace_log AS (
+    INSERT INTO
+      workspace_logs (date, workspace_id, version, message)
+    SELECT
+      now(),
+      workspace.id,
+      workspace.version,
+      $message
+    FROM
+      workspace
+  )
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      workspace
+  );
+
+-- BLOCK select_workspace_launch_is_current
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      workspaces AS w
+    WHERE
+      w.id = $workspace_id
+      AND w.state = 'launching'
+      AND w.launch_uuid = $launch_uuid
+  );
 
 -- BLOCK update_workspace_message
 WITH

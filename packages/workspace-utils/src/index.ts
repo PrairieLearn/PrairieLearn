@@ -6,7 +6,14 @@ import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import type { Server as SocketIOServer } from 'socket.io';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalScalar,
+  queryRow,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 export {
@@ -65,7 +72,50 @@ export async function updateWorkspaceMessage(
 }
 
 /**
+ * Whether the launch is still the workspace's current launch, as of this
+ * statement rather than an earlier snapshot.
+ */
+export async function isWorkspaceLaunchCurrent(launch: WorkspaceLaunch): Promise<boolean> {
+  return await queryScalar(
+    sql.select_workspace_launch_is_current,
+    { workspace_id: launch.id, launch_uuid: launch.launch_uuid },
+    z.boolean(),
+  );
+}
+
+/**
+ * Updates the message of a launch that is still in progress. A superseded
+ * launch writes and publishes nothing, so that its progress never appears on
+ * the launch that replaced it.
+ *
+ * @param toDatabase Whether to write the message to the database.
+ * @returns Whether the launch is still current.
+ */
+export async function updateWorkspaceLaunchMessage(
+  launch: WorkspaceLaunch,
+  message: string,
+  toDatabase = true,
+): Promise<boolean> {
+  const current = toDatabase
+    ? await queryScalar(
+        sql.update_workspace_launch_message,
+        { workspace_id: launch.id, launch_uuid: launch.launch_uuid, message },
+        z.boolean(),
+      )
+    : await isWorkspaceLaunchCurrent(launch);
+  if (current) {
+    emitMessageForWorkspace(launch.id, 'change:message', { workspace_id: launch.id, message });
+  }
+  return current;
+}
+
+/**
  * Updates a workspace's current state and message.
+ *
+ * This applies no matter which launch the workspace is on, so it is only for
+ * transitions that are meant to end whatever launch is current. Use
+ * {@link startWorkspaceLaunch} to start a launch and
+ * {@link updateWorkspaceLaunchState} to finish one.
  *
  * @param workspace_id The workspace's id.
  * @param state The workspace's new state.
@@ -73,23 +123,104 @@ export async function updateWorkspaceMessage(
  */
 export async function updateWorkspaceState(
   workspace_id: string | number,
-  state: string,
+  state: 'uninitialized' | 'stopped',
   message = '',
 ): Promise<void> {
-  // TODO: add locking
-  const duration_milliseconds = await queryScalar(
-    sql.update_workspace_state,
-    { workspace_id, state, message },
-    IntervalSchema,
-  );
-  if (duration_milliseconds > 0) {
-    await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration_milliseconds });
+  await setWorkspaceState({ workspace_id, state, message });
+}
+
+/**
+ * Identifies one attempt to launch a workspace. `launch_uuid` is only null for
+ * a launch started by a main server that predates launch identities.
+ */
+export interface WorkspaceLaunch {
+  id: string | number;
+  launch_uuid: string | null;
+}
+
+/**
+ * Moves a workspace to `launching` and returns the identity of the new launch.
+ * Everything that later acts on behalf of this launch must present that
+ * identity, so a launch that was superseded by a reboot or a reset can't
+ * affect its replacement.
+ */
+export async function startWorkspaceLaunch(
+  workspace_id: string | number,
+  message: string,
+): Promise<string> {
+  const launch_uuid = crypto.randomUUID();
+  await setWorkspaceState({ workspace_id, state: 'launching', message, launch_uuid });
+  return launch_uuid;
+}
+
+/**
+ * Finishes a launch, unless it is no longer the workspace's current launch.
+ *
+ * @returns Whether the workspace was updated.
+ */
+export async function updateWorkspaceLaunchState(
+  launch: WorkspaceLaunch,
+  result: { state: 'running'; hostname: string } | { state: 'stopped'; message: string },
+): Promise<boolean> {
+  return setWorkspaceState({
+    workspace_id: launch.id,
+    state: result.state,
+    message: result.state === 'stopped' ? result.message : '',
+    hostname: result.state === 'running' ? result.hostname : undefined,
+    expectedLaunch: launch,
+  });
+}
+
+async function setWorkspaceState({
+  workspace_id,
+  state,
+  message,
+  hostname,
+  launch_uuid,
+  expectedLaunch,
+}: {
+  workspace_id: string | number;
+  state: 'uninitialized' | 'stopped' | 'launching' | 'running';
+  message: string;
+  hostname?: string;
+  /** The identity of the launch that a transition to `launching` starts. */
+  launch_uuid?: string;
+  /** If set, the update only applies while this launch is in progress. */
+  expectedLaunch?: WorkspaceLaunch;
+}): Promise<boolean> {
+  async function updateState() {
+    const queryDuration = expectedLaunch ? queryOptionalScalar : queryScalar;
+    const duration_milliseconds = await queryDuration(
+      sql.update_workspace_state,
+      {
+        workspace_id,
+        state,
+        message,
+        hostname: hostname ?? null,
+        new_launch_uuid: launch_uuid ?? null,
+        launch_guarded: expectedLaunch !== undefined,
+        expected_launch_uuid: expectedLaunch?.launch_uuid ?? null,
+      },
+      IntervalSchema,
+    );
+    if (duration_milliseconds === null) return false;
+    if (duration_milliseconds > 0) {
+      await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration_milliseconds });
+    }
+    return true;
   }
+
+  // A guarded update commits before it is published, so a client never loads a
+  // workspace whose `running` state it can't see yet. Other callers may already
+  // be inside a transaction, in which case they publish before their commit.
+  const updated = expectedLaunch ? await runInTransactionAsync(updateState) : await updateState();
+  if (!updated) return false;
   emitMessageForWorkspace(workspace_id, 'change:state', {
     workspace_id,
     state,
     message,
   });
+  return true;
 }
 
 /**

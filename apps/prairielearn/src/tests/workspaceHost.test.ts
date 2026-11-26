@@ -1,8 +1,11 @@
-import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { Server } from 'socket.io';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
+import { WorkspaceSchema } from '../lib/db-types.js';
 import * as workspaceHostUtils from '../lib/workspaceHost.js';
 
 import * as helperDb from './helperDb.js';
@@ -19,12 +22,6 @@ const WorkspaceHostLogsSchema = z.object({
   workspace_host_id: z.string(),
   message: z.string(),
   state: z.string(),
-});
-
-const WorkspaceSchema = z.object({
-  id: z.string(),
-  state: z.string(),
-  workspace_host_id: z.string().nullable(),
 });
 
 const WorkspaceLogsSchema = z.object({
@@ -49,13 +46,15 @@ async function insertWorkspaceHost(id: string | number, state = 'launching') {
 async function insertWorkspace(
   id: string | number,
   hostId: string | number | null | undefined = null,
+  launchUuid: string | null = null,
 ) {
   return sqldb.queryRow(
-    'INSERT INTO workspaces (id, state, workspace_host_id) VALUES ($id, $state, $workspace_host_id) RETURNING *;',
+    'INSERT INTO workspaces (id, state, workspace_host_id, launch_uuid) VALUES ($id, $state, $workspace_host_id, $launch_uuid) RETURNING *;',
     {
       id,
       state: 'launching',
       workspace_host_id: hostId,
+      launch_uuid: launchUuid,
     },
     WorkspaceSchema,
   );
@@ -86,10 +85,14 @@ async function getWorkspaceHostLogs(id: string | number) {
 
 async function getWorkspaceLogs(id: string | number) {
   return sqldb.queryRows(
-    'SELECT * FROM workspace_logs WHERE workspace_id = $id;',
+    'SELECT * FROM workspace_logs WHERE workspace_id = $id ORDER BY id;',
     { id },
     WorkspaceLogsSchema,
   );
+}
+
+async function startLaunch(id: string) {
+  return { id, launch_uuid: await workspaceUtils.startWorkspaceLaunch(id, '') };
 }
 
 describe('workspaceHost utilities', function () {
@@ -105,6 +108,114 @@ describe('workspaceHost utilities', function () {
     await sqldb.execute('DELETE FROM workspaces;');
     await sqldb.execute('DELETE FROM workspace_hosts;');
     await sqldb.execute('DELETE FROM workspace_host_logs;');
+  });
+
+  describe('updateWorkspaceLaunchState', () => {
+    const io = new Server();
+    const broadcast = vi.spyOn(
+      io.of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE).adapter,
+      'broadcast',
+    );
+    const failure = { state: 'stopped', message: 'Error starting container' } as const;
+
+    beforeEach(async () => {
+      workspaceUtils.init(io);
+      broadcast.mockClear();
+      await insertWorkspace(1);
+      broadcast.mockClear();
+    });
+
+    it('leaves a running replacement intact when an older launch fails', async () => {
+      const original = await startLaunch('1');
+      const replacement = await startLaunch('1');
+      const hostname = 'replacement:1234';
+      assert.isTrue(
+        await workspaceUtils.updateWorkspaceLaunchState(replacement, {
+          state: 'running',
+          hostname,
+        }),
+      );
+      const running = await selectWorkspace('1');
+      broadcast.mockClear();
+
+      assert.isFalse(await workspaceUtils.updateWorkspaceLaunchState(original, failure));
+
+      assert.deepEqual(await selectWorkspace('1'), running);
+      assert.equal(running.state, 'running');
+      assert.equal(running.hostname, hostname);
+      assert.deepEqual(
+        (await getWorkspaceLogs(1)).map((log) => log.state),
+        ['launching', 'launching', 'running'],
+      );
+      expect(broadcast).not.toHaveBeenCalled();
+    });
+
+    it('rejects a launch once the workspace has been rebooted', async () => {
+      const original = await startLaunch('1');
+      const stale = { state: 'running', hostname: 'stale:1234' } as const;
+
+      // A reboot stops the workspace but leaves the old UUID in place so that
+      // the host can find the container to remove.
+      await workspaceUtils.updateWorkspaceState(original.id, 'stopped', 'Rebooting container');
+      broadcast.mockClear();
+      assert.isFalse(await workspaceUtils.updateWorkspaceLaunchState(original, stale));
+
+      const replacement = await startLaunch('1');
+      broadcast.mockClear();
+      assert.isFalse(await workspaceUtils.updateWorkspaceLaunchState(original, stale));
+      assert.isFalse(await workspaceUtils.updateWorkspaceLaunchState(original, failure));
+
+      const current = await selectWorkspace('1');
+      assert.equal(current.state, 'launching');
+      assert.equal(current.launch_uuid, replacement.launch_uuid);
+      assert.notEqual(current.launch_uuid, original.launch_uuid);
+      assert.isNull(current.hostname);
+      expect(broadcast).not.toHaveBeenCalled();
+    });
+
+    it('records and broadcasts a failure for the current launch', async () => {
+      const launch = await startLaunch('1');
+      broadcast.mockClear();
+
+      assert.isTrue(await workspaceUtils.updateWorkspaceLaunchState(launch, failure));
+
+      const current = await selectWorkspace('1');
+      assert.equal(current.state, 'stopped');
+      assert.equal(current.message, failure.message);
+      const log = (await getWorkspaceLogs(1)).at(-1);
+      assert.equal(log?.state, 'stopped');
+      assert.equal(log?.message, failure.message);
+      expect(broadcast).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          data: ['change:state', { workspace_id: launch.id, ...failure }],
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('publishes progress only for the current launch', async () => {
+      const original = await startLaunch('1');
+      const replacement = await startLaunch('1');
+      const before = await selectWorkspace('1');
+      const logCount = (await getWorkspaceLogs(1)).length;
+      broadcast.mockClear();
+
+      assert.isFalse(await workspaceUtils.updateWorkspaceLaunchMessage(original, 'Stale'));
+      assert.isFalse(await workspaceUtils.updateWorkspaceLaunchMessage(original, 'Stale', false));
+      assert.deepEqual(await selectWorkspace('1'), before);
+      assert.lengthOf(await getWorkspaceLogs(1), logCount);
+      expect(broadcast).not.toHaveBeenCalled();
+
+      assert.isTrue(await workspaceUtils.updateWorkspaceLaunchMessage(replacement, 'Current'));
+      assert.equal((await selectWorkspace('1')).message, 'Current');
+      assert.equal((await getWorkspaceLogs(1)).at(-1)?.message, 'Current');
+      expect(broadcast).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          data: ['change:message', { workspace_id: replacement.id, message: 'Current' }],
+        }),
+        expect.anything(),
+      );
+    });
   });
 
   describe('markWorkspaceHostUnhealthy()', () => {
@@ -156,12 +267,14 @@ describe('workspaceHost utilities', function () {
   });
 
   describe('assignWorkspaceToHost', () => {
+    const launch = { id: '1', launch_uuid: 'current-launch' };
+
     it('should assign a workspace to a host', async () => {
-      await insertWorkspace(1);
+      await insertWorkspace(1, null, launch.launch_uuid);
       await insertWorkspaceHost(1, 'ready');
 
-      const hostId = await workspaceHostUtils.assignWorkspaceToHost('1', 1);
-      assert.equal(hostId, '1');
+      const assignment = await workspaceHostUtils.assignWorkspaceToHost(launch, 1);
+      assert.deepEqual(assignment, { workspace_host_id: '1', launch_current: true });
 
       const workspace = await selectWorkspace('1');
       assert.equal(workspace.workspace_host_id, '1');
@@ -181,11 +294,11 @@ describe('workspaceHost utilities', function () {
     });
 
     it('should not assign a workspace to a host if it is unhealthy', async () => {
-      await insertWorkspace(1);
+      await insertWorkspace(1, null, launch.launch_uuid);
       await insertWorkspaceHost(1, 'unhealthy');
 
-      const hostId = await workspaceHostUtils.assignWorkspaceToHost('1', 1);
-      assert.isNull(hostId);
+      const assignment = await workspaceHostUtils.assignWorkspaceToHost(launch, 1);
+      assert.deepEqual(assignment, { workspace_host_id: null, launch_current: true });
 
       const workspace = await selectWorkspace('1');
       assert.isNull(workspace.workspace_host_id);
@@ -195,15 +308,31 @@ describe('workspaceHost utilities', function () {
     });
 
     it('should not assign a workspace to a host if it is at capacity', async () => {
-      await insertWorkspace(1);
+      await insertWorkspace(1, null, launch.launch_uuid);
       await insertWorkspaceHost(1, 'ready');
 
       // Set capacity to zero to simulate a full host.
-      const hostId = await workspaceHostUtils.assignWorkspaceToHost('1', 0);
-      assert.isNull(hostId);
+      const assignment = await workspaceHostUtils.assignWorkspaceToHost(launch, 0);
+      assert.deepEqual(assignment, { workspace_host_id: null, launch_current: true });
 
       const workspace = await selectWorkspace('1');
       assert.isNull(workspace.workspace_host_id);
+
+      assert.isEmpty(await getWorkspaceHostLogs(1));
+      assert.isEmpty(await getWorkspaceLogs(1));
+    });
+
+    it('should not take a workspace away from the launch that replaced this one', async () => {
+      await insertWorkspaceHost(1, 'ready');
+      await insertWorkspaceHost(2, 'ready');
+      await insertWorkspace(1, 2, 'replacement-launch');
+
+      const assignment = await workspaceHostUtils.assignWorkspaceToHost(launch, 1);
+      assert.deepEqual(assignment, { workspace_host_id: null, launch_current: false });
+
+      const workspace = await selectWorkspace('1');
+      assert.equal(workspace.workspace_host_id, '2');
+      assert.equal((await selectWorkspaceHost(1)).load_count, 0);
 
       assert.isEmpty(await getWorkspaceHostLogs(1));
       assert.isEmpty(await getWorkspaceLogs(1));

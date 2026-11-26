@@ -1,26 +1,3 @@
--- BLOCK select_workspace
-SELECT
-  w.version,
-  c.id AS course_id,
-  i.id AS institution_id
-FROM
-  workspaces AS w
-  JOIN variants AS v ON (v.workspace_id = w.id)
-  JOIN questions AS q ON (q.id = v.question_id)
-  JOIN courses AS c ON (c.id = v.course_id)
-  JOIN institutions AS i ON (i.id = c.institution_id)
-WHERE
-  w.id = $workspace_id;
-
--- BLOCK select_and_lock_workspace
-SELECT
-  *
-FROM
-  workspaces
-WHERE
-  id = $workspace_id
-FOR NO KEY UPDATE;
-
 -- BLOCK select_workspace_settings
 SELECT
   q.*,
@@ -41,14 +18,9 @@ UPDATE workspaces AS w
 SET
   url_rewrite = $url_rewrite
 WHERE
-  w.id = $workspace_id;
-
--- BLOCK update_workspace_hostname
-UPDATE workspaces AS w
-SET
-  hostname = $hostname
-WHERE
-  w.id = $workspace_id;
+  w.id = $id
+  AND w.state = 'launching'
+  AND w.launch_uuid = $launch_uuid;
 
 -- BLOCK insert_workspace_hosts
 INSERT INTO
@@ -105,25 +77,41 @@ WHERE
   w.id = $workspace_id
   AND wh.instance_id = $instance_id;
 
--- BLOCK set_workspace_launch_uuid
+-- BLOCK claim_workspace_launch
 UPDATE workspaces AS w
 SET
-  launch_uuid = $launch_uuid
+  -- Main servers that predate launch identities don't send one, so the host
+  -- has to mint it. This fallback can be removed once no such server is running.
+  launch_uuid = COALESCE($launch_uuid, $fallback_launch_uuid)
 FROM
-  workspace_hosts AS wh
+  workspace_hosts AS wh,
+  variants AS v
+  JOIN courses AS c ON (c.id = v.course_id)
 WHERE
   w.id = $workspace_id
-  AND wh.instance_id = $instance_id;
+  AND w.state = 'launching'
+  AND (
+    $launch_uuid::text IS NULL
+    OR w.launch_uuid = $launch_uuid
+  )
+  AND w.workspace_host_id = wh.id
+  AND wh.instance_id = $instance_id
+  AND v.workspace_id = w.id
+RETURNING
+  w.id,
+  w.version,
+  w.launch_uuid,
+  c.id AS course_id,
+  c.institution_id;
 
 -- BLOCK set_workspace_launch_port
 UPDATE workspaces AS w
 SET
   launch_port = $launch_port
-FROM
-  workspace_hosts AS wh
 WHERE
-  w.id = $workspace_id
-  AND wh.instance_id = $instance_id;
+  w.id = $id
+  AND w.state = 'launching'
+  AND w.launch_uuid = $launch_uuid;
 
 -- BLOCK get_is_port_occupied
 SELECT
@@ -188,7 +176,10 @@ SET
 FROM
   workspace_hosts AS wh
 WHERE
-  w.id = $workspace_id
+  w.id = $id
+  AND w.state = 'stopped'
+  AND w.launch_uuid IS NOT DISTINCT FROM $launch_uuid
+  AND w.workspace_host_id = wh.id
   AND wh.instance_id = $instance_id;
 
 -- BLOCK mark_host_unhealthy

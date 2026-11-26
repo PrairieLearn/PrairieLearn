@@ -82,6 +82,8 @@ WITH
       available_host AS ah
     WHERE
       w.id = $workspace_id
+      AND w.state = 'launching'
+      AND w.launch_uuid = $launch_uuid
     RETURNING
       w.*
   ),
@@ -123,9 +125,12 @@ WITH
       updated_workspace AS uw
   )
 SELECT
-  id AS workspace_host_id
-FROM
-  updated_workspace_host;
+  (
+    SELECT
+      id
+    FROM
+      updated_workspace_host
+  ) AS workspace_host_id;
 
 -- BLOCK recapture_draining_hosts
 WITH

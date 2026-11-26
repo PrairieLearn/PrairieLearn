@@ -180,7 +180,7 @@ async function controlContainer(workspace_id: string, action: 'getGradedFiles'):
 async function controlContainer(
   workspace_id: string,
   action: 'init',
-  options: { useInitialZip: boolean },
+  options: { useInitialZip: boolean; launch_uuid: string },
 ): Promise<void>;
 
 async function controlContainer(
@@ -289,7 +289,7 @@ async function startup(workspace_id: string): Promise<void> {
   //   stopped -> launching -> stopped -> launching
   // - We don't want multiple hosts trying to assign a host for the same
   //   workspace at the same time.
-  let shouldAssignHost = false as boolean;
+  let launch_uuid = null as string | null;
   let movedInitializeFiles = false as boolean;
   try {
     await sqldb.runInTransactionAsync(async () => {
@@ -348,12 +348,10 @@ async function startup(workspace_id: string): Promise<void> {
         );
       }
 
-      await workspaceUtils.updateWorkspaceState(
+      launch_uuid = await workspaceUtils.startWorkspaceLaunch(
         workspace_id,
-        'launching',
         'Assigning workspace host',
       );
-      shouldAssignHost = true;
     });
   } finally {
     // If initialize() created a temp directory but we didn't move it into
@@ -371,7 +369,38 @@ async function startup(workspace_id: string): Promise<void> {
 
   // Bail out if needed; this should only ever occur if another host is
   // already trying to assign this host to a workspace.
-  if (!shouldAssignHost) return;
+  if (launch_uuid === null) return;
+
+  const launch = { id: workspace_id, launch_uuid };
+  try {
+    await launchOnHost(launch, useInitialZip);
+  } catch (err: any) {
+    logger.error(`Error launching workspace ${workspace_id}`, err);
+    // The student may have rebooted or reset the workspace while we were
+    // waiting for a host. This failure must not stop the launch that replaced
+    // this one. A failure here must not reach the caller, which stops the
+    // workspace without checking which launch is current.
+    await workspaceUtils
+      .updateWorkspaceLaunchState(launch, {
+        state: 'stopped',
+        message: `Error! Click "Reboot" to try again. Detail: ${err}`,
+      })
+      .catch((stopErr) => {
+        logger.error(`Error stopping failed launch of workspace ${workspace_id}`, stopErr);
+        Sentry.captureException(stopErr);
+      });
+  }
+}
+
+/**
+ * Assigns a host to a launch and tells that host to start the container.
+ * Returns without doing anything further once the launch has been superseded.
+ */
+async function launchOnHost(
+  launch: { id: string; launch_uuid: string },
+  useInitialZip: boolean,
+): Promise<void> {
+  const workspace_id = launch.id;
 
   let attempt = 0;
   while (true) {
@@ -379,7 +408,9 @@ async function startup(workspace_id: string): Promise<void> {
       throw new Error('Time exceeded to deploy more computational resources');
     }
 
-    if (await assignHost(workspace_id)) {
+    const { workspace_host_id, launch_current } = await assignHost(launch);
+    if (!launch_current) return;
+    if (workspace_host_id) {
       // Success, we got a host.
       break;
     }
@@ -392,16 +423,24 @@ async function startup(workspace_id: string): Promise<void> {
     }
 
     const t = attempt * config.workspaceLaunchingRetryIntervalSec;
-    await workspaceUtils.updateWorkspaceMessage(
-      workspace_id,
+    const current = await workspaceUtils.updateWorkspaceLaunchMessage(
+      launch,
       `Deploying more computational resources (${t} seconds elapsed)`,
     );
+    if (!current) return;
     await sleep(config.workspaceLaunchingRetryIntervalSec * 1000);
     attempt++;
   }
 
-  await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Sending launch command to host');
-  await controlContainer(workspace_id, 'init', { useInitialZip });
+  if (
+    !(await workspaceUtils.updateWorkspaceLaunchMessage(launch, 'Sending launch command to host'))
+  ) {
+    return;
+  }
+  await controlContainer(workspace_id, 'init', {
+    useInitialZip,
+    launch_uuid: launch.launch_uuid,
+  });
 }
 
 /**
@@ -695,18 +734,20 @@ export async function generateWorkspaceFiles({
   return { fileGenerationErrors };
 }
 
-/**
- * @returns The ID of the host that was assigned to the workspace.
- */
-async function assignHost(workspace_id: string): Promise<string | null> {
-  if (!config.workspaceEnable) return null;
+async function assignHost(launch: {
+  id: string;
+  launch_uuid: string;
+}): Promise<workspaceHostUtils.WorkspaceHostAssignment> {
+  if (!config.workspaceEnable) return { workspace_host_id: null, launch_current: true };
 
-  const workspaceHostId = await workspaceHostUtils.assignWorkspaceToHost(
-    workspace_id,
+  const assignment = await workspaceHostUtils.assignWorkspaceToHost(
+    launch,
     config.workspaceLoadHostCapacity,
   );
-  debug(`assignHost(): workspace_id=${workspace_id}, workspace_host_id=${workspaceHostId}`);
-  return workspaceHostId; // null means we didn't assign a host
+  debug(
+    `assignHost(): workspace_id=${launch.id}, workspace_host_id=${assignment.workspace_host_id}`,
+  );
+  return assignment;
 }
 
 export async function getGradedFiles(workspace_id: string): Promise<string | null> {

@@ -54,11 +54,15 @@ const WorkspaceRowSchema = z.object({
   version: z.coerce.number(), // BIGINT, but always fits a number
 });
 
-const SelectWorkspaceSchema = z.object({
-  version: z.coerce.number(), // BIGINT, but always fits a number
+const WorkspaceLaunchSchema = WorkspaceRowSchema.pick({ id: true, launch_uuid: true });
+
+const ClaimedWorkspaceLaunchSchema = WorkspaceRowSchema.pick({ id: true, version: true }).extend({
+  launch_uuid: z.string(),
   course_id: z.coerce.string(),
   institution_id: z.coerce.string(),
 });
+
+type ClaimedWorkspaceLaunch = z.infer<typeof ClaimedWorkspaceLaunchSchema>;
 
 const PortOccupiedSchema = z.boolean();
 
@@ -80,15 +84,10 @@ type WorkspaceSettings = z.infer<typeof WorkspaceSettingsRowSchema> & {
   workspace_environment: string[];
 };
 
-interface Workspace {
-  id: string | number;
-  version: number;
-  launch_uuid: string;
+interface Workspace extends ClaimedWorkspaceLaunch {
   launch_port: number;
   local_name: string;
   remote_name: string;
-  course_id: string;
-  institution_id: string;
   settings: WorkspaceSettings;
 }
 
@@ -161,7 +160,8 @@ app.post(
       res.status(500).send('Missing action');
     } else if (action === 'init') {
       const useInitialZip: boolean = req.body.options?.useInitialZip ?? false;
-      await initSequence(workspace_id, useInitialZip, res);
+      const launch_uuid: string | null = req.body.options?.launch_uuid ?? null;
+      await initSequence(workspace_id, launch_uuid, useInitialZip, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
     } else if (action === 'getLogs') {
@@ -294,19 +294,24 @@ async
       const workspaces = await sqldb.queryRows(
         sql.recover_crash_workspaces,
         { instance_id: workspace_server_settings.instance_id },
-        WorkspaceRowSchema,
+        WorkspaceLaunchSchema.extend({ state: WorkspaceRowSchema.shape.state }),
       );
-      await async.eachSeries(workspaces, async (ws) => {
-        if (ws.state === 'launching') {
+      await async.eachSeries(workspaces, async ({ state, ...ws }) => {
+        if (state === 'launching') {
           // We don't know what state the container is in, kill it and let the
           // user retry initializing it.
-          await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Status unknown');
+          const stopped = await workspaceUtils.updateWorkspaceLaunchState(ws, {
+            state: 'stopped',
+            message: 'Status unknown',
+          });
+          if (!stopped) return;
           await sqldb.execute(sql.clear_workspace_on_shutdown, {
-            workspace_id: ws.id,
+            ...ws,
             instance_id: workspace_server_settings.instance_id,
           });
+          if (ws.launch_uuid === null) return;
           try {
-            const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid!);
+            const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
             await killAndRemoveWorkspace(ws.id, container);
           } catch (err) {
             debug(`Couldn't find container: ${err}`);
@@ -314,21 +319,7 @@ async
         }
       });
 
-      // Especially in dev mode, there may be containers that are running but
-      // don't correspond to any known workspace. Clean them up.
-      const allContainers = await docker.listContainers({
-        all: true,
-        filters: JSON.stringify({ label: ['prairielearn.workspace-id'] }),
-      });
-      for (const container of allContainers) {
-        const containerWorkspaceId = container.Labels['prairielearn.workspace-id'];
-        if (workspaces.some((ws) => ws.id === containerWorkspaceId)) continue;
-
-        logger.info(
-          `Killing dangling container ${container.Id} for workspace ${containerWorkspaceId}`,
-        );
-        await killAndRemoveWorkspace(containerWorkspaceId, docker.getContainer(container.Id));
-      }
+      await pruneRunawayContainers();
     },
     async () => {
       await cache.init({
@@ -357,26 +348,12 @@ async function pruneStoppedContainers() {
   const recently_stopped = await sqldb.queryRows(
     sql.get_stopped_workspaces,
     { instance_id },
-    WorkspaceRowSchema,
+    WorkspaceLaunchSchema.extend({ launch_uuid: z.string() }),
   );
   await async.each(recently_stopped, async (ws) => {
-    let container;
-    try {
-      // Try to grab the container, but don't care if it doesn't exist
-      container = await _getDockerContainerByLaunchUuid(ws.launch_uuid!);
-    } catch {
-      // No container
-      await sqldb.execute(sql.clear_workspace_on_shutdown, {
-        workspace_id: ws.id,
-        instance_id: workspace_server_settings.instance_id,
-      });
-      return;
-    }
-    await sqldb.execute(sql.clear_workspace_on_shutdown, {
-      workspace_id: ws.id,
-      instance_id: workspace_server_settings.instance_id,
-    });
-    await killAndRemoveWorkspace(ws.id, container);
+    const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid).catch(() => null);
+    await sqldb.execute(sql.clear_workspace_on_shutdown, { ...ws, instance_id });
+    if (container) await killAndRemoveWorkspace(ws.id, container);
   });
 }
 
@@ -384,6 +361,18 @@ async function pruneStoppedContainers() {
  * Remove any containers that are running but do not have a corresponding launch_uuid in the database.
  */
 async function pruneRunawayContainers() {
+  let running_workspaces: Docker.ContainerInfo[];
+  try {
+    running_workspaces = await docker.listContainers({
+      all: true,
+      filters: JSON.stringify({ label: ['prairielearn.workspace-id'] }),
+    });
+  } catch {
+    return;
+  }
+
+  // Read assignments after listing containers so launches that started during
+  // the Docker call are included in the database snapshot.
   const instance_id = workspace_server_settings.instance_id;
   const db_workspaces = await sqldb.queryRows(
     sql.get_running_workspaces,
@@ -392,13 +381,6 @@ async function pruneRunawayContainers() {
   );
 
   const db_workspaces_uuid_set = new Set(db_workspaces.map((ws) => `workspace-${ws.launch_uuid}`));
-  let running_workspaces: Docker.ContainerInfo[] | undefined;
-  try {
-    running_workspaces = await docker.listContainers({ all: true });
-  } catch {
-    // Nothing to do
-    return;
-  }
 
   await async.each(running_workspaces, async (container_info) => {
     if (container_info.Names.length !== 1) return;
@@ -553,9 +535,9 @@ const _allocateContainerPortMutex = new Mutex();
 
 /**
  * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
- * @returns Port that was allocated to the workspace.
+ * @returns The allocated port, or null if the launch was superseded.
  */
-async function _allocateContainerPort(workspace_id: string | number): Promise<number> {
+async function _allocateContainerPort(launch: ClaimedWorkspaceLaunch): Promise<number | null> {
   /** Check if a port is considered free in the database */
   async function check_port_db(port: number) {
     const params = {
@@ -604,12 +586,11 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
     if (!done || !port) {
       throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
     }
-    await sqldb.execute(sql.set_workspace_launch_port, {
-      workspace_id,
+    const updated = await sqldb.execute(sql.set_workspace_launch_port, {
+      ...workspaceLaunchParams(launch),
       launch_port: port,
-      instance_id: workspace_server_settings.instance_id,
     });
-    return port;
+    return updated === 1 ? port : null;
   });
 }
 
@@ -717,7 +698,7 @@ async function _pullImage(workspace: Workspace) {
     return;
   }
 
-  await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
+  await workspaceUtils.updateWorkspaceLaunchMessage(workspace, 'Checking image');
   const workspace_image = workspace.settings.workspace_image;
   logger.info(`Pulling docker image: ${workspace_image}`);
 
@@ -792,7 +773,7 @@ async function _pullImage(workspace: Workspace) {
           1000 * 60 * 60 * 24 * 30, // 30 days
         );
         void workspaceUtils
-          .updateWorkspaceMessage(workspace.id, 'Pulling image (100%)', toDatabase)
+          .updateWorkspaceLaunchMessage(workspace, 'Pulling image (100%)', toDatabase)
           .catch((err) => {
             logger.error('Error updating workspace message', err);
             Sentry.captureException(err);
@@ -840,7 +821,7 @@ async function _pullImage(workspace: Workspace) {
             percentDisplayed = true;
             const toDatabase = false;
             workspaceUtils
-              .updateWorkspaceMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase)
+              .updateWorkspaceLaunchMessage(workspace, `Pulling image (${percent}%)`, toDatabase)
               .catch((err) => {
                 logger.error('Error updating workspace message', err);
                 Sentry.captureException(err);
@@ -906,7 +887,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
         throw new SafeForStudentError('Workspace URL rewrite setting is not a valid boolean value');
       }
       await sqldb.execute(sql.update_workspace_url_rewrite, {
-        workspace_id: workspace.id,
+        ...workspaceLaunchParams(workspace),
         url_rewrite: urlRewrite === 'true',
       });
     }
@@ -1000,49 +981,58 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   return container;
 }
 
-async function _startContainer(workspace_id: string | number, container: Docker.Container) {
-  await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Starting container');
+async function _startContainer(workspace: Workspace, container: Docker.Container) {
+  await workspaceUtils.updateWorkspaceLaunchMessage(workspace, 'Starting container');
   await container.start();
 }
 
 /**
- * Wrapper around `updateWorkspaceState()` that will ensure any errors don't
- * propagate to the caller. Useful during the initialization sequence when we
- * would mark the host as unhealthy if an error occurred while updating the state.
+ * A failed state update should still allow container cleanup to proceed.
  */
-function safeUpdateWorkspaceState(
-  workspaceId: string | number,
-  state: 'stopped',
-  message?: string,
-) {
-  workspaceUtils.updateWorkspaceState(workspaceId, state, message).catch((err) => {
-    logger.error('Error updating workspace state', err);
-    Sentry.captureException(err);
-  });
+async function stopFailedLaunch(launch: workspaceUtils.WorkspaceLaunch, message: string) {
+  await workspaceUtils
+    .updateWorkspaceLaunchState(launch, { state: 'stopped', message })
+    .catch((err) => {
+      logger.error('Error updating workspace state', err);
+      Sentry.captureException(err);
+    });
+}
+
+function workspaceLaunchParams({ id, launch_uuid }: ClaimedWorkspaceLaunch) {
+  return { id, launch_uuid };
 }
 
 /** Called by the main server the first time a workspace is used by a user */
-async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
+async function initSequence(
+  workspace_id: string | number,
+  requested_launch_uuid: string | null,
+  useInitialZip: boolean,
+  res: Response,
+) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
+
+  const launch = await sqldb.queryOptionalRow(
+    sql.claim_workspace_launch,
+    {
+      workspace_id,
+      launch_uuid: requested_launch_uuid,
+      fallback_launch_uuid: crypto.randomUUID(),
+      instance_id: workspace_server_settings.instance_id,
+    },
+    ClaimedWorkspaceLaunchSchema,
+  );
+  if (!launch) {
+    logger.info(
+      `Ignoring launch ${requested_launch_uuid} for workspace ${workspace_id}: it is not the current launch on this host`,
+    );
+    return;
+  }
 
   // Check before pulling or creating a container so failed launches also trigger a check.
   await checkDiskSpace();
 
-  const uuid = crypto.randomUUID();
-  const params = {
-    workspace_id,
-    launch_uuid: uuid,
-    instance_id: workspace_server_settings.instance_id,
-  };
-  await sqldb.execute(sql.set_workspace_launch_uuid, params);
-
-  const { version, course_id, institution_id } = await sqldb.queryRow(
-    sql.select_workspace,
-    { workspace_id },
-    SelectWorkspaceSchema,
-  );
-
+  const { launch_uuid, version } = launch;
   logger.info(`Launching workspace-${workspace_id}-${version} (useInitialZip=${useInitialZip})`);
   try {
     // Only errors at this level will set host to unhealthy.
@@ -1050,24 +1040,18 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     const workspace = await run(async () => {
       try {
         debug('init: configuring workspace');
+        const launch_port = await _allocateContainerPort(launch);
+        if (launch_port === null) return;
         return {
-          id: workspace_id,
-          course_id,
-          institution_id,
-          version,
-          launch_uuid: uuid,
-          local_name: `workspace-${uuid}`,
+          ...launch,
+          local_name: `workspace-${launch_uuid}`,
           remote_name: `workspace-${workspace_id}-${version}`,
-          launch_port: await _allocateContainerPort(workspace_id),
+          launch_port,
           settings: await _getWorkspaceSettings(workspace_id),
         } satisfies Workspace;
       } catch (err) {
         logger.error(`Error configuring workspace ${workspace_id}`, err);
-        safeUpdateWorkspaceState(
-          workspace_id,
-          'stopped',
-          'Error configuring workspace. Click "Reboot" to try again.',
-        );
+        await stopFailedLaunch(launch, 'Error configuring workspace. Click "Reboot" to try again.');
       }
     });
 
@@ -1078,95 +1062,42 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     } catch (err) {
       const image = workspace.settings.workspace_image;
       logger.error(`Error pulling image ${image} for workspace ${workspace.id}`, err);
-      safeUpdateWorkspaceState(
-        workspace.id,
-        'stopped',
-        'Error pulling image. Click "Reboot" to try again.',
-      );
+      await stopFailedLaunch(workspace, 'Error pulling image. Click "Reboot" to try again.');
       return; // don't set host to unhealthy
     }
 
     let container: Docker.Container | undefined;
     try {
-      await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
+      if (!(await workspaceUtils.updateWorkspaceLaunchMessage(workspace, 'Creating container'))) {
+        logger.info(`Abandoning superseded launch ${launch_uuid} for workspace ${workspace.id}`);
+        return;
+      }
       container = await _createContainer(workspace);
     } catch (err: any) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
-      safeUpdateWorkspaceState(
-        workspace.id,
-        'stopped',
+      await stopFailedLaunch(
+        workspace,
         `Error creating container${err instanceof SafeForStudentError ? `: ${err.message}` : ''}. Click "Reboot" to try again.`,
       );
       return; // don't set host to unhealthy
     }
 
     try {
-      await _startContainer(workspace.id, container);
+      await _startContainer(workspace, container);
       await _checkServer(workspace);
       debug(`init: container initialized for workspace_id=${workspace.id}`);
 
-      // Before we transition this workspace to running, check that the container
-      // we just launched is the same one that this workspace is still assigned to.
-      // We check both the launch_uuid and the version to catch race conditions:
-      //
-      // - launch_uuid changes when a workspace is rebooted
-      // - version changes when a workspace is reset
-      //
-      // If either has changed, the workspace was relaunched/reset while we were
-      // initializing it, and we should abandon this container.
-      //
-      // We don't have to explicitly kill the container here - our usual
-      // background maintenance processes will soon notice that this container
-      // should not be running on this host and kill it.
-      const hostname = await sqldb.runInTransactionAsync(async () => {
-        const currentWorkspace = await sqldb.queryRow(
-          sql.select_and_lock_workspace,
-          { workspace_id: workspace.id },
-          WorkspaceRowSchema,
-        );
-        const current_launch_uuid = currentWorkspace.launch_uuid;
-        const current_version = currentWorkspace.version;
-
-        // Check if the launch_uuid has changed (workspace was rebooted)
-        if (current_launch_uuid !== workspace.launch_uuid) {
-          logger.info(
-            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${current_launch_uuid}`,
-          );
-          return null;
-        }
-
-        // Check if the version has changed (workspace was reset)
-        if (current_version !== workspace.version) {
-          logger.info(
-            `Abandoning container for workspace ${workspace.id}: version changed from ${workspace.version} to ${current_version}`,
-          );
-          return null;
-        }
-
-        const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-        await sqldb.execute(sql.update_workspace_hostname, {
-          workspace_id: workspace.id,
-          hostname,
-        });
-        return hostname;
+      const running = await workspaceUtils.updateWorkspaceLaunchState(workspace, {
+        state: 'running',
+        hostname: `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`,
       });
-
-      // If we successfully updated the workspace's hostname, we can transition
-      // it to running. Note that this MUST be done outside of the above transaction,
-      // since this send a websocket message to the client to make it load the
-      // workspace. If we do this inside the transaction, there's a chance that the
-      // websocket message will reach the client before the state change is committed,
-      // which would cause the client to try to load the workspace before it's ready.
-      if (hostname) {
-        await workspaceUtils.updateWorkspaceState(workspace.id, 'running');
+      if (!running) {
+        logger.info(`Abandoning superseded launch ${launch_uuid} for workspace ${workspace.id}`);
+        await killAndRemoveWorkspace(workspace.id, container);
       }
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
-      safeUpdateWorkspaceState(
-        workspace.id,
-        'stopped',
-        'Error starting container. Click "Reboot" to try again.',
-      );
+      await stopFailedLaunch(workspace, 'Error starting container. Click "Reboot" to try again.');
 
       // Immediately kill and remove the container, which will flush any
       // logs to S3 for better debugging.
