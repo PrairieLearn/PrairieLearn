@@ -14,16 +14,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  Alert,
-  Button,
-  CloseButton,
-  Dropdown,
-  Form,
-  Overlay,
-  Popover,
-  Spinner,
-} from 'react-bootstrap';
+import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -383,6 +374,7 @@ function Chat({
   );
   // Approving one review is when auto-approve is worth offering, once per course.
   const [autoApproveOffered, setAutoApproveOffered] = useState(false);
+  const [confirmingAutoApprove, setConfirmingAutoApprove] = useState(false);
   const offerAutoApprove = () => {
     if (shownApprovalMode !== 'always_approve' && claimAutoApproveNotice()) {
       setAutoApproveOffered(true);
@@ -735,10 +727,29 @@ function Chat({
         pending={sending || deny.isPending}
         attachments={drafts.attachments}
         approvalMode={shownApprovalMode}
-        autoApproveOffered={autoApproveOffered}
+        notice={
+          autoApproveOffered && (
+            <Alert
+              variant="warning"
+              className="course-agent-auto-approve-offer small mb-2"
+              dismissible
+              onClose={() => setAutoApproveOffered(false)}
+            >
+              Don't want to approve every request manually?{' '}
+              <Alert.Link
+                as="button"
+                type="button"
+                className="btn btn-link p-0 align-baseline text-decoration-none"
+                onClick={() => setConfirmingAutoApprove(true)}
+              >
+                Turn on auto-approve
+                <i className="bi bi-chevron-right" aria-hidden="true" />
+              </Alert.Link>
+            </Alert>
+          )
+        }
         stopDisabled={!connected || !canStop}
         onApprovalModeChange={changeApprovalMode}
-        onAutoApproveOfferClose={() => setAutoApproveOffered(false)}
         onAttach={drafts.add}
         onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
@@ -749,6 +760,14 @@ function Chat({
           <ConversationStats state={lifecycle} conversationId={conversationId} />
         )}
       </Composer>
+      <AutoApproveModal
+        show={confirmingAutoApprove}
+        onHide={() => setConfirmingAutoApprove(false)}
+        onConfirm={() => {
+          setConfirmingAutoApprove(false);
+          changeApprovalMode('always_approve');
+        }}
+      />
     </FileDropArea>
   );
 }
@@ -763,9 +782,8 @@ function Composer({
   pending = false,
   attachments,
   approvalMode,
-  autoApproveOffered = false,
+  notice,
   onApprovalModeChange,
-  onAutoApproveOfferClose,
   onAttach,
   onRemoveAttachment,
   stopDisabled = false,
@@ -782,10 +800,9 @@ function Composer({
   pending?: boolean;
   attachments: DraftAttachment[];
   approvalMode: ApprovalMode;
-  /** Point out auto-approve from the approval mode button. */
-  autoApproveOffered?: boolean;
+  /** Shown directly above the message box. */
+  notice?: ReactNode;
   onApprovalModeChange: (mode: ApprovalMode) => void;
-  onAutoApproveOfferClose?: () => void;
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
@@ -806,6 +823,7 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
+      {notice}
       <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
         <DraftAttachmentList
           attachments={attachments}
@@ -856,12 +874,7 @@ function Composer({
           >
             <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
-          <ApprovalModePicker
-            mode={approvalMode}
-            offered={autoApproveOffered}
-            onChange={onApprovalModeChange}
-            onOfferClose={onAutoApproveOfferClose}
-          />
+          <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
           <div className="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
             {children}
             {onStop ? (
@@ -905,42 +918,16 @@ const APPROVAL_MODES: Record<ApprovalMode, { label: string; icon: string }> = {
 
 function ApprovalModePicker({
   mode,
-  offered,
   onChange,
-  onOfferClose,
 }: {
   mode: ApprovalMode;
-  offered: boolean;
   onChange: (mode: ApprovalMode) => void;
-  onOfferClose?: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const current = APPROVAL_MODES[mode];
   return (
     <>
-      <Overlay target={dropdownRef} show={offered} placement="top-start">
-        <Popover id="course-agent-auto-approve-offer" className="course-agent-auto-approve-offer">
-          <Popover.Body className="d-flex align-items-start gap-2">
-            <span>
-              Don't want to approve every request manually?{' '}
-              <Button
-                variant="link"
-                className="p-0 align-baseline"
-                onClick={() => {
-                  onOfferClose?.();
-                  setConfirming(true);
-                }}
-              >
-                Turn on auto-approve
-                <i className="bi bi-chevron-right" aria-hidden="true" />
-              </Button>
-            </span>
-            <CloseButton aria-label="Dismiss" onClick={onOfferClose} />
-          </Popover.Body>
-        </Popover>
-      </Overlay>
-      <Dropdown ref={dropdownRef} drop="up" className="course-agent-composer-shrink">
+      <Dropdown drop="up" className="course-agent-composer-shrink">
         <Dropdown.Toggle
           variant="link"
           size="sm"

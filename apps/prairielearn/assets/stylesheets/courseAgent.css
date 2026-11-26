@@ -128,11 +128,18 @@ textarea.course-agent-composer-input {
   padding: 0.75rem;
 }
 
+/* A one-line offer above the message box, so it is tighter than a page alert. */
+.alert.course-agent-auto-approve-offer {
+  --bs-alert-padding-x: 0.75rem;
+  --bs-alert-padding-y: 0.5rem;
+}
+
 .course-agent-auto-approve-offer .btn-link {
   font-size: inherit;
 }
 
 .course-agent-auto-approve-offer .btn-close {
+  padding: 0.75rem;
   font-size: 0.625rem;
 }
 
