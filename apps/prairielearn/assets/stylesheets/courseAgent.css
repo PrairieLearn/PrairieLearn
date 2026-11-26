@@ -132,11 +132,10 @@
 }
 
 /*
- * Keep words whole and give every column some room, so no column squeezes to
- * one word per line. A table that still doesn't fit scrolls sideways.
+ * Keep words whole in cells, so a column is never narrower than its longest
+ * word. A table that doesn't fit scrolls sideways.
  */
 .course-agent-panel .markdown-body :is(th, td) {
-  min-width: 5rem;
   overflow-wrap: break-word;
 }
 

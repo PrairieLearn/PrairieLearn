@@ -30,6 +30,12 @@ describe('ChatMarkdown', () => {
     expect(html).toContain('<td><strong>Numbers</strong></td>');
   });
 
+  it('lets inline code break after slashes', () => {
+    const html = render('`Cs101/hw01/info.json`');
+
+    expect(html).toContain('<code>Cs101/<wbr/>hw01/<wbr/>info.json</code>');
+  });
+
   it('leaves unmatched brackets and underscores in a finished message', () => {
     const html = render('The interval [0, 1) is half-open.\n\nCall __init for setup.');
 

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { createElement } from 'react';
+import { Fragment, type ReactNode, createElement } from 'react';
 import type { UrlTransform } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import {
@@ -40,9 +40,28 @@ const PLAIN_TAGS = [
   'strong',
 ] as const;
 
+// Table cells keep words whole, so paths and IDs get a line break opportunity
+// after each slash.
+function breakAfterSlashes(children: ReactNode) {
+  if (typeof children !== 'string') return children;
+  let offset = 0;
+  return children.split(/(?<=\/)/).map((part) => {
+    const start = offset;
+    offset += part.length;
+    return (
+      <Fragment key={start}>
+        {start > 0 && <wbr />}
+        {part}
+      </Fragment>
+    );
+  });
+}
+
 const components: Components = {
   ...Object.fromEntries(PLAIN_TAGS.map((tag) => [tag, tag])),
-  inlineCode: ({ node: _node, className: _className, ...props }) => <code {...props} />,
+  inlineCode: ({ node: _node, className: _className, children, ...props }) => (
+    <code {...props}>{breakAfterSlashes(children)}</code>
+  ),
   // `pre` is left to Streamdown: it only marks its child as a block, and
   // `code` then renders the whole code block.
   code: ({ className, children }) => (
