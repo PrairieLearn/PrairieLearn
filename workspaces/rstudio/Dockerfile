@@ -43,7 +43,7 @@
 FROM node:24.22.1-bookworm-slim AS node
 
 FROM rocker/rstudio:4.6.2
-ARG CACHEBUST=2026-09-15-14-09-16
+ARG CACHEBUST=2026-11-15-14-04-41
 
 # Update the bundled runtime independently of RStudio releases.
 COPY --from=node /usr/local/bin/node /usr/lib/rstudio-server/bin/node/bin/node
