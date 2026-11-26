@@ -85,6 +85,7 @@ export const MAX_REVIEW_FILE_BYTES = 1024 * 1024;
 // Capture counts base64-encoded originals and proposed contents; leave room for metadata
 // under Cloudflare's 32 MiB serialized RPC limit.
 export const MAX_REVIEW_BYTES = 20 * 1024 * 1024;
+export const MAX_REVIEW_FILES = 200;
 
 const ReviewPathSchema = z
   .string()
@@ -120,7 +121,7 @@ export const RequestChangesResultSchema = z
       z.strictObject({ status: z.literal('saved_locally') }),
       z.strictObject({
         status: z.literal('conflict'),
-        paths: z.array(ReviewPathSchema).min(1).max(100),
+        paths: z.array(ReviewPathSchema).min(1).max(MAX_REVIEW_FILES),
       }),
       z.strictObject({ status: z.literal('published') }),
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
@@ -164,8 +165,8 @@ export type RequestChangesResult = z.infer<typeof RequestChangesResultSchema>;
 const ReviewFilesShape = {
   additions: z
     .array(z.strictObject({ path: ReviewPathSchema, contents: ReviewContentsSchema }))
-    .max(100),
-  deletions: z.array(z.strictObject({ path: ReviewPathSchema })).max(100),
+    .max(MAX_REVIEW_FILES),
+  deletions: z.array(z.strictObject({ path: ReviewPathSchema })).max(MAX_REVIEW_FILES),
 };
 
 /** Captured file contents for instructor review, independent of the live sandbox. */
@@ -183,7 +184,7 @@ export const ReviewSnapshotSchema = z
   .refine((snapshot) => {
     const paths = [...snapshot.additions, ...snapshot.deletions].map((file) => file.path);
     return (
-      paths.length <= 100 &&
+      paths.length <= MAX_REVIEW_FILES &&
       new Set(paths).size === paths.length &&
       snapshot.additions.reduce((size, file) => size + file.contents.length, 0) <= MAX_REVIEW_BYTES
     );

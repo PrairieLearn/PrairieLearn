@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 import {
   MAX_REVIEW_BYTES,
+  MAX_REVIEW_FILES,
   MAX_REVIEW_FILE_BYTES,
   type ReviewSnapshot,
   ReviewSnapshotSchema,
@@ -698,8 +699,8 @@ export class CourseSandbox extends DurableObject<Env> {
       if (total > MAX_REVIEW_BYTES) {
         throw new UnsupportedReviewError('Reviewed changes are too large');
       }
-      if (additions.length + deletions.length > 100) {
-        throw new UnsupportedReviewError('A review may change at most 100 files');
+      if (additions.length + deletions.length > MAX_REVIEW_FILES) {
+        throw new UnsupportedReviewError(`A review may change at most ${MAX_REVIEW_FILES} files`);
       }
     }
     // The other limits are checked above; what remains is the agent's choice of file names.
