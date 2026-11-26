@@ -147,7 +147,7 @@ describe('Course agent student actions', { timeout: 60_000 }, () => {
       'The course instance "Sp15" has no student with UID nobody@example.com. Check these UIDs with the instructor.',
     );
     expect(await refusal('students_block', { uids: [a.uid] }, limitedConversation)).toContain(
-      'Student Data Editor access to the course instance',
+      'Student Data Editor access in the course instance',
     );
     expect(await status(a.uid)).toBe('joined');
 

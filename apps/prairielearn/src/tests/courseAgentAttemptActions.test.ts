@@ -135,7 +135,7 @@ describe('Course agent attempt actions', { timeout: 60_000 }, () => {
         assessment_instance_id: attemptId,
         score_perc: 50,
       }),
-    ).toContain('Student Data Editor access to the course instance');
+    ).toContain('Student Data Editor access in the course instance');
     expect((await attempt()).score_perc).toBe(0);
 
     await insertCourseInstancePermissions({

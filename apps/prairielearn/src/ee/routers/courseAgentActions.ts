@@ -5,6 +5,7 @@ import { CourseActionRunSchema } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
+import { CoursePageAuthzDataSchema } from '../../lib/authz-data-lib.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseAgentEnabled } from '../lib/course-agent/access.js';
 import { CourseActionError } from '../lib/course-agent/actions/action.js';
@@ -53,8 +54,8 @@ router.post(
         {
           course: res.locals.course,
           user: res.locals.authn_user,
-          is_administrator: res.locals.is_administrator,
-          authz_data: res.locals.authz_data,
+          // The agent's requests have no browser session, which extractPageContext would require.
+          authz_data: CoursePageAuthzDataSchema.parse(res.locals.authz_data),
         },
         body.data.input,
       );

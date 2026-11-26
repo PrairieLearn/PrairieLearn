@@ -150,7 +150,7 @@ type SystemRole = 'System';
 
 type StudentCourseInstanceRole = 'Student';
 
-type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
+export type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
 
 export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
 
@@ -159,6 +159,10 @@ export type Role =
   | StudentCourseInstanceRole
   | InstructorCourseInstanceRole
   | CourseRole;
+
+export function isCourseInstanceRole(role: Role): role is InstructorCourseInstanceRole {
+  return role === 'Student Data Viewer' || role === 'Student Data Editor';
+}
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {

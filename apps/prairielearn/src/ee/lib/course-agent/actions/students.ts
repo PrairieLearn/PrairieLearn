@@ -40,6 +40,7 @@ import {
   type CourseInstanceActionContext,
   count,
   courseInstanceAction,
+  requireRole,
 } from './action.js';
 
 // The PrairieLearn pages take up to 1000 UIDs at a time.
@@ -104,7 +105,7 @@ function statusAction({
 }) {
   return courseInstanceAction({
     description,
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: StudentsInputSchema,
     run: async ({ ctx, input }) => {
       const students = await selectStudents(ctx, input.uids);
@@ -235,7 +236,7 @@ export const studentActions = {
   students_invite: courseInstanceAction({
     description:
       "Invite students to the course instance by UID, as the Students page's invite does. Each person joins by accepting the invitation in PrairieLearn. Course staff, and students who are already joined, invited, blocked, or removed, are skipped; re-enroll blocked or removed students with students_reenroll.",
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: StudentsInputSchema,
     run: async ({ ctx, input }) => {
       if (!ctx.course_instance.modern_publishing) {
@@ -335,7 +336,7 @@ export const studentActions = {
   student_labels_add_students: courseInstanceAction({
     description:
       'Add students to an existing student label, as the Students page does. Labels themselves are defined in the course files.',
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: LabelInputSchema,
     run: async ({ ctx, input }) => {
       const label = await selectLabel(ctx, input.label_name);
@@ -355,7 +356,7 @@ export const studentActions = {
   }),
   student_labels_remove_students: courseInstanceAction({
     description: 'Remove students from a student label, as the Students page does.',
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: LabelInputSchema,
     run: async ({ ctx, input }) => {
       const label = await selectLabel(ctx, input.label_name);
@@ -376,7 +377,7 @@ export const studentActions = {
   extensions_add: courseInstanceAction({
     description:
       'Give students access to the course instance after it closes for everyone else, as the Publishing page\'s "Add extension" does. Each assessment still follows its own dates.',
-    permission: ['course_editor', 'student_data_editor'],
+    requiredRole: ['Student Data Editor'],
     input: z.strictObject({
       ...COURSE_INSTANCE_INPUT,
       name: ExtensionNameSchema.optional().describe(
@@ -386,6 +387,8 @@ export const studentActions = {
       uids: UidsSchema,
     }),
     run: async ({ ctx, input }) => {
+      // The Publishing page needs Editor access as well as Student Data Editor.
+      requireRole(ctx, ['Editor']);
       const { course_instance } = ctx;
       // The Publishing page offers extensions only with the newer access rules.
       if (!course_instance.modern_publishing) {
@@ -415,7 +418,7 @@ export const studentActions = {
   extensions_edit: courseInstanceAction({
     description:
       "Change an extension's name, end date, or students, as the Publishing page does. Give only what changes.",
-    permission: ['course_editor', 'student_data_editor'],
+    requiredRole: ['Student Data Editor'],
     input: z.strictObject({
       ...COURSE_INSTANCE_INPUT,
       extension_id: ExtensionIdSchema,
@@ -430,6 +433,7 @@ export const studentActions = {
       ),
     }),
     run: async ({ ctx, input }) => {
+      requireRole(ctx, ['Editor']);
       const extension = await selectExtension(ctx, input.extension_id);
       if (input.name === undefined && input.end_date === undefined && input.uids === undefined) {
         throw new CourseActionError('Give a new name, end_date, or uids.');
@@ -462,9 +466,10 @@ export const studentActions = {
   extensions_remove: courseInstanceAction({
     description:
       'Remove an extension, as the Publishing page does, so its students lose access when everyone else does.',
-    permission: ['course_editor', 'student_data_editor'],
+    requiredRole: ['Student Data Editor'],
     input: z.strictObject({ ...COURSE_INSTANCE_INPUT, extension_id: ExtensionIdSchema }),
     run: async ({ ctx, input }) => {
+      requireRole(ctx, ['Editor']);
       const extension = await selectExtension(ctx, input.extension_id);
       const students = await selectEnrollmentsForPublishingExtension({ extension });
       await deletePublishingExtension({ extension, courseInstance: ctx.course_instance });

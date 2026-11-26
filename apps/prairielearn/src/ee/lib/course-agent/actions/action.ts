@@ -3,14 +3,18 @@ import { z } from 'zod';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
-  type CourseInstancePageAuthzData,
-  CourseInstancePageAuthzDataSchema,
-  makePageAuthzData,
+  type CoursePageAuthzDataSchema,
+  type Role,
+  hasRole,
+  isCourseInstanceRole,
 } from '../../../../lib/authz-data-lib.js';
-import { constructCourseOrInstanceContext } from '../../../../lib/authz-data.js';
 import type { Assessment, Course, CourseInstance, User } from '../../../../lib/db-types.js';
+import { idsEqual } from '../../../../lib/id.js';
 import { selectOptionalAssessmentByTid } from '../../../../models/assessment.js';
-import { selectOptionalCourseInstanceByShortName } from '../../../../models/course-instances.js';
+import {
+  selectCourseInstancesWithStaffAccess,
+  selectOptionalCourseInstanceByShortName,
+} from '../../../../models/course-instances.js';
 
 /**
  * A request the action cannot carry out as asked. The course agent is shown the message, so it
@@ -18,47 +22,24 @@ import { selectOptionalCourseInstanceByShortName } from '../../../../models/cour
  */
 export class CourseActionError extends Error {}
 
-interface CourseActionAuthz {
-  has_course_permission_edit: boolean;
-  has_course_permission_own: boolean;
-  has_course_instance_permission_view?: boolean;
-  has_course_instance_permission_edit?: boolean;
-}
-
-const PERMISSIONS = {
-  course_editor: {
-    label: 'Editor access to the course',
-    allows: (authz: CourseActionAuthz) => authz.has_course_permission_edit,
-  },
-  course_owner: {
-    label: 'Owner access to the course',
-    allows: (authz: CourseActionAuthz) => authz.has_course_permission_own,
-  },
-  student_data_viewer: {
-    label: 'Student Data Viewer access to the course instance',
-    allows: (authz: CourseActionAuthz) => authz.has_course_instance_permission_view === true,
-  },
-  student_data_editor: {
-    label: 'Student Data Editor access to the course instance',
-    allows: (authz: CourseActionAuthz) => authz.has_course_instance_permission_edit === true,
-  },
-};
-
-type CourseActionPermission = keyof typeof PERMISSIONS;
+type CourseAuthzData = z.infer<typeof CoursePageAuthzDataSchema>;
 
 /** Whom an action runs for, and where. */
 export interface CourseActionContext {
   course: Course;
-  /** The instructor who owns the conversation. Actions use their permissions and are logged as theirs. */
+  /** The instructor who owns the conversation. Actions run as them and are logged as theirs. */
   user: User;
-  is_administrator: boolean;
-  authz_data: CourseActionAuthz;
+  /** Their permissions, as the course's pages get them. */
+  authz_data: CourseAuthzData;
 }
 
 export interface CourseInstanceActionContext extends CourseActionContext {
   course_instance: CourseInstance;
-  /** The instructor's permissions in the course instance, in the form model functions take. */
-  authz_data: CourseInstancePageAuthzData;
+  /** The course's permissions plus the instructor's access to student data in this course instance. */
+  authz_data: CourseAuthzData & {
+    has_course_instance_permission_view: boolean;
+    has_course_instance_permission_edit: boolean;
+  };
 }
 
 export interface AssessmentActionContext extends CourseInstanceActionContext {
@@ -68,8 +49,11 @@ export interface AssessmentActionContext extends CourseInstanceActionContext {
 interface CourseActionDefinition<Schema extends z.ZodObject, Context extends CourseActionContext> {
   /** What the action does, in a sentence or two, for the course agent. */
   description: string;
-  /** Every permission listed is required, matching the PrairieLearn page that does the same. */
-  permission: CourseActionPermission | CourseActionPermission[];
+  /**
+   * The roles that allow the action, any one of which is enough, as PrairieLearn's model functions
+   * take them. Match the PrairieLearn page that does the same thing.
+   */
+  requiredRole: Role[];
   input: Schema;
   /**
    * Carries the action out and says, in one sentence, what happened. It runs in a transaction, so
@@ -89,30 +73,38 @@ export function count(n: number, noun: string) {
   return `${n} ${noun}${n === 1 ? '' : 's'}`;
 }
 
+/** Refuses the action unless the instructor has one of `requiredRole`. */
+export function requireRole(
+  ctx: CourseActionContext | CourseInstanceActionContext,
+  requiredRole: Role[],
+) {
+  if (hasRole(ctx.authz_data, requiredRole)) return;
+  const where =
+    requiredRole.some(isCourseInstanceRole) && 'course_instance' in ctx
+      ? `in the course instance "${ctx.course_instance.short_name}"`
+      : 'to the course';
+  throw new CourseActionError(
+    `The instructor needs ${requiredRole.join(' or ')} access ${where} for this, which they do not have. Tell them, and do not retry. A course Owner can grant it on the Staff page.`,
+  );
+}
+
 function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
   definition: CourseActionDefinition<Schema, Context>,
   locate: (ctx: CourseActionContext, input: z.infer<Schema>) => Promise<Context>,
 ): CourseAction {
-  const check = async (ctx: CourseActionContext, raw: unknown) => {
-    const parsed = definition.input.safeParse(raw);
-    // Zod's message says what is allowed, so the course agent can correct its request.
-    if (!parsed.success) throw new CourseActionError(z.prettifyError(parsed.error));
-    const located = await locate(ctx, parsed.data);
-    for (const key of [definition.permission].flat()) {
-      if (!PERMISSIONS[key].allows(located.authz_data)) {
-        throw new CourseActionError(
-          `The instructor needs ${PERMISSIONS[key].label} for this, which they do not have. Tell them, and do not retry. A course owner can grant it on the Staff page.`,
-        );
-      }
-    }
-    return { ctx: located, input: parsed.data };
-  };
   return {
     description: definition.description,
     input: definition.input,
     // A run that fails partway is rolled back, so a failed action never leaves a partial change.
     run: async (ctx, raw) =>
-      await runInTransactionAsync(async () => await definition.run(await check(ctx, raw))),
+      await runInTransactionAsync(async () => {
+        const parsed = definition.input.safeParse(raw);
+        // Zod's message says what is allowed, so the course agent can correct its request.
+        if (!parsed.success) throw new CourseActionError(z.prettifyError(parsed.error));
+        const located = await locate(ctx, parsed.data);
+        requireRole(located, definition.requiredRole);
+        return await definition.run({ ctx: located, input: parsed.data });
+      }),
   };
 }
 
@@ -146,6 +138,10 @@ export const ASSESSMENT_INPUT = {
 const CourseInstanceInputSchema = z.object(COURSE_INSTANCE_INPUT);
 const AssessmentInputSchema = z.object(ASSESSMENT_INPUT);
 
+/**
+ * The course instance and the instructor's access to its student data, which the course's own
+ * permissions do not include. Course data reads check student data access the same way.
+ */
 async function locateCourseInstance(
   ctx: CourseActionContext,
   shortName: string,
@@ -159,28 +155,19 @@ async function locateCourseInstance(
       `This course has no course instance named "${shortName}". Use a directory name from courseInstances/ in the course files.`,
     );
   }
-  const { authzData } = await constructCourseOrInstanceContext({
-    user: ctx.user,
-    course_id: ctx.course.id,
-    course_instance_id: course_instance.id,
-    ip: null,
-    req_date: new Date(),
-    is_administrator: ctx.is_administrator,
-    // Staff permissions do not depend on the exam mode, which is otherwise found from the IP
-    // address of a student's request.
-    overrides: { mode: 'Public' },
-  });
-  if (!authzData) {
-    throw new CourseActionError(
-      `The instructor has no access to the course instance "${shortName}". Tell them, and do not retry.`,
-    );
-  }
+  const staffAccess = (
+    await selectCourseInstancesWithStaffAccess({ course: ctx.course, authzData: ctx.authz_data })
+  ).find((ci) => idsEqual(ci.id, course_instance.id));
   return {
     ...ctx,
     course_instance,
-    authz_data: CourseInstancePageAuthzDataSchema.parse(
-      makePageAuthzData({ authzData, is_administrator: ctx.is_administrator }),
-    ),
+    authz_data: {
+      ...ctx.authz_data,
+      has_course_instance_permission_view:
+        staffAccess?.has_course_instance_permission_view ?? false,
+      has_course_instance_permission_edit:
+        staffAccess?.has_course_instance_permission_edit ?? false,
+    },
   };
 }
 

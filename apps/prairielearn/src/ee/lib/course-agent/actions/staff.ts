@@ -100,7 +100,12 @@ async function selectStaffMembers(
 
 /** As on the Staff page, only administrators can change their own course access. */
 function refuseSelf(ctx: CourseActionContext, userIds: string[]) {
-  if (!ctx.is_administrator && userIds.some((id) => idsEqual(id, ctx.user.id))) {
+  const { is_administrator, is_institution_administrator } = ctx.authz_data;
+  if (
+    !is_administrator &&
+    !is_institution_administrator &&
+    userIds.some((id) => idsEqual(id, ctx.user.id))
+  ) {
     throw new CourseActionError(
       'The instructor cannot change their own course access or remove themselves. Another course owner can do it on the Staff page. Nothing was changed; leave the instructor out of the request if it was about others too.',
     );
@@ -124,7 +129,7 @@ export const staffActions = {
   staff_add: action({
     description:
       'Add people to the course staff by UID, as the Staff page\'s "Add users" form does. Like that form, it only raises access: anyone who already has more keeps it. It can also give them access to student data in course instances.',
-    permission: 'course_owner',
+    requiredRole: ['Owner'],
     input: z.strictObject({
       uids: z
         .array(UidSchema)
@@ -186,7 +191,7 @@ export const staffActions = {
   staff_set_course_role: action({
     description:
       'Set the course role of people on the course staff, up or down, as on the Staff page. The instructor cannot change their own role.',
-    permission: 'course_owner',
+    requiredRole: ['Owner'],
     input: z.strictObject({ ...StaffMembersInput, course_role: CourseRoleSchema }),
     run: async ({ ctx, input }) => {
       const userIds = await selectStaffMembers(ctx, input);
@@ -207,7 +212,7 @@ export const staffActions = {
   staff_set_instance_role: courseInstanceAction({
     description:
       "Set the access to student data that people on the course staff have in one course instance, as on the Staff page, such as to let a TA grade students' work.",
-    permission: 'course_owner',
+    requiredRole: ['Owner'],
     input: z.strictObject({
       ...COURSE_INSTANCE_INPUT,
       ...StaffMembersInput,
@@ -241,7 +246,7 @@ export const staffActions = {
   staff_remove: action({
     description:
       'Remove people from the course staff, as on the Staff page. They lose all access to the course content and its student data, and their enrollments in its course instances are removed. The instructor cannot remove themselves.',
-    permission: 'course_owner',
+    requiredRole: ['Owner'],
     input: z.strictObject(StaffMembersInput),
     run: async ({ ctx, input }) => {
       const userIds = await selectStaffMembers(ctx, input);

@@ -224,7 +224,7 @@ export const attemptActions = {
   assessment_instances_set_time_limit: assessmentAction({
     description:
       "Change the time limit on attempts students have already started, such as extra time for one student during an exam, as the time limit button on the assessment's Students tab does. It can also reopen closed attempts. To change the limit for students who have not started, edit the assessment's access rules in the course files instead.",
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: TimeLimitInputSchema,
     run: async ({ ctx, input }) => {
       const change = TIME_LIMIT_CHANGES[input.change];
@@ -280,7 +280,7 @@ export const attemptActions = {
   assessment_instances_set_score: assessmentAction({
     description:
       "Set the total score of one attempt, as editing the total on the attempt's page does, such as to excuse a student. Later grading in the attempt recalculates the total and replaces it. To change one question's score, use instance_questions_set_score.",
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: SetAttemptScoreInputSchema,
     run: async ({ ctx, input }) => {
       const [attempt] = await selectAttempts(ctx, [input.assessment_instance_id]);
@@ -301,7 +301,7 @@ export const attemptActions = {
   instance_questions_set_score: assessmentAction({
     description:
       "Set the score of one question in one student's attempt, as editing its points on the attempt's page or grading it on the manual grading page does, optionally with feedback for the student. The attempt's total is recalculated and the question leaves the manual grading queue. Setting the manual points replaces any rubric grading of the question.",
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: SetQuestionScoreInputSchema,
     run: async ({ ctx, input }) => {
       checkOneScore(input);
@@ -341,7 +341,7 @@ export const attemptActions = {
   instance_questions_assign_grader: assessmentAction({
     description:
       'Assign a staff member to grade questions in attempts, or remove the assigned grader, as the manual grading page does. The grader needs Student Data Editor access to the course instance. This does not grade anything or change scores.',
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: AssignGraderInputSchema,
     run: async ({ ctx, input }) => {
       const { grader_user_id, grader_uid } = input;

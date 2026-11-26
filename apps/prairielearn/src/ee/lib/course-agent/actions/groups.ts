@@ -104,7 +104,7 @@ export const groupActions = {
   groups_create: assessmentAction({
     description:
       "Create a group of students for an assessment that uses group work, as on the assessment's Groups page. The students in a group share one attempt at the assessment.",
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: z.strictObject({
       ...ASSESSMENT_INPUT,
       group_name: z
@@ -140,7 +140,7 @@ export const groupActions = {
   groups_add_members: assessmentAction({
     description:
       "Add students to an existing group, as editing a group on the assessment's Groups page does. As on that page, the group's size limit does not apply. To move a student between groups, remove them from their group with groups_remove_members first.",
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: z.strictObject({ ...ASSESSMENT_INPUT, ...GroupInput, uids: UidsSchema }),
     run: async ({ ctx, input }) => {
       const groups = await selectGroups(ctx);
@@ -176,7 +176,7 @@ export const groupActions = {
   groups_remove_members: assessmentAction({
     description:
       "Remove students from a group, as editing a group on the assessment's Groups page does. A student removed from a group can no longer open the group's attempt.",
-    permission: 'student_data_editor',
+    requiredRole: ['Student Data Editor'],
     input: z.strictObject({ ...ASSESSMENT_INPUT, ...GroupInput, uids: UidsSchema }),
     run: async ({ ctx, input }) => {
       const group = findGroup(ctx, await selectGroups(ctx), input);

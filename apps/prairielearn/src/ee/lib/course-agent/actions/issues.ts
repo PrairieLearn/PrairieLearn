@@ -53,7 +53,7 @@ export const issueActions = {
   issues_close: action({
     description:
       'Close open issues, as on the Issues page. Issues that are already closed are left as they are.',
-    permission: 'course_editor',
+    requiredRole: ['Editor'],
     input: IssuesInputSchema,
     run: async ({ ctx, input }) => {
       await selectIssues(ctx, input.issue_ids);
@@ -68,7 +68,7 @@ export const issueActions = {
   issues_reopen: action({
     description:
       'Reopen closed issues, as on the Issues page. Issues that are already open are left as they are.',
-    permission: 'course_editor',
+    requiredRole: ['Editor'],
     input: IssuesInputSchema,
     run: async ({ ctx, input }) => {
       const closed = (await selectIssues(ctx, input.issue_ids)).filter((issue) => !issue.open);
@@ -87,7 +87,7 @@ export const issueActions = {
   issues_report: action({
     description:
       'Report an issue on a question version, as the "Report an issue" button does. A version that belongs to a student needs Student Data Viewer access to its course instance.',
-    permission: [],
+    requiredRole: ['Previewer'],
     input: ReportInputSchema,
     run: async ({ ctx, input }) => {
       const variant = await selectOptionalVariantById(input.variant_id);
@@ -105,7 +105,7 @@ export const issueActions = {
           question_id: variant.question_id,
           authn_user: ctx.user,
           user: ctx.user,
-          is_administrator: ctx.is_administrator,
+          is_administrator: ctx.authz_data.is_administrator,
         });
       } catch (error) {
         if (error instanceof HttpStatusError && error.status === 403) {

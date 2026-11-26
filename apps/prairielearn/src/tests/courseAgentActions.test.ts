@@ -162,7 +162,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     const open = await insertIssue();
     COURSE_AGENT_ACTIONS.test_closes_then_fails = action({
       description: 'Close an issue, then fail.',
-      permission: 'course_editor',
+      requiredRole: ['Editor'],
       input: z.strictObject({}),
       run: async ({ ctx }) => {
         await updateIssueOpen({

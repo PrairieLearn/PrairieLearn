@@ -14,7 +14,7 @@ export const sharingActions = {
   sharing_sets_add_course: action({
     description:
       "Let another course use the questions in one of this course's sharing sets, as on the course's Sharing page. It needs the other course's sharing token, which that course's owner copies from its Sharing page. PrairieLearn has no way to take this access back.",
-    permission: 'course_owner',
+    requiredRole: ['Owner'],
     input: z.strictObject({
       sharing_set_name: z
         .string()
