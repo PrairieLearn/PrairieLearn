@@ -5,6 +5,14 @@ set -ex
 # add a dot to the following line:
 # .
 
+# Keep the image small: don't install documentation (this includes ~95 MB of
+# TeX Live docs), weak dependencies, or non-English translations.
+cat >> /etc/dnf/dnf.conf << EOF
+tsflags=nodocs
+install_weak_deps=False
+EOF
+echo '%_install_langs C:en:en_US:en_US.UTF-8' > /etc/rpm/macros.image-language-conf
+
 dnf update -y
 
 # Notes:
@@ -50,9 +58,10 @@ npm install -g 'pnpm@^12.17.0'
 for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
+# The database cluster itself is initialized by `start_postgres.sh` in the same
+# Docker layer that runs migrations, so its files aren't stored in two layers.
 mkdir /var/postgres && chown postgres:postgres /var/postgres
 mkdir /var/run/postgresql && chown postgres:postgres /var/run/postgresql
-su postgres -c "initdb -D /var/postgres"
 
 echo "installing pgvector..."
 dnf -y install postgresql17-server-devel
@@ -86,3 +95,4 @@ UV_PYTHON_INSTALL_DIR=/opt/uv/python UV_PYTHON_BIN_DIR=/usr/local/bin uv python 
 dnf clean all
 nvm cache clear
 npm cache clean --force
+rm -rf /nvm/.git

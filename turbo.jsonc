@@ -1,6 +1,9 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "agentGuidance": false,
+  // Lets the Docker image point node-gyp at Node's bundled headers so that
+  // native addons don't download another copy.
+  "globalPassThroughEnv": ["npm_config_nodedir"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

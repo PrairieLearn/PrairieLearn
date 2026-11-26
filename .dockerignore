@@ -31,6 +31,10 @@
 
 # Forbid specific patterns.
 apps/course-agent/
+**/node_modules/
+**/.turbo/
+**/__pycache__/
+packages/bind-mount/build/
 .DS_Store
 /config.json
 apps/*/dist/
