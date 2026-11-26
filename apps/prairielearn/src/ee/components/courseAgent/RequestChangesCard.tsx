@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { type ReactNode, Suspense, lazy, useState } from 'react';
-import { Alert, Button, CloseButton, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
 import type { RequestChangesResult } from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
@@ -34,7 +34,7 @@ export function RequestChangesCard({
   reviewId,
   canResume,
   autoApprove,
-  claimAutoApproveNotice,
+  onApprovedOnce,
   onAlwaysApprove,
 }: {
   conversationId: string;
@@ -44,15 +44,14 @@ export function RequestChangesCard({
   /** Submitted under "Auto-approve", so the agent service approves it and has it saved. */
   autoApprove: boolean;
   /** The instructor approved this review and asked not to be asked again in this course. */
-  /** True the first time it is called in this course, when this review offers auto-approve. */
-  claimAutoApproveNotice: () => boolean;
+  /** The instructor approved this review alone, which is when auto-approve is worth offering. */
+  onApprovedOnce: () => void;
   onAlwaysApprove: () => void;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [showChanges, setShowChanges] = useState(false);
   const [confirmingAlways, setConfirmingAlways] = useState(false);
-  const [showAutoApproveNotice, setShowAutoApproveNotice] = useState(false);
   const [shownAt] = useState(Date.now);
   const reviewInput = { conversationId, reviewId };
   const review = useQuery({
@@ -91,9 +90,7 @@ export function RequestChangesCard({
   const files = pending?.diff.files ?? lastFiles;
   const decide = (value: 'approved' | 'denied') => {
     decision.mutate({ conversationId, reviewId, decision: value });
-    if (value === 'approved' && !autoApprove && claimAutoApproveNotice()) {
-      setShowAutoApproveNotice(true);
-    }
+    if (value === 'approved' && !autoApprove) onApprovedOnce();
   };
   const approveAlways = () =>
     decision.mutate(
@@ -104,123 +101,95 @@ export function RequestChangesCard({
   const actionsDisabled = !pending || decision.isPending;
   const canApprove = !!pending?.diff.files;
   return (
-    <div className="d-flex flex-column gap-2">
-      <div className="course-agent-review border rounded-3">
-        {data?.status === 'decided' && data.result ? (
-          <ReviewResult result={data.result} />
-        ) : (
-          <ReviewActions
-            disabled={actionsDisabled}
-            canApprove={canApprove}
-            files={files}
-            onViewChanges={() => setShowChanges(true)}
-            onDecision={decide}
-            onApproveAlways={() => setConfirmingAlways(true)}
-          />
-        )}
-        {/* The buttons stay in case the automatic approval is refused. */}
-        {autoApprovalPolled && (
-          <p className="small text-muted mt-2 mb-0" role="status">
-            Approving automatically…
-          </p>
-        )}
-        {data?.status === 'decided' && !data.result && (
-          <p className="small text-muted mt-2 mb-0" role="status">
-            Saving and syncing…
-          </p>
-        )}
-        {data?.status === 'unavailable' && (
-          <p className="small text-muted mt-2 mb-0">This review is no longer available.</p>
-        )}
-        {/* The composer delivers a denial by message again when the instructor resends it. */}
-        {canResume && data?.status === 'decided' && data.result && !data.result.viaMessage && (
-          <div className="d-flex align-items-center gap-2 mt-2">
-            <span className="small text-muted">The course agent has not received this result.</span>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              disabled={resume.isPending}
-              onClick={() => resume.mutate({ conversationId })}
-            >
-              Resume
-            </Button>
-          </div>
-        )}
-        {/* A diff can fail transiently, for example while the course is locked by another save. */}
-        {(review.isError || pending?.diff.error) && (
-          <Button
-            className="mt-2"
-            size="sm"
-            variant="outline-secondary"
-            onClick={() => void review.refetch()}
-          >
-            Reload review
-          </Button>
-        )}
-        {pending?.diff.error && (
-          <Alert variant="danger" className="mt-2 mb-0">
-            {pending.diff.error}
-          </Alert>
-        )}
-        <ReviewChangesModal
-          id={reviewId}
-          show={showChanges}
-          loading={review.isLoading}
-          files={files}
-          error={pending?.diff.error ? <Alert variant="danger">{pending.diff.error}</Alert> : null}
-          actionsDisabled={actionsDisabled}
+    <div className="course-agent-review border rounded-3">
+      {data?.status === 'decided' && data.result ? (
+        <ReviewResult result={data.result} />
+      ) : (
+        <ReviewActions
+          disabled={actionsDisabled}
           canApprove={canApprove}
-          onHide={() => setShowChanges(false)}
-          onDecision={(value) => {
-            decide(value);
-            setShowChanges(false);
-          }}
-          onApproveAlways={() => {
-            setShowChanges(false);
-            setConfirmingAlways(true);
-          }}
+          files={files}
+          onViewChanges={() => setShowChanges(true)}
+          onDecision={decide}
+          onApproveAlways={() => setConfirmingAlways(true)}
         />
-        <AutoApproveModal
-          show={confirmingAlways}
-          onHide={() => setConfirmingAlways(false)}
-          onConfirm={() => {
-            setConfirmingAlways(false);
-            setShowAutoApproveNotice(false);
-            // The notice opens this for a review that is already approved.
-            if (pending) approveAlways();
-            else onAlwaysApprove();
-          }}
-        />
-        {failure && (
-          <AppErrorAlert
-            className="mt-2"
-            error={failure}
-            render={{ UNKNOWN: ({ message }) => message }}
-          />
-        )}
-      </div>
-      {showAutoApproveNotice && (
-        <div className="course-agent-review border rounded-3 d-flex align-items-start gap-2">
-          <i
-            className="bi bi-shield-exclamation fs-5 lh-1 text-warning-emphasis"
-            aria-hidden="true"
-          />
-          <div className="flex-grow-1">
-            <div className="fw-semibold">Turn on auto-approve</div>
-            <div className="small text-body-secondary">
-              Lets the agent read and edit content without asking you every time.
-            </div>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              className="mt-2"
-              onClick={() => setConfirmingAlways(true)}
-            >
-              See details <i className="bi bi-chevron-right" aria-hidden="true" />
-            </Button>
-          </div>
-          <CloseButton aria-label="Dismiss" onClick={() => setShowAutoApproveNotice(false)} />
+      )}
+      {/* The buttons stay in case the automatic approval is refused. */}
+      {autoApprovalPolled && (
+        <p className="small text-muted mt-2 mb-0" role="status">
+          Approving automatically…
+        </p>
+      )}
+      {data?.status === 'decided' && !data.result && (
+        <p className="small text-muted mt-2 mb-0" role="status">
+          Saving and syncing…
+        </p>
+      )}
+      {data?.status === 'unavailable' && (
+        <p className="small text-muted mt-2 mb-0">This review is no longer available.</p>
+      )}
+      {/* The composer delivers a denial by message again when the instructor resends it. */}
+      {canResume && data?.status === 'decided' && data.result && !data.result.viaMessage && (
+        <div className="d-flex align-items-center gap-2 mt-2">
+          <span className="small text-muted">The course agent has not received this result.</span>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            disabled={resume.isPending}
+            onClick={() => resume.mutate({ conversationId })}
+          >
+            Resume
+          </Button>
         </div>
+      )}
+      {/* A diff can fail transiently, for example while the course is locked by another save. */}
+      {(review.isError || pending?.diff.error) && (
+        <Button
+          className="mt-2"
+          size="sm"
+          variant="outline-secondary"
+          onClick={() => void review.refetch()}
+        >
+          Reload review
+        </Button>
+      )}
+      {pending?.diff.error && (
+        <Alert variant="danger" className="mt-2 mb-0">
+          {pending.diff.error}
+        </Alert>
+      )}
+      <ReviewChangesModal
+        id={reviewId}
+        show={showChanges}
+        loading={review.isLoading}
+        files={files}
+        error={pending?.diff.error ? <Alert variant="danger">{pending.diff.error}</Alert> : null}
+        actionsDisabled={actionsDisabled}
+        canApprove={canApprove}
+        onHide={() => setShowChanges(false)}
+        onDecision={(value) => {
+          decide(value);
+          setShowChanges(false);
+        }}
+        onApproveAlways={() => {
+          setShowChanges(false);
+          setConfirmingAlways(true);
+        }}
+      />
+      <AutoApproveModal
+        show={confirmingAlways}
+        onHide={() => setConfirmingAlways(false)}
+        onConfirm={() => {
+          setConfirmingAlways(false);
+          approveAlways();
+        }}
+      />
+      {failure && (
+        <AppErrorAlert
+          className="mt-2"
+          error={failure}
+          render={{ UNKNOWN: ({ message }) => message }}
+        />
       )}
     </div>
   );

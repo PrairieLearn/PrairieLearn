@@ -14,7 +14,16 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
+import {
+  Alert,
+  Button,
+  CloseButton,
+  Dropdown,
+  Form,
+  Overlay,
+  Popover,
+  Spinner,
+} from 'react-bootstrap';
 import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -372,7 +381,15 @@ function Chat({
   const { mutate: saveApprovalMode } = useMutation(
     trpc.courseAgent.setApprovalMode.mutationOptions(),
   );
+  // Approving one review is when auto-approve is worth offering, once per course.
+  const [autoApproveOffered, setAutoApproveOffered] = useState(false);
+  const offerAutoApprove = () => {
+    if (shownApprovalMode !== 'always_approve' && claimAutoApproveNotice()) {
+      setAutoApproveOffered(true);
+    }
+  };
   const changeApprovalMode = (mode: ApprovalMode) => {
+    setAutoApproveOffered(false);
     setChosenApprovalMode(mode);
     saveApprovalMode({ conversationId, approvalMode: mode });
     onApprovalModeChosen(mode);
@@ -643,7 +660,7 @@ function Chat({
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
-              claimAutoApproveNotice={claimAutoApproveNotice}
+              onApprovedOnce={offerAutoApprove}
               onAlwaysApprove={changeApprovalMode}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={(text) => void send(text, [])}
@@ -661,7 +678,7 @@ function Chat({
                 reviewId={lifecycle.reviewId}
                 canResume={awaitingReviewId === lifecycle.reviewId}
                 autoApprove={false}
-                claimAutoApproveNotice={claimAutoApproveNotice}
+                onApprovedOnce={offerAutoApprove}
                 onAlwaysApprove={() => changeApprovalMode('always_approve')}
               />
             )}
@@ -718,8 +735,10 @@ function Chat({
         pending={sending || deny.isPending}
         attachments={drafts.attachments}
         approvalMode={shownApprovalMode}
+        autoApproveOffered={autoApproveOffered}
         stopDisabled={!connected || !canStop}
         onApprovalModeChange={changeApprovalMode}
+        onAutoApproveOfferClose={() => setAutoApproveOffered(false)}
         onAttach={drafts.add}
         onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
@@ -744,7 +763,9 @@ function Composer({
   pending = false,
   attachments,
   approvalMode,
+  autoApproveOffered = false,
   onApprovalModeChange,
+  onAutoApproveOfferClose,
   onAttach,
   onRemoveAttachment,
   stopDisabled = false,
@@ -761,7 +782,10 @@ function Composer({
   pending?: boolean;
   attachments: DraftAttachment[];
   approvalMode: ApprovalMode;
+  /** Point out auto-approve from the approval mode button. */
+  autoApproveOffered?: boolean;
   onApprovalModeChange: (mode: ApprovalMode) => void;
+  onAutoApproveOfferClose?: () => void;
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
@@ -832,7 +856,12 @@ function Composer({
           >
             <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
-          <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
+          <ApprovalModePicker
+            mode={approvalMode}
+            offered={autoApproveOffered}
+            onChange={onApprovalModeChange}
+            onOfferClose={onAutoApproveOfferClose}
+          />
           <div className="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
             {children}
             {onStop ? (
@@ -876,16 +905,42 @@ const APPROVAL_MODES: Record<ApprovalMode, { label: string; icon: string }> = {
 
 function ApprovalModePicker({
   mode,
+  offered,
   onChange,
+  onOfferClose,
 }: {
   mode: ApprovalMode;
+  offered: boolean;
   onChange: (mode: ApprovalMode) => void;
+  onOfferClose?: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const current = APPROVAL_MODES[mode];
   return (
     <>
-      <Dropdown drop="up" className="course-agent-composer-shrink">
+      <Overlay target={dropdownRef} show={offered} placement="top-start">
+        <Popover id="course-agent-auto-approve-offer" className="course-agent-auto-approve-offer">
+          <Popover.Body className="d-flex align-items-start gap-2">
+            <span>
+              Don't want to approve every request manually?{' '}
+              <Button
+                variant="link"
+                className="p-0 align-baseline"
+                onClick={() => {
+                  onOfferClose?.();
+                  setConfirming(true);
+                }}
+              >
+                Turn on auto-approve
+                <i className="bi bi-chevron-right" aria-hidden="true" />
+              </Button>
+            </span>
+            <CloseButton aria-label="Dismiss" onClick={onOfferClose} />
+          </Popover.Body>
+        </Popover>
+      </Overlay>
+      <Dropdown ref={dropdownRef} drop="up" className="course-agent-composer-shrink">
         <Dropdown.Toggle
           variant="link"
           size="sm"
@@ -963,7 +1018,7 @@ function Message({
   conversationId,
   uploadsUrl,
   awaitingReviewId,
-  claimAutoApproveNotice,
+  onApprovedOnce,
   onAlwaysApprove,
   hiddenReviewId,
   turnRunning,
@@ -984,7 +1039,7 @@ function Message({
   uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
-  claimAutoApproveNotice: () => boolean;
+  onApprovedOnce: () => void;
   onAlwaysApprove: (mode: 'always_approve') => void;
   /** A review requested by the running turn, whose card waits for the turn to end. */
   hiddenReviewId: string | null;
@@ -1027,7 +1082,7 @@ function Message({
         reviewId={card.reviewId}
         canResume={awaitingReviewId === card.reviewId}
         autoApprove={card.autoApprove === true}
-        claimAutoApproveNotice={claimAutoApproveNotice}
+        onApprovedOnce={onApprovedOnce}
         onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
     ) : (
