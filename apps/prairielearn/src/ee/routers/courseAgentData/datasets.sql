@@ -136,7 +136,7 @@ SELECT
   iq.score_perc,
   iq.highest_submission_score,
   iq.requires_manual_grading,
-  grader.uid AS assigned_grader_uid,
+  iq.assigned_grader AS assigned_grader_user_id,
   EXTRACT(
     EPOCH
     FROM
@@ -149,9 +149,8 @@ FROM
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
+  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
   LEFT JOIN questions AS q ON (q.id = aq.question_id)
-  LEFT JOIN users AS grader ON (grader.id = iq.assigned_grader)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -288,14 +287,11 @@ SELECT
   ci.id AS course_instance_id,
   ci.short_name AS course_instance_short_name,
   e.user_id,
-  COALESCE(u.uid, e.pending_uid) AS uid,
-  COALESCE(u.name, e.pending_name) AS name,
   e.status,
   e.first_joined_at
 FROM
   course_instances AS ci
   JOIN enrollments AS e ON (e.course_instance_id = ci.id)
-  LEFT JOIN users AS u ON (u.id = e.user_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
@@ -306,13 +302,12 @@ SELECT
   ci.short_name AS course_instance_short_name,
   sl.name AS label_name,
   e.id AS enrollment_id,
-  COALESCE(u.uid, e.pending_uid) AS uid
+  e.user_id
 FROM
   course_instances AS ci
   JOIN student_labels AS sl ON (sl.course_instance_id = ci.id)
   JOIN student_label_enrollments AS sle ON (sle.student_label_id = sl.id)
   JOIN enrollments AS e ON (e.id = sle.enrollment_id)
-  LEFT JOIN users AS u ON (u.id = e.user_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
@@ -324,7 +319,7 @@ SELECT
   pe.name AS extension_name,
   pe.end_date,
   e.id AS enrollment_id,
-  COALESCE(u.uid, e.pending_uid) AS uid
+  e.user_id
 FROM
   course_instances AS ci
   JOIN course_instance_publishing_extensions AS pe ON (pe.course_instance_id = ci.id)
@@ -332,20 +327,16 @@ FROM
     pee.course_instance_publishing_extension_id = pe.id
   )
   JOIN enrollments AS e ON (e.id = pee.enrollment_id)
-  LEFT JOIN users AS u ON (u.id = e.user_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
 
 -- BLOCK select_staff_by_course_id
 SELECT
-  u.id AS user_id,
-  u.uid,
-  u.name,
+  cp.user_id,
   cp.course_role
 FROM
   course_permissions AS cp
-  JOIN users AS u ON (u.id = cp.user_id)
 WHERE
   cp.course_id = $course_id;
 
@@ -357,15 +348,13 @@ SELECT
   a.tid AS assessment_tid,
   g.id AS team_id,
   g.name AS group_name,
-  u.id AS user_id,
-  u.uid
+  gu.user_id
 FROM
   course_instances AS ci
   JOIN assessments AS a ON (a.course_instance_id = ci.id)
   JOIN team_configs AS gc ON (gc.assessment_id = a.id)
   JOIN teams AS g ON (g.team_config_id = gc.id)
   JOIN team_users AS gu ON (gu.team_id = g.id)
-  JOIN users AS u ON (u.id = gu.user_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -383,10 +372,8 @@ SELECT
   ai.id AS assessment_instance_id,
   ai.user_id,
   ai.team_id,
-  u.uid,
   asl.date AS changed_at,
   asl.auth_user_id AS changed_by_user_id,
-  cu.uid AS changed_by_uid,
   asl.points,
   asl.max_points,
   asl.score_perc
@@ -395,9 +382,6 @@ FROM
   JOIN assessments AS a ON (a.course_instance_id = ci.id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
   JOIN assessment_score_logs AS asl ON (asl.assessment_instance_id = ai.id)
-  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
-  LEFT JOIN users AS u ON (u.id = ai.user_id)
-  LEFT JOIN users AS cu ON (cu.id = asl.auth_user_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -413,13 +397,11 @@ SELECT
   ai.id AS assessment_instance_id,
   ai.user_id,
   ai.team_id,
-  u.uid,
   iq.id AS instance_question_id,
   aq.question_id,
   q.qid,
   qsl.date AS changed_at,
   qsl.auth_user_id AS changed_by_user_id,
-  cu.uid AS changed_by_uid,
   qsl.grading_job_id,
   qsl.points,
   qsl.auto_points,
@@ -435,10 +417,8 @@ FROM
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   JOIN question_score_logs AS qsl ON (qsl.instance_question_id = iq.id)
-  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
+  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
   LEFT JOIN questions AS q ON (q.id = aq.question_id)
-  LEFT JOIN users AS u ON (u.id = ai.user_id)
-  LEFT JOIN users AS cu ON (cu.id = qsl.auth_user_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -454,10 +434,8 @@ SELECT
   ai.id AS assessment_instance_id,
   ai.user_id,
   ai.team_id,
-  u.uid,
   asl.date AS changed_at,
   asl.auth_user_id AS changed_by_user_id,
-  cu.uid AS changed_by_uid,
   asl.open,
   asl.date_limit AS time_limit_ends_at
 FROM
@@ -465,9 +443,6 @@ FROM
   JOIN assessments AS a ON (a.course_instance_id = ci.id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
   JOIN assessment_state_logs AS asl ON (asl.assessment_instance_id = ai.id)
-  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
-  LEFT JOIN users AS u ON (u.id = ai.user_id)
-  LEFT JOIN users AS cu ON (cu.id = asl.auth_user_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -483,7 +458,6 @@ SELECT
   ai.id AS assessment_instance_id,
   ai.user_id,
   ai.team_id,
-  u.uid,
   iq.id AS instance_question_id,
   v.question_id,
   q.qid,
@@ -493,7 +467,6 @@ SELECT
   gj.grading_requested_at AS requested_at,
   gj.graded_at,
   gj.graded_by AS graded_by_user_id,
-  gu.uid AS graded_by_uid,
   gj.gradable,
   gj.correct,
   gj.score,
@@ -508,10 +481,8 @@ FROM
   JOIN variants AS v ON (v.instance_question_id = iq.id)
   JOIN submissions AS s ON (s.variant_id = v.id)
   JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
-  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
+  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
   LEFT JOIN questions AS q ON (q.id = v.question_id)
-  LEFT JOIN users AS u ON (u.id = ai.user_id)
-  LEFT JOIN users AS gu ON (gu.id = gj.graded_by)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -529,7 +500,6 @@ SELECT
   ai.id AS assessment_instance_id,
   ai.user_id,
   ai.team_id,
-  u.uid,
   iq.id AS instance_question_id,
   v.question_id,
   q.qid,
@@ -549,9 +519,8 @@ FROM
   JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
   -- The prompt can hold submitted images, and neither it nor the reply is selected.
   JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)
-  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
+  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
   LEFT JOIN questions AS q ON (q.id = v.question_id)
-  LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -622,9 +591,7 @@ WHERE
 
 -- BLOCK select_staff_student_data_access_by_course_id
 SELECT
-  u.id AS user_id,
-  u.uid,
-  u.name,
+  cp.user_id,
   ci.id AS course_instance_id,
   ci.short_name AS course_instance_short_name,
   cip.course_instance_role AS access
@@ -632,7 +599,6 @@ FROM
   course_permissions AS cp
   JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
   JOIN course_instances AS ci ON (ci.id = cip.course_instance_id)
-  JOIN users AS u ON (u.id = cp.user_id)
 WHERE
   cp.course_id = $course_id
   AND ci.deleted_at IS NULL

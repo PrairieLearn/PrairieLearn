@@ -74,18 +74,13 @@ function dataset<Shape extends Record<string, z.ZodType>>({
 const ATTEMPT_OWNER = {
   user_id: IdSchema.nullable().describe('Student who owns the attempt. Null for team work.'),
   team_id: IdSchema.nullable().describe('Team that owns the attempt. Null for individual work.'),
-  uid: z
-    .string()
-    .nullable()
-    .describe('UID of the student who owns the attempt. Null for team work.'),
 };
 
 // Who caused a recorded change.
 const CHANGED_BY = {
   changed_by_user_id: IdSchema.nullable().describe(
-    'User whose action caused the change: the student when their own answers were graded, or a staff member. Null when none was recorded.',
+    'User whose action caused the change: the student when their own answers were graded, or a staff member (as user_id in staff). Null when none was recorded.',
   ),
-  changed_by_uid: z.string().nullable().describe('UID of that user.'),
 };
 
 /**
@@ -94,6 +89,9 @@ const CHANGED_BY = {
  * returns exactly its schema's columns. Within v1, only add datasets and columns; a removal,
  * rename, or change in meaning needs a new version, since a running conversation may still use
  * an older Worker.
+ *
+ * No dataset returns a column that identifies a person, such as a name, UID, email, or UIN, so
+ * identities never leave the database. People appear only as IDs, which join rows across datasets.
  */
 export const COURSE_DATA_DATASETS = {
   course_instances: dataset({
@@ -291,10 +289,9 @@ export const COURSE_DATA_DATASETS = {
         .nullable()
         .describe('Best submission score, from 0 to 1.'),
       requires_manual_grading: z.boolean().describe('Whether manual grading is pending.'),
-      assigned_grader_uid: z
-        .string()
-        .nullable()
-        .describe('UID of the staff member assigned to grade the question manually, if any.'),
+      assigned_grader_user_id: IdSchema.nullable().describe(
+        'Staff member assigned to grade the question manually, as user_id in staff. Null if none.',
+      ),
       duration: z
         .number()
         .nullable()
@@ -487,7 +484,7 @@ export const COURSE_DATA_DATASETS = {
     label: 'students',
     icon: 'people',
     description:
-      'People enrolled in or invited to each course instance. Course staff are not listed.',
+      'People enrolled in or invited to each course instance. Course staff are not listed. Students are identified only by enrollment_id and user_id; their names, UIDs, and emails are not available.',
     query: sql.select_students_by_course_id,
     schema: z.object({
       enrollment_id: IdSchema,
@@ -496,11 +493,6 @@ export const COURSE_DATA_DATASETS = {
       user_id: IdSchema.nullable().describe(
         'The user, as user_id in other datasets. Null for an invitation not yet accepted.',
       ),
-      uid: z
-        .string()
-        .nullable()
-        .describe('UID the student signs in with, such as an email address.'),
-      name: z.string().nullable().describe("The student's name."),
       status: EnumEnrollmentStatusSchema.describe(
         'invited: invited but not yet joined. joined: enrolled. rejected: declined the invitation. left: left on their own. removed: removed by staff. blocked: blocked by staff.',
       ),
@@ -517,8 +509,10 @@ export const COURSE_DATA_DATASETS = {
       course_instance_id: IdSchema,
       course_instance_short_name: CourseInstanceShortNameSchema,
       label_name: z.string().describe('Name of the label.'),
-      enrollment_id: IdSchema,
-      uid: z.string().nullable().describe('UID of the student in the label.'),
+      enrollment_id: IdSchema.describe('The student, as enrollment_id in students.'),
+      user_id: IdSchema.nullable().describe(
+        'The student, as user_id in other datasets. Null for an invitation not yet accepted.',
+      ),
     }),
   }),
   publishing_extension_students: dataset({
@@ -532,8 +526,10 @@ export const COURSE_DATA_DATASETS = {
       course_instance_short_name: CourseInstanceShortNameSchema,
       extension_name: z.string().nullable().describe('Name of the extension.'),
       end_date: TimestampSchema.describe("When the extension's access ends."),
-      enrollment_id: IdSchema,
-      uid: z.string().nullable().describe('UID of the student with the extension.'),
+      enrollment_id: IdSchema.describe('The student, as enrollment_id in students.'),
+      user_id: IdSchema.nullable().describe(
+        'The student, as user_id in other datasets. Null for an invitation not yet accepted.',
+      ),
     }),
   }),
   group_members: dataset({
@@ -549,19 +545,17 @@ export const COURSE_DATA_DATASETS = {
       assessment_tid: AssessmentTidSchema,
       team_id: IdSchema.describe('The group, as team_id in assessment_instances.'),
       group_name: z.string().describe('Name of the group, unique in the assessment.'),
-      user_id: IdSchema,
-      uid: z.string().describe('UID of the student in the group.'),
+      user_id: IdSchema.describe('The student, as user_id in other datasets.'),
     }),
   }),
   staff: dataset({
     label: 'staff',
     icon: 'person-badge',
-    description: "People on the course's staff and their course roles.",
+    description:
+      "People on the course's staff and their course roles. Staff are identified only by user_id; their names, UIDs, and emails are not available.",
     query: sql.select_staff_by_course_id,
     schema: z.object({
       user_id: IdSchema,
-      uid: z.string().describe('UID the staff member signs in with.'),
-      name: z.string().nullable().describe("The staff member's name."),
       course_role: EnumCourseRoleSchema.describe(
         'Previewer, Viewer, Editor, or Owner, each with the access of the one before and more. None means the person only has access to student data in some course instances.',
       ),
@@ -675,9 +669,8 @@ export const COURSE_DATA_DATASETS = {
       requested_at: TimestampSchema.nullable().describe('When grading was requested.'),
       graded_at: TimestampSchema.nullable().describe('When grading finished. Null while waiting.'),
       graded_by_user_id: IdSchema.nullable().describe(
-        'Staff member who graded it, or who started AI grading. Null for grading by the question or an external grader.',
+        'Staff member who graded it, or who started AI grading, as user_id in staff. Null for grading by the question or an external grader.',
       ),
-      graded_by_uid: z.string().nullable().describe('UID of that staff member.'),
       gradable: z
         .boolean()
         .nullable()
@@ -784,9 +777,7 @@ export const COURSE_DATA_DATASETS = {
       'Staff who can see or edit student data in each course instance. A course role, even Owner, gives no access to student data on its own. Grading, changing scores, and managing students need Student Data Editor.',
     query: sql.select_staff_student_data_access_by_course_id,
     schema: z.object({
-      user_id: IdSchema,
-      uid: z.string().describe('UID the staff member signs in with.'),
-      name: z.string().nullable().describe("The staff member's name."),
+      user_id: IdSchema.describe('The staff member, as user_id in staff.'),
       course_instance_id: IdSchema,
       course_instance_short_name: CourseInstanceShortNameSchema,
       access: EnumCourseInstanceRoleSchema.exclude(['None']).describe(
