@@ -740,7 +740,7 @@ function Chat({
                 <Button
                   variant="primary"
                   size="sm"
-                  className="text-nowrap ms-auto"
+                  className="text-nowrap"
                   onClick={() => setConfirmingAutoApprove(true)}
                 >
                   Turn on auto-approve
