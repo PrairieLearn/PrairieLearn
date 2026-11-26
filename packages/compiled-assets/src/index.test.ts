@@ -73,7 +73,7 @@ async function testProject(options: CompiledAssetsOptions) {
         const moduleUrl = `http://localhost:${port}${compiledScriptPath('esm-bundles/main.js')}`;
         const moduleRes = await fetch(moduleUrl);
         assert.isTrue(moduleRes.ok);
-        const lazyImport = /import\("([^"]+)"\)/.exec(await moduleRes.text());
+        const lazyImport = /import\(["'`]([^"'`]+)["'`]\)/.exec(await moduleRes.text());
         assert.isNotNull(lazyImport);
         const lazyRes = await fetch(new URL(lazyImport[1], moduleUrl));
         assert.isTrue(lazyRes.ok);
@@ -132,6 +132,48 @@ describe('compiled-assets', () => {
         assert.lengthOf(nested.preloads, 1);
         assert.notInclude(main.preloads, nested.preloads[0]);
         assert.sameMembers(lazy.preloads, [...base.preloads, ...nested.preloads]);
+      },
+      { unsafeCleanup: true },
+    );
+  });
+
+  it('only loads the modules an entry uses from a side-effect-free package index', async () => {
+    await tmp.withDir(
+      async (dir) => {
+        const root = await fs.realpath(dir.path);
+        const pkgDir = path.join(root, 'node_modules', 'barrel-pkg');
+        await fs.outputJSON(path.join(pkgDir, 'package.json'), {
+          name: 'barrel-pkg',
+          type: 'module',
+          main: 'index.js',
+          sideEffects: false,
+        });
+        await fs.outputFile(
+          path.join(pkgDir, 'index.js'),
+          "export { small } from './small.js';\nexport { large } from './large.js';\n",
+        );
+        await fs.outputFile(path.join(pkgDir, 'small.js'), "export const small = () => 'small';\n");
+        await fs.outputFile(path.join(pkgDir, 'large.js'), "export const large = () => 'LARGE';\n");
+
+        const entries = path.join(root, 'assets', 'scripts', 'esm-bundles');
+        await fs.outputFile(
+          path.join(entries, 'a.js'),
+          "import { small } from 'barrel-pkg';\nconsole.log(small());\n",
+        );
+        await fs.outputFile(
+          path.join(entries, 'b.js'),
+          "import { large } from 'barrel-pkg';\nconsole.log(large());\n",
+        );
+
+        const buildDirectory = path.join(root, 'public', 'build');
+        const manifest = await build(path.join(root, 'assets'), buildDirectory);
+        const { assetPath, preloads } = manifest['scripts/esm-bundles/a.js'];
+        const files = await Promise.all(
+          [assetPath, ...preloads].map((file) =>
+            fs.readFile(path.join(buildDirectory, file), 'utf8'),
+          ),
+        );
+        assert.notInclude(files.join('\n'), 'LARGE');
       },
       { unsafeCleanup: true },
     );

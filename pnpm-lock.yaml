@@ -1757,6 +1757,9 @@ importers:
       pretty-bytes:
         specifier: ^7.2.0
         version: 7.2.0
+      rolldown:
+        specifier: ^1.2.16
+        version: 1.2.16
       tmp-promise:
         specifier: ^3.0.3
         version: 3.0.3

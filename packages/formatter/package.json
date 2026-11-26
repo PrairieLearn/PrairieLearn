@@ -7,6 +7,7 @@
     "directory": "packages/formatter"
   },
   "type": "module",
+  "sideEffects": false,
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
