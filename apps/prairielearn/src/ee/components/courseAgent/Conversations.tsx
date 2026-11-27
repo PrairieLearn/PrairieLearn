@@ -1135,7 +1135,10 @@ function Message({
       rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
       const { reviewId, autoApproved } = ReviewPartSchema.parse(part.data);
-      if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId, autoApproved });
+      // An auto-approved review waits for no decision, so its line shows while the review loads.
+      if (autoApproved || reviewId !== hiddenReviewId) {
+        cards.push({ kind: 'review', reviewId, autoApproved });
+      }
     } else if (part.type === 'data-input-request') {
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
