@@ -3,7 +3,7 @@ ARG CACHEBUST=2026-10-22-11-58-28
 
 WORKDIR /PrairieLearn
 
-COPY --parents scripts/pl-install.sh /PrairieLearn/
+COPY --parents scripts/pl-install.sh scripts/install_seaweedfs.sh /PrairieLearn/
 
 RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
 

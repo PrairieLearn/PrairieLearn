@@ -47,9 +47,6 @@ overrides:
   'markdownlint-cli2>markdown-it': ^15.0.3
   'notebookjs>jsdom': '*'
 
-  # Preserve S3rver's legacy Busboy API while removing the unpatched Dicer parser.
-  's3rver>busboy': npm:@fastify/busboy@^3.2.4
-
   # jsdom pins Undici exactly; require a patched release.
   'jsdom>undici': '^8.12.3'
 
