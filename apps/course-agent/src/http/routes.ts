@@ -1,7 +1,9 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
+import { z } from 'zod';
 
 import {
+  ApprovalModeSchema,
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
   MAX_THUMBNAIL_BYTES,
@@ -76,6 +78,8 @@ app.post('/conversations', async (c) => {
   return c.json({ id }, 201);
 });
 
+const ApprovalModeBodySchema = z.strictObject({ approvalMode: ApprovalModeSchema });
+
 const conversations = new Hono<{ Bindings: Env }>();
 conversations.use('/:id/*', async (c, next) => {
   if (!UUID_PATTERN.test(c.req.param('id')!)) return c.notFound();
@@ -104,6 +108,14 @@ conversations.post('/:id/resume', async (c) => {
     reportError(error);
     return c.json({ error: 'Could not recover the course agent' }, 503);
   }
+});
+
+conversations.put('/:id/approval-mode', async (c) => {
+  const body = ApprovalModeBodySchema.safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.text('Invalid approval mode', 400);
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  await conversation.setApprovalMode(body.data.approvalMode);
+  return c.json(body.data);
 });
 
 // The browser uploads each attachment before sending the message that refers to it by ID.

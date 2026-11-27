@@ -10,6 +10,7 @@ import { type UIMessage, createUIMessageStreamResponse, parseJsonEventStream } f
 import { z } from 'zod';
 
 import {
+  type ApprovalMode,
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
@@ -19,7 +20,6 @@ import {
   type Review,
   type ReviewPart,
   type ReviewSnapshot,
-  ReviewSubmittedSchema,
   type Usage,
   UsageDecisionSchema,
   type UsageReport,
@@ -101,8 +101,8 @@ const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
 // Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
 // within one decision.
 const MAX_PROVIDER_REQUESTS = 4;
-// Reporting a review may approve it, which fetches its snapshot and starts the save.
-const REVIEW_SUBMITTED_TIMEOUT_MS = 30_000;
+// Approving a review fetches its snapshot and starts the save.
+const AUTO_APPROVAL_TIMEOUT_MS = 30_000;
 
 const OPENAI_API = 'https://api.openai.com';
 
@@ -222,6 +222,8 @@ interface RecordData {
    * the denial with that message, which the browser sends once PrairieLearn records the denial.
    */
   deniedByMessage?: string | null;
+  /** Set by PrairieLearn; absent means `approval_required`. */
+  approvalMode?: ApprovalMode;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
   /** User messages refused by the usage limit, sent to Codex with the next admitted message. */
@@ -274,6 +276,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     sandboxLost: false,
     reviewId: null,
     title: null,
+    approvalMode: 'approval_required',
   };
 
   private metering: MeteringState = {
@@ -350,6 +353,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
       title: this.record.title ?? null,
+      approvalMode: this.record.approvalMode ?? 'approval_required',
     };
     // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
     const retryAt = this.metering.limitedUntil;
@@ -466,6 +470,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     );
     // Idempotent: every connection shares one interval schedule.
     await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
+  }
+
+  /** Applies to reviews the agent submits from now on. */
+  setApprovalMode(approvalMode: ApprovalMode) {
+    this.setRecord({ ...this.record, approvalMode });
   }
 
   /** Clients ignore this message type; sending it only keeps proxied sockets from idling out. */
@@ -704,20 +713,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Tells PrairieLearn about a submitted review, which it approves now if the conversation's owner
-   * chose auto-approve. A review PrairieLearn could not be told about waits for the instructor.
+   * Has PrairieLearn approve a review the owner chose to auto-approve. A review PrairieLearn did
+   * not approve waits for the instructor.
    */
-  private async reportReviewSubmitted(reviewId: string) {
+  private async approveAutomatically(reviewId: string) {
     try {
       const response = await this.postToPrairieLearn(
-        `conversations/${this.name}/reviews/${reviewId}`,
+        `conversations/${this.name}/reviews/${reviewId}/approve`,
         {},
-        REVIEW_SUBMITTED_TIMEOUT_MS,
+        AUTO_APPROVAL_TIMEOUT_MS,
       );
       if (!response.ok) throw new Error(`PrairieLearn answered ${response.status}`);
-      return ReviewSubmittedSchema.parse(await response.json()).autoApproved;
+      return true;
     } catch (error) {
-      logEvent('review_submitted_report_failed', {
+      logEvent('review_auto_approval_failed', {
         conversationId: this.name,
         reviewId,
         error: String(error),
@@ -1393,7 +1402,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         waitsForResume: false,
       },
     });
-    const autoApproved = await this.reportReviewSubmitted(id);
+    const autoApproved =
+      this.record.approvalMode === 'always_approve' && (await this.approveAutomatically(id));
     // Chat history shows the review by ID; its contents and outcome stay out of history. If the
     // turn ended meanwhile, the browser shows the conversation's pending review without this part.
     this.native?.emit({

@@ -23,10 +23,10 @@ import { withResolvers } from '@prairielearn/utils';
 import { buildPageCatalog } from '../ee/lib/course-agent/pages.js';
 import {
   insertCourseAgentConversation,
-  selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
 } from '../ee/models/course-agent-conversation.js';
 import { selectCourseAgentConversationUsage } from '../ee/models/course-agent-usage-report.js';
+import { updateCourseAgentUserApprovalMode } from '../ee/models/course-agent-user-settings.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -61,7 +61,6 @@ function createConversation(user: User) {
     user_id: user.id,
     agent_conversation_id: crypto.randomUUID(),
     title: 'Test conversation',
-    approval_mode: 'approval_required',
   });
 }
 
@@ -142,6 +141,11 @@ describe('Course agent access and conversation privacy', () => {
       user_id: owner.id,
       course_role: 'Owner',
       authn_user_id: '1',
+    });
+    await updateCourseAgentUserApprovalMode({
+      user_id: owner.id,
+      course_id: '1',
+      approval_mode: 'approval_required',
     });
   });
   afterAll(helperServer.after);
@@ -302,7 +306,7 @@ describe('Course agent access and conversation privacy', () => {
     ]);
   });
 
-  test("saves the approval mode on the caller's own conversation and as their default", async () => {
+  test("tells only the caller's own conversation its approval mode, and remembers it", async () => {
     const own = await createConversation(owner);
     const other = await createConversation(otherOwner);
     await withUser(owner, async () => {
@@ -317,20 +321,14 @@ describe('Course agent access and conversation privacy', () => {
         conversationId: own.id,
         approvalMode: 'always_approve',
       });
-      expect(await client.courseAgent.settings.query()).toMatchObject({
-        approvalMode: 'always_approve',
-      });
+      expect(await client.courseAgent.defaultApprovalMode.query()).toBe('always_approve');
     });
-    const modes = Object.fromEntries(
-      (await selectCourseAgentConversationsForUser({ course_id: '1', user_id: owner.id }))
-        .concat(
-          await selectCourseAgentConversationsForUser({ course_id: '1', user_id: otherOwner.id }),
-        )
-        .map((conversation) => [conversation.id, conversation.approval_mode]),
-    );
-    expect(modes[own.id]).toBe('always_approve');
-    expect(modes[other.id]).toBe('approval_required');
-    expect(serviceRequests).toEqual([]);
+    expect(serviceRequests.map(({ path, body }) => ({ path, body }))).toEqual([
+      {
+        path: `/conversations/${own.agent_conversation_id}/approval-mode`,
+        body: { approvalMode: 'always_approve' },
+      },
+    ]);
   });
 
   test('downloads a sent file, and displays an image preview', async () => {

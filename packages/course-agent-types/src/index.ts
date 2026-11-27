@@ -36,6 +36,7 @@ export type ConversationState = ConversationLifecycle & {
   reviewId: string | null;
   /** Generated from the first message; PrairieLearn shows its own fallback until then. */
   title: string | null;
+  approvalMode: ApprovalMode;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
@@ -332,10 +333,13 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 /** Metadata the browser attaches to a user message. */
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
 
-/** PrairieLearn's answer when the agent service reports a submitted review. */
-export const ReviewSubmittedSchema = z.object({ autoApproved: z.boolean() });
+/**
+ * Whether the instructor decides each `request_changes` review, or the conversation has PrairieLearn
+ * approve it as soon as the agent submits it.
+ */
+export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
 
-export type ReviewSubmitted = z.infer<typeof ReviewSubmittedSchema>;
+export type ApprovalMode = z.infer<typeof ApprovalModeSchema>;
 
 /**
  * A `data-review` part, which shows a review in chat history by ID. `autoApproved` records that

@@ -19,6 +19,8 @@ import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import {
+  type ApprovalMode,
+  ApprovalModeSchema,
   type ConversationState,
   type InputRequestPart,
   InputRequestPartSchema,
@@ -28,15 +30,11 @@ import {
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
-import { type AppError, getAppError } from '@prairielearn/trpc/client';
+import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
-import {
-  type EnumCourseAgentApprovalMode,
-  EnumCourseAgentApprovalModeSchema,
-} from '../../../lib/db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
@@ -143,7 +141,16 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
-  const approval = useApprovalModeSettings();
+  // The mode a new conversation starts in: the one this user last chose in this course.
+  const defaultApprovalModeKey = trpc.courseAgent.defaultApprovalMode.queryKey();
+  const newApprovalMode =
+    useQuery(trpc.courseAgent.defaultApprovalMode.queryOptions()).data ?? 'approval_required';
+  const rememberApprovalMode = (mode: ApprovalMode) =>
+    queryClient.setQueryData(defaultApprovalModeKey, mode);
+  const saveDefaultApprovalMode = useMutation({
+    ...trpc.courseAgent.setApprovalMode.mutationOptions(),
+    onError: () => void queryClient.invalidateQueries({ queryKey: defaultApprovalModeKey }),
+  });
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -225,16 +232,15 @@ function ConversationPicker({
           courseId={courseId}
           conversationId={selectedId}
           showConversationStats={showConversationStats}
-          approvalMode={selectedConversation?.approval_mode ?? approval.newConversationMode}
-          approvalModeError={approval.error}
+          initialApprovalMode={create.data?.id === selectedId ? newApprovalMode : undefined}
+          offeredAutoApprove={selectedConversation?.auto_approve_offered_at != null}
           chatCsrfToken={chatCsrfToken}
           initialMessage={
             create.data?.id === selectedId && create.variables
               ? { text: create.variables.text, attachments: initialAttachments }
               : undefined
           }
-          claimAutoApproveNotice={approval.claimAutoApproveOffer}
-          onApprovalModeChange={(mode) => approval.change(mode, selectedId)}
+          onApprovalModeChosen={rememberApprovalMode}
           onInitialMessageSent={create.reset}
         />
       ) : active ? (
@@ -259,8 +265,11 @@ function ConversationPicker({
             disabled={create.isPending}
             pending={create.isPending}
             attachments={drafts.attachments}
-            approvalMode={approval.newConversationMode}
-            onApprovalModeChange={(mode) => approval.change(mode, null)}
+            approvalMode={newApprovalMode}
+            onApprovalModeChange={(mode) => {
+              rememberApprovalMode(mode);
+              saveDefaultApprovalMode.mutate({ approvalMode: mode });
+            }}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
@@ -270,61 +279,6 @@ function ConversationPicker({
       ) : null}
     </div>
   );
-}
-
-/**
- * The approval mode is kept in PrairieLearn: on each conversation, and as the user's choice for
- * new conversations in this course, along with whether they have been offered auto-approve.
- */
-function useApprovalModeSettings() {
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-  const settings = useQuery(trpc.courseAgent.settings.queryOptions());
-  const setSettings = (update: {
-    approvalMode?: EnumCourseAgentApprovalMode;
-    autoApproveOffered?: boolean;
-  }) =>
-    queryClient.setQueryData(trpc.courseAgent.settings.queryKey(), (current) =>
-      current ? { ...current, ...update } : current,
-    );
-  const save = useMutation({
-    ...trpc.courseAgent.setApprovalMode.mutationOptions(),
-    // Saves run one at a time, so the last choice is the one kept.
-    scope: { id: 'course-agent-approval-mode' },
-    // Show the modes PrairieLearn still has rather than one that was not saved.
-    onError: () => {
-      void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
-      void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.settings.queryKey() });
-    },
-  });
-  const markOffered = useMutation(trpc.courseAgent.markAutoApproveOffered.mutationOptions());
-  return {
-    newConversationMode: settings.data?.approvalMode ?? 'approval_required',
-    error: getAppError<CourseAgentError['SetApprovalMode']>(save.error),
-    change: (approvalMode: EnumCourseAgentApprovalMode, conversationId: string | null) => {
-      // A fetch that started before the change would otherwise restore the old mode.
-      void queryClient.cancelQueries({ queryKey: trpc.courseAgent.list.queryKey() });
-      void queryClient.cancelQueries({ queryKey: trpc.courseAgent.settings.queryKey() });
-      setSettings({ approvalMode });
-      if (conversationId) {
-        queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) =>
-          current?.map((conversation) =>
-            conversation.id === conversationId
-              ? { ...conversation, approval_mode: approvalMode }
-              : conversation,
-          ),
-        );
-      }
-      save.mutate({ conversationId: conversationId ?? undefined, approvalMode });
-    },
-    /** True only the first time, once the settings have loaded. */
-    claimAutoApproveOffer: () => {
-      if (settings.data?.autoApproveOffered !== false) return false;
-      setSettings({ autoApproveOffered: true });
-      markOffered.mutate();
-      return true;
-    },
-  };
 }
 
 function Loading() {
@@ -353,21 +307,21 @@ function Chat({
   initialMessage,
   onInitialMessageSent,
   showConversationStats,
-  approvalMode,
-  approvalModeError,
-  claimAutoApproveNotice,
-  onApprovalModeChange,
+  initialApprovalMode,
+  offeredAutoApprove,
+  onApprovalModeChosen,
 }: {
   courseId: string;
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
   initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
-  approvalMode: EnumCourseAgentApprovalMode;
-  approvalModeError: AppError<CourseAgentError['SetApprovalMode']> | null;
-  /** True the first time it is called in this course, when a review offers auto-approve. */
-  claimAutoApproveNotice: () => boolean;
-  onApprovalModeChange: (mode: EnumCourseAgentApprovalMode) => void;
+  /** The mode a new conversation was created in, shown until the conversation reports it. */
+  initialApprovalMode: ApprovalMode | undefined;
+  /** This conversation has already offered auto-approve. */
+  offeredAutoApprove: boolean;
+  /** The instructor chose a mode, which their next new conversation starts in. */
+  onApprovalModeChosen: (mode: ApprovalMode) => void;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -390,17 +344,48 @@ function Chat({
   const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
-  // Approving one review is when auto-approve is worth offering, once per course.
-  const [autoApproveOffered, setAutoApproveOffered] = useState(false);
+  // The conversation keeps its own mode. A choice made here shows at once, until the conversation
+  // reports it back; after that the reported mode shows, including a change from another tab.
+  const [chosenApprovalMode, setChosenApprovalMode] = useState(initialApprovalMode);
+  if (chosenApprovalMode && lifecycle?.approvalMode === chosenApprovalMode) {
+    setChosenApprovalMode(undefined);
+  }
+  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode ?? 'approval_required';
+  const saveApprovalMode = useMutation({
+    ...trpc.courseAgent.setApprovalMode.mutationOptions(),
+    // Saves run one at a time, so the last choice is the one the conversation keeps.
+    scope: { id: `course-agent-approval-mode:${conversationId}` },
+    // Show the mode the conversation still has rather than one that was not saved.
+    onError: () => {
+      setChosenApprovalMode(undefined);
+      void queryClient.invalidateQueries({
+        queryKey: trpc.courseAgent.defaultApprovalMode.queryKey(),
+      });
+    },
+  });
+  const saveApprovalModeError = getAppError<CourseAgentError['SetApprovalMode']>(
+    saveApprovalMode.error,
+  );
+  // Approving one review is when auto-approve is worth offering, once per conversation.
+  const [showAutoApproveOffer, setShowAutoApproveOffer] = useState(false);
   const [confirmingAutoApprove, setConfirmingAutoApprove] = useState(false);
+  const markOffered = useMutation({
+    ...trpc.courseAgent.markAutoApproveOffered.mutationOptions(),
+    onSuccess: (updated) =>
+      queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) =>
+        current?.map((conversation) => (conversation.id === updated.id ? updated : conversation)),
+      ),
+  });
   const offerAutoApprove = () => {
-    if (approvalMode !== 'always_approve' && claimAutoApproveNotice()) {
-      setAutoApproveOffered(true);
-    }
+    if (approvalMode === 'always_approve' || offeredAutoApprove || !markOffered.isIdle) return;
+    setShowAutoApproveOffer(true);
+    markOffered.mutate({ conversationId });
   };
-  const changeApprovalMode = (mode: EnumCourseAgentApprovalMode) => {
-    setAutoApproveOffered(false);
-    onApprovalModeChange(mode);
+  const changeApprovalMode = (mode: ApprovalMode) => {
+    setShowAutoApproveOffer(false);
+    setChosenApprovalMode(mode);
+    saveApprovalMode.mutate({ conversationId, approvalMode: mode });
+    onApprovalModeChosen(mode);
   };
   const [connectionFailed, setConnectionFailed] = useState(false);
   // Chat remounts per conversation, so this is the message that created it.
@@ -715,9 +700,9 @@ function Chat({
           {deny.isError && (
             <AppErrorAlert error={denyError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
-          {approvalModeError && (
+          {saveApprovalModeError && (
             <AppErrorAlert
-              error={approvalModeError}
+              error={saveApprovalModeError}
               render={{
                 UNKNOWN: () => 'Could not change the approval mode. Choose it again to retry.',
               }}
@@ -735,7 +720,7 @@ function Chat({
           )}
         </div>
       </div>
-      {autoApproveOffered && (
+      {showAutoApproveOffer && (
         <Alert
           variant="warning"
           className="course-agent-auto-approve-offer small mb-0 rounded-0 border-start-0 border-end-0 border-bottom-0"
@@ -755,7 +740,7 @@ function Chat({
             <CloseButton
               className="flex-shrink-0"
               aria-label="Dismiss"
-              onClick={() => setAutoApproveOffered(false)}
+              onClick={() => setShowAutoApproveOffer(false)}
             />
           </div>
         </Alert>
@@ -824,8 +809,8 @@ function Composer({
   /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
   attachments: DraftAttachment[];
-  approvalMode: EnumCourseAgentApprovalMode;
-  onApprovalModeChange: (mode: EnumCourseAgentApprovalMode) => void;
+  approvalMode: ApprovalMode;
+  onApprovalModeChange: (mode: ApprovalMode) => void;
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
@@ -933,7 +918,7 @@ function Composer({
   );
 }
 
-const APPROVAL_MODES: Record<EnumCourseAgentApprovalMode, { label: string; icon: string }> = {
+const APPROVAL_MODES: Record<ApprovalMode, { label: string; icon: string }> = {
   approval_required: { label: 'Ask first', icon: 'bi-hand-index-thumb' },
   always_approve: { label: 'Auto-approve', icon: 'bi-shield-exclamation' },
 };
@@ -942,8 +927,8 @@ function ApprovalModePicker({
   mode,
   onChange,
 }: {
-  mode: EnumCourseAgentApprovalMode;
-  onChange: (mode: EnumCourseAgentApprovalMode) => void;
+  mode: ApprovalMode;
+  onChange: (mode: ApprovalMode) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
   const current = APPROVAL_MODES[mode];
@@ -967,7 +952,7 @@ function ApprovalModePicker({
           <Dropdown.Header className="text-wrap">
             Before editing files, reading student data, or taking actions
           </Dropdown.Header>
-          {EnumCourseAgentApprovalModeSchema.options.map((option) => {
+          {ApprovalModeSchema.options.map((option) => {
             const { label, icon } = APPROVAL_MODES[option];
             return (
               <Dropdown.Item

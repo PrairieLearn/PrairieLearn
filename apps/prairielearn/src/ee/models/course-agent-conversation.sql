@@ -1,19 +1,12 @@
 -- BLOCK insert_course_agent_conversation
 INSERT INTO
-  course_agent_conversations (
-    course_id,
-    user_id,
-    agent_conversation_id,
-    title,
-    approval_mode
-  )
+  course_agent_conversations (course_id, user_id, agent_conversation_id, title)
 VALUES
   (
     $course_id,
     $user_id,
     $agent_conversation_id,
-    $title,
-    $approval_mode
+    $title
   )
 RETURNING
   *;
@@ -56,10 +49,10 @@ WHERE
 RETURNING
   *;
 
--- BLOCK update_course_agent_conversation_approval_mode
+-- BLOCK update_course_agent_conversation_auto_approve_offered
 UPDATE course_agent_conversations
 SET
-  approval_mode = $approval_mode
+  auto_approve_offered_at = COALESCE(auto_approve_offered_at, now())
 WHERE
   id = $id
 RETURNING

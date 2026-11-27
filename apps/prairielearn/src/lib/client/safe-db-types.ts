@@ -258,7 +258,7 @@ export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
 /** Course Agent Conversations */
 // Omits `agent_conversation_id`: only the server addresses the agent service.
 export const RawStaffCourseAgentConversationSchema = RawCourseAgentConversationSchema.pick({
-  approval_mode: true,
+  auto_approve_offered_at: true,
   created_at: true,
   id: true,
   title: true,

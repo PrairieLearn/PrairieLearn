@@ -1,6 +1,5 @@
 columns
     approval_mode: enum_course_agent_approval_mode not null default 'approval_required'::enum_course_agent_approval_mode
-    auto_approve_offered_at: timestamp with time zone
     course_id: bigint not null
     user_id: bigint not null
 

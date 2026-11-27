@@ -729,7 +729,7 @@ export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
 export const CourseAgentConversationSchema = z.object({
   agent_conversation_id: z.string(),
-  approval_mode: EnumCourseAgentApprovalModeSchema,
+  auto_approve_offered_at: DateFromISOString.nullable(),
   course_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
@@ -754,7 +754,6 @@ export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
 
 export const CourseAgentUserSettingsSchema = z.object({
   approval_mode: EnumCourseAgentApprovalModeSchema,
-  auto_approve_offered_at: DateFromISOString.nullable(),
   course_id: IdSchema,
   user_id: IdSchema,
 });

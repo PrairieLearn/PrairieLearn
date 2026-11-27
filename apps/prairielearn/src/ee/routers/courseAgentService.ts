@@ -9,7 +9,7 @@ import { parseRequest } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { approveSubmittedReview } from '../lib/course-agent/apply-changes.js';
+import { approveReviewAutomatically } from '../lib/course-agent/apply-changes.js';
 import { recordCourseAgentUsageReport } from '../lib/course-agent/usage.js';
 
 /** Requests from the course agent service, which authenticates with its service token. */
@@ -41,18 +41,18 @@ router.post(
   }),
 );
 
-const ReviewSubmittedRequestSchemas = {
+const ApproveRequestSchemas = {
   params: z.strictObject({ agentId: z.uuid(), reviewId: z.uuid() }),
   query: z.strictObject({}),
   body: z.strictObject({}),
 };
 
-// The agent submitted a review; it is approved now if the conversation's owner chose auto-approve.
+// The conversation submitted a review while its owner chose auto-approve.
 router.post(
-  '/conversations/:agentId/reviews/:reviewId',
+  '/conversations/:agentId/reviews/:reviewId/approve',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const { params } = parseRequest(req, ReviewSubmittedRequestSchemas);
-    res.json(await approveSubmittedReview(params.agentId, params.reviewId));
+    const { params } = parseRequest(req, ApproveRequestSchemas);
+    res.json(await approveReviewAutomatically(params.agentId, params.reviewId));
   }),
 );
 

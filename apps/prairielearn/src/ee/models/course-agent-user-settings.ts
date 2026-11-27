@@ -21,14 +21,7 @@ export async function selectCourseAgentUserSettings({
     { user_id, course_id },
     CourseAgentUserSettingsSchema,
   );
-  return (
-    settings ?? {
-      user_id,
-      course_id,
-      approval_mode: 'approval_required',
-      auto_approve_offered_at: null,
-    }
-  );
+  return settings ?? { user_id, course_id, approval_mode: 'approval_required' };
 }
 
 export async function updateCourseAgentUserApprovalMode({
@@ -43,21 +36,6 @@ export async function updateCourseAgentUserApprovalMode({
   return await queryRow(
     sql.upsert_course_agent_user_approval_mode,
     { user_id, course_id, approval_mode },
-    CourseAgentUserSettingsSchema,
-  );
-}
-
-/** Keeps the first time, so the offer counts as shown once however often this runs. */
-export async function updateCourseAgentUserAutoApproveOffered({
-  user_id,
-  course_id,
-}: {
-  user_id: string;
-  course_id: string;
-}) {
-  return await queryRow(
-    sql.upsert_course_agent_user_auto_approve_offered,
-    { user_id, course_id },
     CourseAgentUserSettingsSchema,
   );
 }

@@ -14,7 +14,6 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
-  type ReviewSubmitted,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -270,17 +269,13 @@ export async function postReviewDecision({
 }
 
 /**
- * Called when the agent submits a review. If the conversation's owner chose auto-approve, the
- * review is approved now as theirs, through the same checks and saving as "Approve once";
- * otherwise it waits for them. A review that cannot be approved here waits too.
+ * Approve a review the conversation submitted while its owner chose auto-approve. The owner must
+ * still be able to use the course agent in the course; the approval is then theirs, with the same
+ * checks and saving as when they click "Approve once".
  */
-export async function approveSubmittedReview(
-  agentConversationId: string,
-  reviewId: string,
-): Promise<ReviewSubmitted> {
+export async function approveReviewAutomatically(agentConversationId: string, reviewId: string) {
   const conversation = await selectOptionalCourseAgentConversationByAgentId(agentConversationId);
   if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
-  if (conversation.approval_mode !== 'always_approve') return { autoApproved: false };
   const user = await selectUserById(conversation.user_id);
   const { authzData, course, institution } = await constructCourseOrInstanceContext({
     user,
@@ -304,26 +299,19 @@ export async function approveSubmittedReview(
       },
     }))
   ) {
-    return { autoApproved: false };
+    throw new HttpStatusError(403, 'The conversation owner cannot use the course agent here.');
   }
-  try {
-    await postReviewDecision({
-      course,
-      conversation,
-      user,
-      authzData: {
-        has_course_permission_edit: authzData.has_course_permission_edit,
-        authn_user: user,
-      },
-      reviewId,
-      decision: 'approved',
-    });
-  } catch (error) {
-    // For example, the course's repository or branch changed since the review was captured.
-    if (error instanceof HttpStatusError && error.status < 500) return { autoApproved: false };
-    throw error;
-  }
-  return { autoApproved: true };
+  return await postReviewDecision({
+    course,
+    conversation,
+    user,
+    authzData: {
+      has_course_permission_edit: authzData.has_course_permission_edit,
+      authn_user: user,
+    },
+    reviewId,
+    decision: 'approved',
+  });
 }
 
 async function applyChanges(

@@ -31,6 +31,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
       sandboxLost: false,
       reviewId: null,
       title: null,
+      approvalMode: 'approval_required',
     };
 
     constructor(
@@ -184,18 +185,16 @@ function modelResponse(inputTokens = 10_000, outputTokens = 2_000) {
   return Response.json({ usage: { input_tokens: inputTokens, output_tokens: outputTokens } });
 }
 
-/** Route PrairieLearn usage reports, submitted reviews, and provider requests to handlers. */
+/** Route PrairieLearn usage reports and approvals, and provider requests, to handlers. */
 function stubFetch(handlers: {
   usage: () => Promise<Response>;
-  reviewSubmitted?: () => Promise<Response>;
+  approve?: () => Promise<Response>;
   model?: (options: RequestInit) => Promise<Response>;
 }) {
   const fetch = vi.fn(async (url: string | URL, options: RequestInit) => {
     if (String(url).endsWith('/usage')) return await handlers.usage();
-    if (String(url).includes('/pl/api/course-agent/conversations/')) {
-      return await (
-        handlers.reviewSubmitted ?? (async () => Response.json({ autoApproved: false }))
-      )();
+    if (String(url).endsWith('/approve')) {
+      return await (handlers.approve ?? (async () => Response.json({ decision: 'approved' })))();
     }
     return await (handlers.model ?? (async () => modelResponse()))(options);
   });
@@ -482,13 +481,17 @@ it('refuses messages while limited, and Resume after the reset sends them', asyn
   );
 });
 
-it('reports a submitted review to PrairieLearn, which decides whether it is auto-approved', async () => {
+it('asks PrairieLearn to approve a review only when the conversation is on auto-approve', async () => {
   vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
   const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
-  const submitReview = async (reviewSubmitted: () => Promise<Response>) => {
+  const submitReview = async (
+    approvalMode: 'approval_required' | 'always_approve',
+    approve?: () => Promise<Response>,
+  ) => {
     emit.mockClear();
-    const { fetch } = stubFetch({ usage: async () => decision(), reviewSubmitted });
+    const { fetch } = stubFetch({ usage: async () => decision(), approve });
     const { conversation } = await runningConversation();
+    conversation.setApprovalMode(approvalMode);
     const reply = await vi.mocked(SandboxTurn).mock.calls.at(-1)![2].onReview!({
       threadId: 'native-thread',
       turnId: 'native-turn',
@@ -498,23 +501,34 @@ it('reports a submitted review to PrairieLearn, which decides whether it is auto
       arguments: {},
     });
     const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-review');
-    return { reply, part, fetch, reviewId: conversation.state.reviewId! };
+    const approvals = fetch.mock.calls.filter(([url]) => String(url).endsWith('/approve'));
+    return { reply, part, approvals, reviewId: conversation.state.reviewId! };
   };
 
-  const approved = await submitReview(async () => Response.json({ autoApproved: true }));
-  expect(approved.fetch).toHaveBeenCalledWith(
-    new URL(
-      `https://pl.test/pl/api/course-agent/conversations/test-conversation/reviews/${approved.reviewId}`,
-    ),
-    expect.objectContaining({ method: 'POST', body: '{}' }),
-  );
+  const asked = await submitReview('approval_required');
+  expect(asked.approvals).toEqual([]);
+  expect(asked.part).toHaveProperty('data', { reviewId: asked.reviewId });
+  expect(asked.reply.text).toContain('for instructor review');
+
+  const approved = await submitReview('always_approve');
+  expect(approved.approvals).toEqual([
+    [
+      new URL(
+        `https://pl.test/pl/api/course-agent/conversations/test-conversation/reviews/${approved.reviewId}/approve`,
+      ),
+      expect.objectContaining({ method: 'POST', body: '{}' }),
+    ],
+  ]);
   expect(approved.part).toHaveProperty('data', { reviewId: approved.reviewId, autoApproved: true });
   expect(approved.reply.text).toContain('they are being saved now');
 
-  // A review PrairieLearn could not be told about waits for the instructor.
-  const unreachable = await submitReview(async () => new Response(null, { status: 503 }));
-  expect(unreachable.part).toHaveProperty('data', { reviewId: unreachable.reviewId });
-  expect(unreachable.reply.text).toContain('for instructor review');
+  // A review PrairieLearn did not approve waits for the instructor.
+  const refused = await submitReview(
+    'always_approve',
+    async () => new Response(null, { status: 403 }),
+  );
+  expect(refused.part).toHaveProperty('data', { reviewId: refused.reviewId });
+  expect(refused.reply.text).toContain('for instructor review');
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {
