@@ -55,12 +55,18 @@ app.post('/conversations/local', async (c) => {
   }
   const pages = parsePagesHeader(c.req.header('X-PL-Pages'));
   if (!pages.success) return c.text('Invalid page catalog', 400);
+  const approvalMode = ApprovalModeSchema.optional().safeParse(c.req.header('X-PL-Approval-Mode'));
+  if (!approvalMode.success) return c.text('Invalid approval mode', 400);
   const id = crypto.randomUUID();
   const archiveKey = `local-sources/${id}.tar.gz`;
   await c.env.CHECKPOINTS.put(archiveKey, c.req.raw.body);
   try {
     const conversation = await getAgentByName(c.env.Conversation, id);
-    await conversation.initialize({ type: 'local', archiveKey, directory }, pages.data);
+    await conversation.initialize(
+      { type: 'local', archiveKey, directory },
+      pages.data,
+      approvalMode.data,
+    );
   } catch (error) {
     await c.env.CHECKPOINTS.delete(archiveKey);
     throw error;
@@ -73,8 +79,8 @@ app.post('/conversations', async (c) => {
   if (!input.success) return c.text('Invalid request', 400);
   const id = crypto.randomUUID();
   const conversation = await getAgentByName(c.env.Conversation, id);
-  const { pages, ...source } = input.data;
-  await conversation.initialize({ type: 'github', ...source }, pages);
+  const { pages, approvalMode, ...source } = input.data;
+  await conversation.initialize({ type: 'github', ...source }, pages, approvalMode);
   return c.json({ id }, 201);
 });
 

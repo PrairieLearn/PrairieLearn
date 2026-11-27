@@ -269,11 +269,11 @@ export async function postReviewDecision({
 }
 
 /**
- * Approve a review the conversation submitted while its owner chose auto-approve. The owner must
- * still be able to use the course agent in the course; the approval is then theirs, with the same
- * checks and saving as when they click "Approve once".
+ * Handles the conversation's auto-approval request (`requestAutoApproval` in the agent service).
+ * The owner must still be able to use the course agent in the course; the approval is then theirs,
+ * with the same checks and saving as when they click "Approve once".
  */
-export async function approveReviewAutomatically(agentConversationId: string, reviewId: string) {
+export async function approveReviewForOwner(agentConversationId: string, reviewId: string) {
   const conversation = await selectOptionalCourseAgentConversationByAgentId(agentConversationId);
   if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
   const user = await selectUserById(conversation.user_id);

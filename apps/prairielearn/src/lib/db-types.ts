@@ -753,8 +753,8 @@ export const CourseAgentReviewSchema = z.object({
 export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
 
 export const CourseAgentUserSettingsSchema = z.object({
-  approval_mode: EnumCourseAgentApprovalModeSchema,
   course_id: IdSchema,
+  default_approval_mode: EnumCourseAgentApprovalModeSchema,
   user_id: IdSchema,
 });
 export type CourseAgentUserSettings = z.infer<typeof CourseAgentUserSettingsSchema>;

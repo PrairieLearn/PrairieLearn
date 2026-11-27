@@ -40,6 +40,7 @@ export async function createCourseAgentConversation(binding: {
   repository: string;
   branch: string;
   pages: PageCatalog;
+  approvalMode: ApprovalMode;
 }): Promise<string> {
   return createConversation('conversations', JSON.stringify(binding), 'application/json');
 }
@@ -48,6 +49,7 @@ export async function createCourseAgentConversation(binding: {
 export async function createLocalCourseAgentConversation(
   coursePath: string,
   pages: PageCatalog,
+  approvalMode: ApprovalMode,
 ): Promise<string> {
   assert(config.devMode, 'Local course agent initialization is only available in development');
   const temporary = await temporaryDirectory({ unsafeCleanup: true });
@@ -96,6 +98,7 @@ export async function createLocalCourseAgentConversation(
       'X-PL-Course-Directory': encodeURIComponent(directory),
       // The body is the archive, so the catalog travels in a header.
       'X-PL-Pages': encodeURIComponent(JSON.stringify(pages)),
+      'X-PL-Approval-Mode': approvalMode,
     });
   } finally {
     await temporary.cleanup();

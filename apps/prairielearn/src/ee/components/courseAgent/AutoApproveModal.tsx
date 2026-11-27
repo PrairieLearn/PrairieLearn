@@ -77,7 +77,7 @@ export function AutoApproveModal({
 }) {
   const trpc = useTRPC();
   const access = useQuery({
-    ...trpc.courseAgent.studentDataAccess.queryOptions(),
+    ...trpc.courseAgent.getStudentDataAccess.queryOptions(),
     enabled: show,
   });
   const studentData = access.data

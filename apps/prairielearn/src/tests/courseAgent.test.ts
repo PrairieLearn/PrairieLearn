@@ -26,7 +26,7 @@ import {
   selectOptionalCourseAgentConversation,
 } from '../ee/models/course-agent-conversation.js';
 import { selectCourseAgentConversationUsage } from '../ee/models/course-agent-usage-report.js';
-import { updateCourseAgentUserApprovalMode } from '../ee/models/course-agent-user-settings.js';
+import { updateCourseAgentUserDefaultApprovalMode } from '../ee/models/course-agent-user-settings.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -142,10 +142,10 @@ describe('Course agent access and conversation privacy', () => {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    await updateCourseAgentUserApprovalMode({
+    await updateCourseAgentUserDefaultApprovalMode({
       user_id: owner.id,
       course_id: '1',
-      approval_mode: 'approval_required',
+      default_approval_mode: 'approval_required',
     });
   });
   afterAll(helperServer.after);
@@ -360,7 +360,7 @@ describe('Course agent access and conversation privacy', () => {
     });
   });
 
-  test('binds creation to the authorized course repository and branch', async () => {
+  test('binds creation to the authorized course repository and branch, in the chosen mode', async () => {
     await updateCourseColumn({
       courseId: '1',
       columnName: 'repository',
@@ -375,7 +375,10 @@ describe('Course agent access and conversation privacy', () => {
     });
     const conversation = await withConfig({ fileEditorUseGit: true }, () =>
       withUser(owner, () =>
-        createClient(owner).courseAgent.create.mutate({ text: 'First message' }),
+        createClient(owner).courseAgent.create.mutate({
+          text: 'First message',
+          approvalMode: 'always_approve',
+        }),
       ),
     );
     expect(serviceRequests).toEqual([
@@ -385,6 +388,7 @@ describe('Course agent access and conversation privacy', () => {
           repository: 'PrairieLearn/test-course',
           branch: 'pilot-edits',
           pages: expect.arrayContaining([expect.objectContaining({ key: 'assessment.settings' })]),
+          approvalMode: 'always_approve',
         },
         authorization: 'Bearer test-token',
       },
@@ -409,7 +413,10 @@ describe('Course agent access and conversation privacy', () => {
         const client = createClient(owner);
         const before = await client.courseAgent.list.query();
         await expect(
-          client.courseAgent.create.mutate({ text: 'First message' }),
+          client.courseAgent.create.mutate({
+            text: 'First message',
+            approvalMode: 'approval_required',
+          }),
         ).rejects.toMatchObject({
           data: { code: 'BAD_REQUEST' },
         });
@@ -502,7 +509,10 @@ describe('Course agent access and conversation privacy', () => {
       });
       await withConfig({ devMode: true, fileEditorUseGit: false }, () =>
         withUser(owner, () =>
-          createClient(owner).courseAgent.create.mutate({ text: 'Read my local changes' }),
+          createClient(owner).courseAgent.create.mutate({
+            text: 'Read my local changes',
+            approvalMode: 'approval_required',
+          }),
         ),
       );
       expect(serviceRequests).toHaveLength(1);

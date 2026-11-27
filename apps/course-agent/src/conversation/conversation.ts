@@ -432,7 +432,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * Set up conversation state and pin the course source and model.
    * The sandbox is created or restored when the first message arrives.
    */
-  initialize(config: CourseSource, pages?: PageCatalog) {
+  initialize(config: CourseSource, pages?: PageCatalog, approvalMode?: ApprovalMode) {
     if (this._record) throw new Error('Conversation is already initialized');
     // TODO: Define how existing sandboxes follow course repository/branch changes. Never
     // retarget an edited sandbox just because a reconnect supplies updated course labels.
@@ -450,6 +450,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: null,
       title: null,
       pages,
+      approvalMode,
     });
   }
 
@@ -661,7 +662,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     let response: Response;
     try {
-      response = await this.postToPrairieLearn(`conversations/${this.name}/usage`, report);
+      response = await this.postPlWebserver(`conversations/${this.name}/usage`, report);
     } catch (error) {
       logEvent('usage_report_unavailable', { conversationId: this.name, error: String(error) });
       return false;
@@ -696,8 +697,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return true;
   }
 
-  /** Calls PrairieLearn's service API, relative to its configured URL so a path prefix is kept. */
-  private postToPrairieLearn(path: string, body: unknown, timeoutMs = 10_000) {
+  /**
+   * POSTs back to the PrairieLearn web server's course agent service routes, relative to its
+   * configured URL so a path prefix is kept.
+   */
+  private postPlWebserver(path: string, body: unknown, timeoutMs = 10_000) {
     const base = this.env.PL_SERVICE_URL.endsWith('/')
       ? this.env.PL_SERVICE_URL
       : `${this.env.PL_SERVICE_URL}/`;
@@ -713,12 +717,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Has PrairieLearn approve a review the owner chose to auto-approve. A review PrairieLearn did
-   * not approve waits for the instructor.
+   * Asks PrairieLearn to approve a review because the conversation is on auto-approve, and
+   * returns whether it did. A review PrairieLearn did not approve waits for the instructor.
    */
-  private async approveAutomatically(reviewId: string) {
+  private async requestAutoApproval(reviewId: string) {
     try {
-      const response = await this.postToPrairieLearn(
+      const response = await this.postPlWebserver(
         `conversations/${this.name}/reviews/${reviewId}/approve`,
         {},
         AUTO_APPROVAL_TIMEOUT_MS,
@@ -1403,7 +1407,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
     });
     const autoApproved =
-      this.record.approvalMode === 'always_approve' && (await this.approveAutomatically(id));
+      this.record.approvalMode === 'always_approve' && (await this.requestAutoApproval(id));
     // Chat history shows the review by ID; its contents and outcome stay out of history. If the
     // turn ended meanwhile, the browser shows the conversation's pending review without this part.
     this.native?.emit({

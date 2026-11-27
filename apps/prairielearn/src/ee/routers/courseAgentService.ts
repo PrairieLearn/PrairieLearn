@@ -9,7 +9,7 @@ import { parseRequest } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { approveReviewAutomatically } from '../lib/course-agent/apply-changes.js';
+import { approveReviewForOwner } from '../lib/course-agent/apply-changes.js';
 import { recordCourseAgentUsageReport } from '../lib/course-agent/usage.js';
 
 /** Requests from the course agent service, which authenticates with its service token. */
@@ -52,7 +52,7 @@ router.post(
   '/conversations/:agentId/reviews/:reviewId/approve',
   typedAsyncHandler<'plain'>(async (req, res) => {
     const { params } = parseRequest(req, ApproveRequestSchemas);
-    res.json(await approveReviewAutomatically(params.agentId, params.reviewId));
+    res.json(await approveReviewForOwner(params.agentId, params.reviewId));
   }),
 );
 

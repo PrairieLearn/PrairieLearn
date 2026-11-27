@@ -21,21 +21,21 @@ export async function selectCourseAgentUserSettings({
     { user_id, course_id },
     CourseAgentUserSettingsSchema,
   );
-  return settings ?? { user_id, course_id, approval_mode: 'approval_required' };
+  return settings ?? { user_id, course_id, default_approval_mode: 'approval_required' };
 }
 
-export async function updateCourseAgentUserApprovalMode({
+export async function updateCourseAgentUserDefaultApprovalMode({
   user_id,
   course_id,
-  approval_mode,
+  default_approval_mode,
 }: {
   user_id: string;
   course_id: string;
-  approval_mode: EnumCourseAgentApprovalMode;
+  default_approval_mode: EnumCourseAgentApprovalMode;
 }) {
   return await queryRow(
-    sql.upsert_course_agent_user_approval_mode,
-    { user_id, course_id, approval_mode },
+    sql.upsert_course_agent_user_default_approval_mode,
+    { user_id, course_id, default_approval_mode },
     CourseAgentUserSettingsSchema,
   );
 }

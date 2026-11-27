@@ -31,7 +31,7 @@ import {
 } from '../../ee/models/course-agent-usage-report.js';
 import {
   selectCourseAgentUserSettings,
-  updateCourseAgentUserApprovalMode,
+  updateCourseAgentUserDefaultApprovalMode,
 } from '../../ee/models/course-agent-user-settings.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
@@ -130,14 +130,18 @@ export const courseAgentRouter = t.router({
     }),
 
   // Record only conversations whose Cloudflare startup succeeded.
+  // The browser sends the mode it shows, so the new conversation starts in that mode.
   create: courseAgentProcedure
-    .input(z.object({ text: z.string().trim().min(1).max(20_000) }))
+    .input(
+      z.object({ text: z.string().trim().min(1).max(20_000), approvalMode: ApprovalModeSchema }),
+    )
     .mutation(async ({ ctx, input }) => {
       const agentConversationId = await run(async () => {
         if (config.devMode && !config.fileEditorUseGit) {
           return createLocalCourseAgentConversation(
             ctx.course.path,
             buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+            input.approvalMode,
           );
         } else {
           const repository = parseGithubRepository(ctx.course.repository ?? '');
@@ -160,17 +164,10 @@ export const courseAgentRouter = t.router({
           return createCourseAgentConversation({
             ...binding.data,
             pages: buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+            approvalMode: input.approvalMode,
           });
         }
       });
-      // A new conversation starts in the mode the user last chose in this course.
-      const settings = await selectCourseAgentUserSettings({
-        user_id: ctx.locals.authn_user.id,
-        course_id: ctx.course.id,
-      });
-      if (settings.approval_mode !== 'approval_required') {
-        await setCourseAgentApprovalMode(agentConversationId, settings.approval_mode);
-      }
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,
         user_id: ctx.locals.authn_user.id,
@@ -186,7 +183,7 @@ export const courseAgentRouter = t.router({
       user_id: ctx.locals.authn_user.id,
       course_id: ctx.course.id,
     });
-    return settings.approval_mode;
+    return settings.default_approval_mode;
   }),
 
   // The conversation keeps its own mode; PrairieLearn remembers the choice for new conversations.
@@ -203,14 +200,14 @@ export const courseAgentRouter = t.router({
         if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
         await setCourseAgentApprovalMode(conversation.agent_conversation_id, input.approvalMode);
       }
-      await updateCourseAgentUserApprovalMode({
+      await updateCourseAgentUserDefaultApprovalMode({
         user_id: ctx.locals.authn_user.id,
         course_id: ctx.course.id,
-        approval_mode: input.approvalMode,
+        default_approval_mode: input.approvalMode,
       });
     }),
 
-  markAutoApproveOffered: courseAgentProcedure
+  setAutoApproveOffered: courseAgentProcedure
     .input(z.object({ conversationId: IdSchema }))
     .mutation(async ({ ctx, input }) => {
       const conversation = await selectOptionalCourseAgentConversation({
@@ -223,9 +220,8 @@ export const courseAgentRouter = t.router({
       return StaffCourseAgentConversationSchema.parse(updated);
     }),
 
-  // The course agent acts with its user's permissions, and student data access is granted per
-  // course instance, so this is what the agent can and cannot reach there.
-  studentDataAccess: courseAgentProcedure
+  // Only for the auto-approve dialog's description of access; it grants and checks nothing.
+  getStudentDataAccess: courseAgentProcedure
     .output(
       z.array(z.strictObject({ name: z.string(), canView: z.boolean(), canEdit: z.boolean() })),
     )
@@ -270,6 +266,6 @@ export interface CourseAgentError {
   SetTitle: never;
   SetApprovalMode: never;
   DefaultApprovalMode: never;
-  MarkAutoApproveOffered: never;
-  StudentDataAccess: never;
+  SetAutoApproveOffered: never;
+  GetStudentDataAccess: never;
 }

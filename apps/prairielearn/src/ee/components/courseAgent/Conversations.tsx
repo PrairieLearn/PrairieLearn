@@ -174,7 +174,7 @@ function ConversationPicker({
     const text = draft.trim();
     if (!text || create.isPending) return;
     setInitialAttachments(drafts.attachments);
-    create.mutate({ text });
+    create.mutate({ text, approvalMode: newApprovalMode });
     setDraft('');
   };
 
@@ -232,7 +232,9 @@ function ConversationPicker({
           courseId={courseId}
           conversationId={selectedId}
           showConversationStats={showConversationStats}
-          initialApprovalMode={create.data?.id === selectedId ? newApprovalMode : undefined}
+          initialApprovalMode={
+            create.data?.id === selectedId ? create.variables?.approvalMode : undefined
+          }
           offeredAutoApprove={selectedConversation?.auto_approve_offered_at != null}
           chatCsrfToken={chatCsrfToken}
           initialMessage={
@@ -347,44 +349,50 @@ function Chat({
   // The conversation keeps its own mode. A choice made here shows at once, until the conversation
   // reports it back; after that the reported mode shows, including a change from another tab.
   const [chosenApprovalMode, setChosenApprovalMode] = useState(initialApprovalMode);
-  if (chosenApprovalMode && lifecycle?.approvalMode === chosenApprovalMode) {
-    setChosenApprovalMode(undefined);
-  }
-  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode ?? 'approval_required';
   const saveApprovalMode = useMutation({
     ...trpc.courseAgent.setApprovalMode.mutationOptions(),
     // Saves run one at a time, so the last choice is the one the conversation keeps.
     scope: { id: `course-agent-approval-mode:${conversationId}` },
-    // Show the mode the conversation still has rather than one that was not saved.
-    onError: () => {
-      setChosenApprovalMode(undefined);
+    onError: () =>
       void queryClient.invalidateQueries({
         queryKey: trpc.courseAgent.defaultApprovalMode.queryKey(),
-      });
-    },
+      }),
   });
+  // An earlier save still in flight can report its mode first, so wait for the last one.
+  if (
+    chosenApprovalMode &&
+    !saveApprovalMode.isPending &&
+    lifecycle?.approvalMode === chosenApprovalMode
+  ) {
+    setChosenApprovalMode(undefined);
+  }
+  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode ?? 'approval_required';
   const saveApprovalModeError = getAppError<CourseAgentError['SetApprovalMode']>(
     saveApprovalMode.error,
   );
   // Approving one review is when auto-approve is worth offering, once per conversation.
   const [showAutoApproveOffer, setShowAutoApproveOffer] = useState(false);
   const [confirmingAutoApprove, setConfirmingAutoApprove] = useState(false);
-  const markOffered = useMutation({
-    ...trpc.courseAgent.markAutoApproveOffered.mutationOptions(),
+  const setOffered = useMutation({
+    ...trpc.courseAgent.setAutoApproveOffered.mutationOptions(),
     onSuccess: (updated) =>
       queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) =>
         current?.map((conversation) => (conversation.id === updated.id ? updated : conversation)),
       ),
   });
   const offerAutoApprove = () => {
-    if (approvalMode === 'always_approve' || offeredAutoApprove || !markOffered.isIdle) return;
+    if (approvalMode === 'always_approve' || offeredAutoApprove || !setOffered.isIdle) return;
     setShowAutoApproveOffer(true);
-    markOffered.mutate({ conversationId });
+    setOffered.mutate({ conversationId });
   };
   const changeApprovalMode = (mode: ApprovalMode) => {
     setShowAutoApproveOffer(false);
     setChosenApprovalMode(mode);
-    saveApprovalMode.mutate({ conversationId, approvalMode: mode });
+    // Only the last save's failure reverts the menu, to the mode the conversation still has.
+    saveApprovalMode.mutate(
+      { conversationId, approvalMode: mode },
+      { onError: () => setChosenApprovalMode(undefined) },
+    );
     onApprovalModeChosen(mode);
   };
   const [connectionFailed, setConnectionFailed] = useState(false);
@@ -442,7 +450,6 @@ function Chat({
   const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
-  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   // A new conversation's first attachments start in the composer, where their uploads show progress.
   const drafts = useDraftAttachments(initialMessage?.attachments);
   const [sending, setSending] = useState(false);
@@ -512,11 +519,7 @@ function Chat({
       if (offline) setAwaitingStart(true);
       // A refused denial's error no longer applies once the message goes out normally.
       resetDeny();
-      void sendMessage({
-        text,
-        files,
-        metadata: { location: currentPageLocation() },
-      });
+      void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
       // An answer chosen on an input request leaves the composer's attachments alone.
       if (attachments.length > 0) {
         revokePreviews(attachments);
@@ -589,6 +592,7 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   // An input request is open until staff send their next message, which answers it however it is sent.
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   const latest = messages.at(-1);
   // The agent writes its closing message after requesting a review or input, so the request's card
   // waits for the turn to end rather than moving down as that text arrives. A review being
@@ -653,7 +657,7 @@ function Chat({
               answered={index < lastUserIndex}
               canAnswer={canSend}
               onApprovedOnce={offerAutoApprove}
-              onAlwaysApprove={changeApprovalMode}
+              onAlwaysApprove={() => changeApprovalMode('always_approve')}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={(text) => void send(text, [])}
             />
@@ -1034,7 +1038,7 @@ function Message({
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
   onApprovedOnce: () => void;
-  onAlwaysApprove: (mode: 'always_approve') => void;
+  onAlwaysApprove: () => void;
   /** A review requested by the running turn, whose card waits for the turn to end. */
   hiddenReviewId: string | null;
   /** The agent's turn that writes this message is running, so its input requests wait too. */
@@ -1079,7 +1083,7 @@ function Message({
           reviewId={card.reviewId}
           canResume={awaitingReviewId === card.reviewId}
           onApprovedOnce={onApprovedOnce}
-          onAlwaysApprove={() => onAlwaysApprove('always_approve')}
+          onAlwaysApprove={onAlwaysApprove}
         />
       )
     ) : (

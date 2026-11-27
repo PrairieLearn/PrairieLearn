@@ -28,7 +28,7 @@ import {
 } from '../../models/course-agent-review.js';
 
 import {
-  approveReviewAutomatically,
+  approveReviewForOwner,
   deliverUndeliveredReviewResults,
   getReview,
   getReviewJobResult,
@@ -232,7 +232,7 @@ it('approves automatically as the owner, only while they can use the course agen
         courseAgentServiceToken: ['token'],
         features: { 'course-agent': true },
       },
-      () => approveReviewAutomatically(conversation.agent_conversation_id, review.id),
+      () => approveReviewForOwner(conversation.agent_conversation_id, review.id),
     );
   await expect(approve()).rejects.toMatchObject({ status: 403 });
   expect(await storedReview()).toBeNull();

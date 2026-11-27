@@ -73,11 +73,20 @@ export const PageCatalogSchema = z
 
 export type PageCatalog = z.infer<typeof PageCatalogSchema>;
 
+/**
+ * Whether the instructor decides each `request_changes` review, or the conversation has PrairieLearn
+ * approve it as soon as the agent submits it.
+ */
+export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
+
+export type ApprovalMode = z.infer<typeof ApprovalModeSchema>;
+
 export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
   // Optional so the Worker can deploy before PrairieLearn starts sending it.
   pages: PageCatalogSchema.optional(),
+  approvalMode: ApprovalModeSchema.optional(),
 });
 
 // Leave room for base64 encoding within the Durable Object's 2 MB storage-entry limit.
@@ -332,14 +341,6 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 
 /** Metadata the browser attaches to a user message. */
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
-
-/**
- * Whether the instructor decides each `request_changes` review, or the conversation has PrairieLearn
- * approve it as soon as the agent submits it.
- */
-export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
-
-export type ApprovalMode = z.infer<typeof ApprovalModeSchema>;
 
 /**
  * A `data-review` part, which shows a review in chat history by ID. `autoApproved` records that

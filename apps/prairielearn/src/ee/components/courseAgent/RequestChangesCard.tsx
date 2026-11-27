@@ -82,8 +82,10 @@ export function RequestChangesCard({
   if (pending?.diff.files && pending.diff.files !== lastFiles) setLastFiles(pending.diff.files);
   const files = pending?.diff.files ?? lastFiles;
   const decide = (value: 'approved' | 'denied') => {
-    decision.mutate({ conversationId, reviewId, decision: value });
-    if (value === 'approved') onApprovedOnce();
+    decision.mutate(
+      { conversationId, reviewId, decision: value },
+      { onSuccess: value === 'approved' ? onApprovedOnce : undefined },
+    );
   };
   const approveAlways = () =>
     decision.mutate(
