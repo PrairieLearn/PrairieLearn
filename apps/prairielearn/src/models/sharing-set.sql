@@ -152,7 +152,7 @@ SELECT
 FROM
   courses AS sharing_course
   JOIN sharing_sets AS ss ON ss.course_id = sharing_course.id
-  JOIN courses AS consuming_course ON consuming_course.id <> sharing_course.id
+  JOIN courses AS consuming_course ON consuming_course.id != sharing_course.id
 WHERE
   consuming_course.sharing_token = $course_sharing_token
   AND ss.id = $sharing_set_id

@@ -58,7 +58,7 @@ INSERT INTO
 SELECT
   q.id,
   q.course_id,
-  $user_id,
+  $user_id AS authn_user_id,
   $user_id,
   'seed',
   '{}',
