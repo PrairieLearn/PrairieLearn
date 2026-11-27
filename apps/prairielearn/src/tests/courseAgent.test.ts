@@ -26,6 +26,7 @@ import {
   selectOptionalCourseAgentConversation,
 } from '../ee/models/course-agent-conversation.js';
 import { selectCourseAgentConversationUsage } from '../ee/models/course-agent-usage-report.js';
+import { updateCourseAgentUserDefaultApprovalMode } from '../ee/models/course-agent-user-settings.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -60,6 +61,7 @@ function createConversation(user: User) {
     user_id: user.id,
     agent_conversation_id: crypto.randomUUID(),
     title: 'Test conversation',
+    approval_mode: 'approval_required',
   });
 }
 
@@ -140,6 +142,11 @@ describe('Course agent access and conversation privacy', () => {
       user_id: owner.id,
       course_role: 'Owner',
       authn_user_id: '1',
+    });
+    await updateCourseAgentUserDefaultApprovalMode({
+      user_id: owner.id,
+      course_id: '1',
+      default_approval_mode: 'approval_required',
     });
   });
   afterAll(helperServer.after);
@@ -300,6 +307,59 @@ describe('Course agent access and conversation privacy', () => {
     ]);
   });
 
+  test("changes only the caller's own conversation's approval mode, and remembers it", async () => {
+    const own = await createConversation(owner);
+    const other = await createConversation(otherOwner);
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      await expect(
+        client.courseAgent.setApprovalMode.mutate({
+          conversationId: other.id,
+          approvalMode: 'always_approve',
+        }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      expect(
+        await client.courseAgent.setApprovalMode.mutate({
+          conversationId: own.id,
+          approvalMode: 'always_approve',
+        }),
+      ).toMatchObject({ id: own.id, approval_mode: 'always_approve' });
+      expect(await client.courseAgent.defaultApprovalMode.query()).toBe('always_approve');
+    });
+    const stored = await Promise.all(
+      [own, other].map((conversation) =>
+        selectOptionalCourseAgentConversation({
+          id: conversation.id,
+          course_id: '1',
+          user_id: conversation.user_id,
+        }),
+      ),
+    );
+    expect(stored.map((conversation) => conversation?.approval_mode)).toEqual([
+      'always_approve',
+      'approval_required',
+    ]);
+    expect(serviceRequests).toEqual([]);
+  });
+
+  test("answers a review report from the agent service with the conversation's mode", async () => {
+    const conversation = await createConversation(owner);
+    const reportReview = (token = 'test-token') =>
+      fetch(
+        `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/reviews`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reviewId: crypto.randomUUID() }),
+        },
+      );
+    expect((await reportReview('wrong')).status).toBe(401);
+    const response = await reportReview();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ autoApproved: false });
+    expect(serviceRequests).toEqual([]);
+  });
+
   test('downloads a sent file, and displays an image preview', async () => {
     const conversation = await createConversation(owner);
     const uploadUrl = `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/uploads/${crypto.randomUUID()}`;
@@ -329,7 +389,7 @@ describe('Course agent access and conversation privacy', () => {
     });
   });
 
-  test('binds creation to the authorized course repository and branch', async () => {
+  test('binds creation to the authorized course repository and branch, in the chosen mode', async () => {
     await updateCourseColumn({
       courseId: '1',
       columnName: 'repository',
@@ -344,7 +404,10 @@ describe('Course agent access and conversation privacy', () => {
     });
     const conversation = await withConfig({ fileEditorUseGit: true }, () =>
       withUser(owner, () =>
-        createClient(owner).courseAgent.create.mutate({ text: 'First message' }),
+        createClient(owner).courseAgent.create.mutate({
+          text: 'First message',
+          approvalMode: 'always_approve',
+        }),
       ),
     );
     expect(serviceRequests).toEqual([
@@ -363,7 +426,10 @@ describe('Course agent access and conversation privacy', () => {
       course_id: '1',
       user_id: owner.id,
     });
-    expect(stored!.agent_conversation_id).toBe(serviceConversationId);
+    expect(stored).toMatchObject({
+      agent_conversation_id: serviceConversationId,
+      approval_mode: 'always_approve',
+    });
   });
 
   test('rejects unbound creation before calling the service or recording a conversation', async () => {
@@ -378,7 +444,10 @@ describe('Course agent access and conversation privacy', () => {
         const client = createClient(owner);
         const before = await client.courseAgent.list.query();
         await expect(
-          client.courseAgent.create.mutate({ text: 'First message' }),
+          client.courseAgent.create.mutate({
+            text: 'First message',
+            approvalMode: 'approval_required',
+          }),
         ).rejects.toMatchObject({
           data: { code: 'BAD_REQUEST' },
         });
@@ -471,7 +540,10 @@ describe('Course agent access and conversation privacy', () => {
       });
       await withConfig({ devMode: true, fileEditorUseGit: false }, () =>
         withUser(owner, () =>
-          createClient(owner).courseAgent.create.mutate({ text: 'Read my local changes' }),
+          createClient(owner).courseAgent.create.mutate({
+            text: 'Read my local changes',
+            approvalMode: 'approval_required',
+          }),
         ),
       );
       expect(serviceRequests).toHaveLength(1);

@@ -1,5 +1,7 @@
 columns
     agent_conversation_id: uuid not null
+    approval_mode: enum_course_agent_approval_mode not null default 'approval_required'::enum_course_agent_approval_mode
+    auto_approve_offered_at: timestamp with time zone
     course_id: bigint not null
     created_at: timestamp with time zone not null default now()
     id: bigint not null default nextval('course_agent_conversations_id_seq'::regclass)

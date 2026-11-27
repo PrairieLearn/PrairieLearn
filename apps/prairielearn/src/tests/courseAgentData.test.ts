@@ -62,6 +62,7 @@ async function conversationHeaders(user_id: string) {
     user_id,
     agent_conversation_id: crypto.randomUUID(),
     title: 'Test',
+    approval_mode: 'approval_required',
   });
   return {
     Authorization: `Bearer ${SERVICE_TOKEN}`,

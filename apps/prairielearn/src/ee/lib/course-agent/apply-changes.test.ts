@@ -11,12 +11,19 @@ import type { Course, CourseAgentConversation, User } from '../../../lib/db-type
 import { FileDeleteEditor, FileUploadEditor, type MultiEditor } from '../../../lib/editors.js';
 import { createServerJob, getJobSequence } from '../../../lib/server-jobs.js';
 import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
+import {
+  insertCoursePermissionsByUserUid,
+  updateCoursePermissionsRole,
+} from '../../../models/course-permissions.js';
 import { selectCourseById, updateCourseColumn } from '../../../models/course.js';
 import * as helperCourse from '../../../tests/helperCourse.js';
 import * as helperDb from '../../../tests/helperDb.js';
 import { getOrCreateUser } from '../../../tests/utils/auth.js';
 import { withConfig } from '../../../tests/utils/config.js';
-import { insertCourseAgentConversation } from '../../models/course-agent-conversation.js';
+import {
+  insertCourseAgentConversation,
+  updateCourseAgentConversationApprovalMode,
+} from '../../models/course-agent-conversation.js';
 import {
   insertCourseAgentReview,
   selectOptionalCourseAgentReview,
@@ -27,6 +34,7 @@ import {
   deliverUndeliveredReviewResults,
   getReview,
   getReviewJobResult,
+  handleSubmittedReview,
   postReviewDecision,
   resumeConversation,
 } from './apply-changes.js';
@@ -93,6 +101,7 @@ beforeAll(async () => {
     user_id: user.id,
     agent_conversation_id: crypto.randomUUID(),
     title: 'Update question',
+    approval_mode: 'approval_required',
   });
   const serverJob = await createServerJob({
     type: 'sync',
@@ -209,6 +218,54 @@ it.each(modes)('saves an approved $type snapshot and delivers its result', async
       result,
     });
   });
+});
+
+it('approves a submitted review as the owner only on auto-approve, while they can use the agent', async () => {
+  await insertCoursePermissionsByUserUid({
+    course_id: '1',
+    uid: user.uid,
+    course_role: 'Owner',
+    authn_user_id: '1',
+  });
+  const report = () =>
+    withConfig(
+      {
+        isEnterprise: true,
+        fileEditorUseGit: true,
+        courseAgentServiceUrl: 'http://agent.test',
+        courseAgentServiceToken: ['token'],
+        features: { 'course-agent': true },
+      },
+      () => handleSubmittedReview(conversation.agent_conversation_id, review.id),
+    );
+  await expect(report()).resolves.toEqual({ autoApproved: false });
+
+  conversation = await updateCourseAgentConversationApprovalMode({
+    conversation,
+    approval_mode: 'always_approve',
+  });
+  await updateCoursePermissionsRole({
+    course_id: '1',
+    user_id: user.id,
+    course_role: 'Editor',
+    authn_user_id: '1',
+  });
+  await expect(report()).resolves.toEqual({ autoApproved: false });
+  expect(await storedReview()).toBeNull();
+
+  await updateCoursePermissionsRole({
+    course_id: '1',
+    user_id: user.id,
+    course_role: 'Owner',
+    authn_user_id: '1',
+  });
+  await expect(report()).resolves.toEqual({ autoApproved: true });
+  await vi.waitFor(async () => expect((await storedReview())?.result_delivered_at).toBeTruthy());
+  expect(FileUploadEditor).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      locals: expect.objectContaining({ user: expect.objectContaining({ id: user.id }) }),
+    }),
+  );
 });
 
 it('denies an unreadable review without starting a save job', async () => {

@@ -17,7 +17,9 @@ import {
   type RequestChangesResult,
   RequestChangesResultSchema,
   type Review,
+  type ReviewPart,
   type ReviewSnapshot,
+  ReviewSubmittedResponseSchema,
   type Usage,
   UsageDecisionSchema,
   type UsageReport,
@@ -99,6 +101,8 @@ const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
 // Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
 // within one decision.
 const MAX_PROVIDER_REQUESTS = 4;
+// Auto-approving a review fetches its snapshot and starts the save before PrairieLearn answers.
+const REVIEW_REPORT_TIMEOUT_MS = 30_000;
 
 const OPENAI_API = 'https://api.openai.com';
 
@@ -648,21 +652,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     let response: Response;
     try {
-      const url = new URL(
-        `pl/api/course-agent/conversations/${this.name}/usage`,
-        this.env.PL_SERVICE_URL.endsWith('/')
-          ? this.env.PL_SERVICE_URL
-          : `${this.env.PL_SERVICE_URL}/`,
-      );
-      response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(report),
-        signal: AbortSignal.timeout(10_000),
-      });
+      response = await this.postPlWebserver(`conversations/${this.name}/usage`, report);
     } catch (error) {
       logEvent('usage_report_unavailable', { conversationId: this.name, error: String(error) });
       return false;
@@ -695,6 +685,48 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
     this.allowedAt = decision.data.status === 'allowed' ? Date.now() : null;
     return true;
+  }
+
+  /**
+   * POSTs back to the PrairieLearn web server's course agent service routes, relative to its
+   * configured URL so a path prefix is kept.
+   */
+  private postPlWebserver(path: string, body: unknown, timeoutMs = 10_000) {
+    const base = this.env.PL_SERVICE_URL.endsWith('/')
+      ? this.env.PL_SERVICE_URL
+      : `${this.env.PL_SERVICE_URL}/`;
+    return fetch(new URL(`pl/api/course-agent/${path}`, base), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  }
+
+  /**
+   * Reports a new review to PrairieLearn, which approves it for the instructor if they chose
+   * auto-approve, and returns whether it did. Otherwise the review waits for the instructor.
+   */
+  private async reportReview(reviewId: string) {
+    try {
+      const response = await this.postPlWebserver(
+        `conversations/${this.name}/reviews`,
+        { reviewId },
+        REVIEW_REPORT_TIMEOUT_MS,
+      );
+      if (!response.ok) throw new Error(`PrairieLearn answered ${response.status}`);
+      return ReviewSubmittedResponseSchema.parse(await response.json()).autoApproved;
+    } catch (error) {
+      logEvent('review_report_failed', {
+        conversationId: this.name,
+        reviewId,
+        error: String(error),
+      });
+      return false;
+    }
   }
 
   /**
@@ -1342,7 +1374,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       return { success: false, text: 'Another submission is already waiting for the instructor.' };
     }
     // A turn that stopped or failed during capture can no longer show the review, so it must not
-    // record one. Recording and showing it below happen without an intervening await.
+    // record one.
     if (!turn || this.active !== turn || turn.stop || !this.native?.streaming) {
       return { success: false, text: 'The turn ended before the changes were submitted.' };
     }
@@ -1365,8 +1397,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         waitsForResume: false,
       },
     });
-    // Chat history shows the review by ID; its contents and outcome stay out of history.
-    this.native?.emit({ type: 'data-review', id, data: { reviewId: id } });
+    const autoApproved = await this.reportReview(id);
+    // Chat history shows the review by ID; its contents and outcome stay out of history. If the
+    // turn ended meanwhile, the browser shows the conversation's pending review without this part.
+    this.native?.emit({
+      type: 'data-review',
+      id,
+      data: { reviewId: id, ...(autoApproved ? { autoApproved } : {}) } satisfies ReviewPart,
+    });
     return {
       success: true,
       text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.',

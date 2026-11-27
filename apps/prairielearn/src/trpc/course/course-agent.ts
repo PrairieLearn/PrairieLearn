@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -21,15 +22,23 @@ import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
+  updateCourseAgentConversationApprovalMode,
+  updateCourseAgentConversationAutoApproveOffered,
   updateCourseAgentConversationTitle,
 } from '../../ee/models/course-agent-conversation.js';
 import {
   CourseAgentConversationUsageSchema,
   selectCourseAgentConversationUsage,
 } from '../../ee/models/course-agent-usage-report.js';
+import {
+  selectCourseAgentUserSettings,
+  updateCourseAgentUserDefaultApprovalMode,
+} from '../../ee/models/course-agent-user-settings.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import { EnumCourseAgentApprovalModeSchema } from '../../lib/db-types.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
 
@@ -123,8 +132,14 @@ export const courseAgentRouter = t.router({
     }),
 
   // Record only conversations whose Cloudflare startup succeeded.
+  // The browser sends the mode it shows, so the new conversation starts in that mode.
   create: courseAgentProcedure
-    .input(z.object({ text: z.string().trim().min(1).max(20_000) }))
+    .input(
+      z.object({
+        text: z.string().trim().min(1).max(20_000),
+        approvalMode: EnumCourseAgentApprovalModeSchema,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const agentConversationId = await run(async () => {
         if (config.devMode && !config.fileEditorUseGit) {
@@ -161,8 +176,82 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
         agent_conversation_id: agentConversationId,
         title: formatCourseAgentConversationTitle(input.text),
+        approval_mode: input.approvalMode,
       });
       return StaffCourseAgentConversationSchema.parse(conversation);
+    }),
+
+  /** The mode a new conversation starts in: the one the user last chose in this course. */
+  defaultApprovalMode: courseAgentProcedure
+    .output(EnumCourseAgentApprovalModeSchema)
+    .query(async ({ ctx }) => {
+      const settings = await selectCourseAgentUserSettings({
+        user_id: ctx.locals.authn_user.id,
+        course_id: ctx.course.id,
+      });
+      return settings.default_approval_mode;
+    }),
+
+  // Sets the conversation's mode, if one is given, and remembers the choice for new conversations.
+  setApprovalMode: courseAgentProcedure
+    .input(
+      z.object({
+        conversationId: IdSchema.optional(),
+        approvalMode: EnumCourseAgentApprovalModeSchema,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return await runInTransactionAsync(async () => {
+        const conversation = await run(async () => {
+          if (!input.conversationId) return null;
+          const conversation = await selectOptionalCourseAgentConversation({
+            id: input.conversationId,
+            course_id: ctx.course.id,
+            user_id: ctx.locals.authn_user.id,
+          });
+          if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+          return await updateCourseAgentConversationApprovalMode({
+            conversation,
+            approval_mode: input.approvalMode,
+          });
+        });
+        await updateCourseAgentUserDefaultApprovalMode({
+          user_id: ctx.locals.authn_user.id,
+          course_id: ctx.course.id,
+          default_approval_mode: input.approvalMode,
+        });
+        return conversation && StaffCourseAgentConversationSchema.parse(conversation);
+      });
+    }),
+
+  setAutoApproveOffered: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      const updated = await updateCourseAgentConversationAutoApproveOffered(conversation);
+      return StaffCourseAgentConversationSchema.parse(updated);
+    }),
+
+  // Only for the auto-approve dialog's description of access; it grants and checks nothing.
+  getStudentDataAccess: courseAgentProcedure
+    .output(
+      z.array(z.strictObject({ name: z.string(), canView: z.boolean(), canEdit: z.boolean() })),
+    )
+    .query(async ({ ctx }) => {
+      const courseInstances = await selectCourseInstancesWithStaffAccess({
+        course: ctx.course,
+        authzData: ctx.authz_data,
+      });
+      return courseInstances.map((courseInstance) => ({
+        name: courseInstance.short_name,
+        canView: courseInstance.has_course_instance_permission_view,
+        canEdit: courseInstance.has_course_instance_permission_edit,
+      }));
     }),
 
   // The agent service generates a title from the first message and publishes it to the
@@ -192,4 +281,8 @@ export interface CourseAgentError {
   GetReview: never;
   PostReviewDecision: never;
   SetTitle: never;
+  SetApprovalMode: never;
+  DefaultApprovalMode: never;
+  SetAutoApproveOffered: never;
+  GetStudentDataAccess: never;
 }

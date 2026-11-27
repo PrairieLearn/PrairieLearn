@@ -9,6 +9,7 @@ import {
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
+import { CodexAppServerClient } from '../sandbox/codex.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import { Conversation, CourseContextSchema, type MeteringState } from './conversation.js';
@@ -143,6 +144,14 @@ function fixture(saved = new Map<string, unknown>()) {
     checkpoint: vi.fn(async () => ({ id: 'checkpoint' })),
     destroy: vi.fn(),
     authorizeModel: vi.fn(async (_config: { executionId: string }) => {}),
+    captureReview: vi.fn(async () => ({
+      type: 'github',
+      repository: 'PrairieLearn/course',
+      branch: 'master',
+      baseCommit: 'a'.repeat(40),
+      additions: [],
+      deletions: [{ path: 'question.html' }],
+    })),
   };
   const env = {
     OPENAI_MODEL: 'test',
@@ -175,16 +184,19 @@ function modelResponse(inputTokens = 10_000, outputTokens = 2_000) {
   return Response.json({ usage: { input_tokens: inputTokens, output_tokens: outputTokens } });
 }
 
-/** Route PrairieLearn usage reports and provider requests to separate handlers. */
+/** Route PrairieLearn usage and review reports, and provider requests, to handlers. */
 function stubFetch(handlers: {
   usage: () => Promise<Response>;
+  review?: () => Promise<Response>;
   model?: (options: RequestInit) => Promise<Response>;
 }) {
-  const fetch = vi.fn(async (url: string | URL, options: RequestInit) =>
-    String(url).endsWith('/usage')
-      ? await handlers.usage()
-      : await (handlers.model ?? (async () => modelResponse()))(options),
-  );
+  const fetch = vi.fn(async (url: string | URL, options: RequestInit) => {
+    if (String(url).endsWith('/usage')) return await handlers.usage();
+    if (String(url).endsWith('/reviews')) {
+      return await (handlers.review ?? (async () => Response.json({ autoApproved: false })))();
+    }
+    return await (handlers.model ?? (async () => modelResponse()))(options);
+  });
   vi.stubGlobal('fetch', fetch);
   return {
     fetch,
@@ -466,6 +478,49 @@ it('refuses messages while limited, and Resume after the reset sends them', asyn
   expect(generateTitle).toHaveBeenCalledWith(
     expect.objectContaining({ message: 'Edit this question' }),
   );
+});
+
+it('reports every review to PrairieLearn and marks it auto-approved only when PrairieLearn says so', async () => {
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const submitReview = async (review: () => Promise<Response>) => {
+    emit.mockClear();
+    const { fetch } = stubFetch({ usage: async () => decision(), review });
+    const { conversation } = await runningConversation();
+    const reply = await vi.mocked(SandboxTurn).mock.calls.at(-1)![2].onReview!({
+      threadId: 'native-thread',
+      turnId: 'native-turn',
+      callId: 'call',
+      namespace: null,
+      tool: 'request_changes',
+      arguments: {},
+    });
+    const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-review');
+    const reports = fetch.mock.calls.filter(([url]) => String(url).endsWith('/reviews'));
+    return { reply, part, reports, reviewId: conversation.state.reviewId! };
+  };
+
+  const approved = await submitReview(async () => Response.json({ autoApproved: true }));
+  expect(approved.reports).toEqual([
+    [
+      new URL('https://pl.test/pl/api/course-agent/conversations/test-conversation/reviews'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ reviewId: approved.reviewId }),
+      }),
+    ],
+  ]);
+  expect(approved.part).toHaveProperty('data', { reviewId: approved.reviewId, autoApproved: true });
+
+  const asked = await submitReview(async () => Response.json({ autoApproved: false }));
+  expect(asked.reports).toHaveLength(1);
+  expect(asked.part).toHaveProperty('data', { reviewId: asked.reviewId });
+  expect(asked.reply).toEqual(approved.reply);
+
+  // A failed report leaves the review waiting for the instructor.
+  const failed = await submitReview(async () => new Response(null, { status: 500 }));
+  expect(failed.part).toHaveProperty('data', { reviewId: failed.reviewId });
+  expect(failed.reply).toEqual(approved.reply);
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {

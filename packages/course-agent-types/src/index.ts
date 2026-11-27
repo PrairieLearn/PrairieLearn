@@ -333,6 +333,27 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
 
 /**
+ * A `data-review` part, which shows a review in chat history by ID. `autoApproved` records that
+ * PrairieLearn approved it when it was submitted, so no one is asked to review it.
+ */
+export const ReviewPartSchema = z.object({
+  reviewId: z.string(),
+  autoApproved: z.literal(true).optional(),
+});
+
+export type ReviewPart = z.infer<typeof ReviewPartSchema>;
+
+/** The Worker reports each review the agent submits to PrairieLearn. */
+export const ReviewSubmittedReportSchema = z.strictObject({ reviewId: z.uuid() });
+
+export type ReviewSubmittedReport = z.infer<typeof ReviewSubmittedReportSchema>;
+
+/** Whether PrairieLearn approved the review for its owner because the conversation auto-approves. */
+export const ReviewSubmittedResponseSchema = z.strictObject({ autoApproved: z.boolean() });
+
+export type ReviewSubmittedResponse = z.infer<typeof ReviewSubmittedResponseSchema>;
+
+/**
  * Input the agent requested from staff with Codex's `request_user_input_async`, in a
  * `data-input-request` part keyed by the Codex item ID. The tool returns at once; staff's next
  * message is the answer, so the part holds no answer and is never rewritten.
