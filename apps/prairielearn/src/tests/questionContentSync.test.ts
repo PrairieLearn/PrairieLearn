@@ -51,6 +51,7 @@ import { selectTopicsByCourseId } from '../models/topics.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 import { assessmentDependenciesRequireFullSync } from '../sync/assessmentDependencies.js';
 import * as courseDB from '../sync/course-db.js';
+import * as questionSync from '../sync/questionSync.js';
 
 import {
   type CourseRepoFixture,
@@ -329,9 +330,22 @@ describe('content-only question save', () => {
     const targeted = vi.spyOn(chunks, 'prepareQuestionContentChunks');
     const full = vi.spyOn(chunks, 'prepareChunksForCourse');
     const load = vi.spyOn(courseDB, 'loadFullCourse');
+    const plan = vi.spyOn(questionSync, 'getQuestionSyncPlan');
     const metadataBefore = await util.dumpTableWithSchema('questions', QuestionSchema);
     const operation = await save();
-    await operation.run();
+    let plansWhenPushed: number | undefined;
+    await operation.run({
+      beforeWrite: async (job) => {
+        const exec = job.exec.bind(job);
+        vi.spyOn(job, 'exec').mockImplementation(async (file, args, options) => {
+          const result = await exec(file, args, options);
+          if (file === 'git' && args[0] === 'push') plansWhenPushed = plan.mock.calls.length;
+          return result;
+        });
+      },
+    });
+    assert.equal(plansWhenPushed, 0);
+    expect(plan).toHaveBeenCalledTimes(1);
     assert.equal(await fs.readFile(filePath, 'utf8'), '<p>Updated</p>');
     expect(load).not.toHaveBeenCalled();
     expect(targeted).toHaveBeenCalledExactlyOnceWith({
@@ -1035,6 +1049,91 @@ describe('content-only question save', () => {
     assert.equal(
       (await selectCourseById(courseId)).commit_hash,
       await getCourseCommitHash(courseDir),
+    );
+  });
+
+  it('does not sync a local candidate when neither push nor fetch confirms it', async () => {
+    const before = await selectCourseById(courseId);
+    const operation = await save();
+    await expect(
+      operation.run({
+        beforeWrite: async (job) => {
+          const exec = job.exec.bind(job);
+          vi.spyOn(job, 'exec').mockImplementation(async (file, args, options) => {
+            if (file === 'git' && args[0] === 'push') throw new Error('Push timed out');
+            if (file === 'git' && args[0] === 'fetch') throw new Error('Fetch timed out');
+            return await exec(file, args, options);
+          });
+        },
+      }),
+    ).rejects.toThrow('Fetch timed out');
+    assert.equal(classifyEditOutcome((await operation.result()).data), 'save_failed');
+    assert.equal(await getCourseCommitHash(courseDir), before.commit_hash);
+    assert.equal((await selectCourseById(courseId)).commit_hash, before.commit_hash);
+    assert.equal(await fs.readFile(filePath, 'utf8'), originContents);
+  });
+
+  it('syncs a commit confirmed by fetch after the push response was lost', async () => {
+    const operation = await save();
+    let pushes = 0;
+    await operation.run({
+      beforeWrite: async (job) => {
+        const exec = job.exec.bind(job);
+        vi.spyOn(job, 'exec').mockImplementation(async (file, args, options) => {
+          const result = await exec(file, args, options);
+          if (file === 'git' && args[0] === 'push') {
+            pushes++;
+            throw new Error('Push timed out after reaching the remote');
+          }
+          return result;
+        });
+      },
+    });
+    assert.equal(pushes, 1);
+    assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
+    assert.equal(
+      (await selectCourseById(courseId)).commit_hash,
+      await getCourseCommitHash(fixture.courseOriginDir),
+    );
+  });
+
+  it('checks pending sharing changes before pushing a reapplied content edit', async () => {
+    await withConfig(
+      { checkSharingOnSync: true, features: { 'question-sharing': true } },
+      async () => {
+        const courseInfoPath = path.join(courseDir, 'infoCourse.json');
+        const courseInfo = await fs.readJson(courseInfoPath);
+        await (
+          await save(
+            courseInfoPath,
+            JSON.stringify({
+              ...courseInfo,
+              sharingSets: [{ name: 'shared', description: 'Shared questions' }],
+            }),
+          )
+        ).run();
+        const infoPath = path.join(path.dirname(filePath), 'info.json');
+        const info = await fs.readJson(infoPath);
+        await (await save(infoPath, JSON.stringify({ ...info, sharingSets: ['shared'] }))).run();
+        const before = await selectCourseById(courseId);
+
+        await execa('git', ['pull', '--ff-only'], { cwd: fixture.courseDevDir });
+        const remoteInfo = path.join(fixture.courseDevDir, 'infoCourse.json');
+        await fs.writeJson(remoteInfo, { ...courseInfo, sharingSets: [] });
+        await execa('git', ['add', remoteInfo], { cwd: fixture.courseDevDir });
+        await execa('git', ['commit', '-m', 'Remove a sharing set still in use'], {
+          cwd: fixture.courseDevDir,
+        });
+        await execa('git', ['push'], { cwd: fixture.courseDevDir });
+        const remoteRevision = await getCourseCommitHash(fixture.courseDevDir);
+
+        const operation = await save();
+        await expect(operation.run()).rejects.toThrow('Invalid sharing operation');
+        assert.equal(classifyEditOutcome((await operation.result()).data), 'save_failed');
+        assert.equal(await getCourseCommitHash(fixture.courseOriginDir), remoteRevision);
+        assert.equal((await selectCourseById(courseId)).commit_hash, before.commit_hash);
+        assert.equal(await fs.readFile(filePath, 'utf8'), originContents);
+      },
     );
   });
 

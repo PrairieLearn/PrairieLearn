@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import crypto from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
@@ -26,7 +27,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import { type QuestionRenameScope, getQuestionRenameScope } from '../sync/questionRenameSync.js';
-import { getQuestionSyncPlan } from '../sync/questionSync.js';
+import { changesOnlyQuestionContent } from '../sync/sharing.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -269,25 +270,6 @@ export abstract class Editor {
           return;
         }
 
-        // If we are using git (e.g., if we are running in production), then we:
-        //
-        // - Clean and reset the repository
-        // - Write changes to disk
-        // - Commit changes to the repository
-        // - Push to remote
-        //   - If the push fails, pull from remote, clean, reset, write, commit, and push
-        // - Clean and reset the repository
-        // - Sync changes from disk
-        //
-        // Note that we only fetch from the remote if the push fails. This avoids an
-        // expensive `fetch` operation in the majority of cases where the local course
-        // repository is up to date with the remote. If the push fails, we assume that
-        // the remote has changes that we need to pull in before we can push.
-        //
-        // If anything goes wrong in the write or push, we make sure to clean/reset
-        // (removing changes made by this edit) and sync (because changes were made
-        // by the pull) before we error and exit.
-
         // Safety check: make sure the course has a defined branch and repository.
         if (!this.course.branch || !this.course.repository) {
           job.fail('Git repository or branch are not set for this course. Exiting...');
@@ -300,7 +282,10 @@ export abstract class Editor {
           env: gitEnv,
         });
 
-        await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+        const trackingBranch = `origin/${this.course.branch}`;
+        const remoteBranch = `refs/heads/${this.course.branch}`;
+        await cleanAndResetRepository(this.course, trackingBranch, gitEnv, job);
+        const initialRevision = await getCourseCommitHash(this.course.path);
         const editedPaths = new Set<string>();
         let renameScope: QuestionRenameScope | null = null;
         let newQuestion: WriteResult['newQuestion'];
@@ -345,142 +330,124 @@ export abstract class Editor {
           );
         };
 
-        let preparedCourseData: PreparedCourseData | undefined;
-        let candidateHash: string;
-        const prepareCourseData = async (): Promise<PreparedCourseData | undefined> => {
-          const qids = await getQuestionSyncPlan({
-            course: this.course,
-            oldHash: startGitHash,
-            newHash: await getCourseCommitHash(this.course.path),
-            editedPaths: [...editedPaths],
-            renameScope,
-            newQuestion,
-          });
-          if (qids !== null) return undefined;
+        const prepareCandidate = async (
+          revision: string,
+        ): Promise<PreparedCourseData | undefined> => {
+          if (!config.checkSharingOnSync) return;
           const configuration = await getSyncConfiguration(this.course);
+          if (!configuration.features['question-sharing']) return;
+
+          // Compare with the processed revision so pending remote edits are covered too.
+          if (
+            startGitHash &&
+            isDeepStrictEqual(this.course.sync_configuration, configuration) &&
+            (await changesOnlyQuestionContent(this.course.path, startGitHash, revision))
+          ) {
+            return;
+          }
+
           return await features.runWithOverrides(configuration.features, async () => {
             const data = await courseDB.loadFullCourse(this.course.id, this.course.path);
             if (!(await syncFromDisk.checkSharingConfigurationValid(this.course, data, job))) {
-              if (startGitHash) {
-                await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
-              }
-              throw new Error('Invalid sharing operation, reverted to last known good state.');
+              throw new Error('Invalid sharing operation. Changes were not pushed.');
             }
-            return { data, configuration };
+            return { data, configuration, revision };
           });
         };
-        try {
-          await writeAndCommitChanges();
 
-          await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
-          // Before pushing the changes, ensure that we don't allow someone
-          // to put their course into an invalid state by deleting a shared
-          // question or otherwise breaking the invariants we rely upon for
-          // question sharing.
-          candidateHash = await getCourseCommitHash(this.course.path);
-          const possibleCourseData = await prepareCourseData();
+        const push = async () => {
+          job.info('Push changes to remote git repository');
+          await job.exec('git', ['push', 'origin', `HEAD:${remoteBranch}`], {
+            cwd: this.course.path,
+            env: gitEnv,
+            cancelSignal: AbortSignal.timeout(30_000),
+          });
+        };
 
-          try {
-            job.info('Push changes to remote git repository');
-            await job.exec('git', ['push'], {
-              cwd: this.course.path,
-              env: gitEnv,
-              // During GitHub incidents, we've observed GitHub taking multiple
-              // minutes to handle a `git push`. To avoid the job sitting for
-              // an unreasonable amount of time and causing a 504 when we fail
-              // to respond to the request in time, we'll use a relatively short
-              // timeout to fail the push if it takes too long.
-              cancelSignal: AbortSignal.timeout(30_000),
-            });
-            job.data.saveSucceeded = true;
-
-            // If we were able to push the change to GitHub, we can safely
-            // use the course data that we already loaded from disk because
-            // we can be sure that there weren't any further changes to the
-            // files on disk. This helps keep syncing fast by avoiding loading
-            // all course JSON files twice.
-            // Publication also checks that the sync configuration still matches.
-            //
-            // If pushing fails, we'll need to incorporate the latest changes
-            // from the remote repository, so we'll have to load the latest
-            // course data from disk after we do so.
-            preparedCourseData = possibleCourseData;
-          } catch {
-            job.info('Failed to push changes to remote git repository');
-            job.info('Pulling changes from remote git repository and trying again');
-
-            job.info('Fetch from remote git repository');
-            await job.exec('git', ['fetch'], {
-              cwd: this.course.path,
-              env: gitEnv,
-              // As with `git push` above, we'll use a timeout here to avoid
-              // long delays during GitHub incidents resulting in 504 errors.
-              cancelSignal: AbortSignal.timeout(30_000),
-            });
-
-            // This will both discard the commit we made locally and also pull
-            // in any new changes from the remote.
-            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
-
-            const endHash = await getCourseCommitHash(this.course.path);
-            const originalPushLanded =
-              (
-                await execa('git', ['merge-base', '--is-ancestor', candidateHash, endHash], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                  reject: false,
-                })
-              ).exitCode === 0;
-            if (!originalPushLanded) await writeAndCommitChanges();
-            const retryCourseData = await prepareCourseData();
-
-            try {
-              job.info('Push changes to remote git repository');
-              await job.exec('git', ['push'], {
-                cwd: this.course.path,
-                env: gitEnv,
-                // See above `git push` attempt for an explanation of this timeout.
-                cancelSignal: AbortSignal.timeout(30_000),
-              });
-              job.data.saveSucceeded = true;
-              preparedCourseData = retryCourseData;
-            } finally {
-              // Clean up to remove any empty directories that might have been
-              // left behind by operations like renames. This will also ensure
-              // that we get back to a good state if the changes couldn't be
-              // pushed to the remote.
-              await cleanAndResetRepository(
-                this.course,
-                `origin/${this.course.branch}`,
-                gitEnv,
-                job,
-              );
-            }
-          }
-        } finally {
-          // Whether or not we error, we'll sync the course.
-          //
-          // If pushing succeeded, then we will be syncing the changes made
-          // by this edit.
-          //
-          // If pushing (or anything before pushing) failed, then we will be
-          // syncing the changes we pulled from the remote git repository.
+        let confirmedRevision: string | undefined;
+        let preparedCourseData: PreparedCourseData | undefined;
+        const syncConfirmedRevision = async (revision: string) => {
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
           checkSyncResult(
             await syncCourseFromDisk({
               course: this.course,
               startGitHash,
+              expectedRevision: revision,
               job,
               preparedCourseData,
-              editedPaths: [...editedPaths],
-              renameScope,
-              newQuestion,
+              editedPaths: job.data.saveSucceeded ? [...editedPaths] : [],
+              renameScope: job.data.saveSucceeded ? renameScope : undefined,
+              newQuestion: job.data.saveSucceeded ? newQuestion : undefined,
             }),
             job,
           );
           job.data.syncSucceeded = true;
+        };
+        try {
+          await writeAndCommitChanges();
+          await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
+          const candidateRevision = await getCourseCommitHash(this.course.path);
+          preparedCourseData = await prepareCandidate(candidateRevision);
+
+          // Push optimistically. Fetch only when Git cannot confirm the first push.
+          try {
+            await push();
+            confirmedRevision = candidateRevision;
+          } catch {
+            job.info('Push could not be confirmed. Fetching the remote revision');
+            await job.exec('git', ['fetch', 'origin', remoteBranch], {
+              cwd: this.course.path,
+              env: gitEnv,
+              cancelSignal: AbortSignal.timeout(30_000),
+            });
+            await cleanAndResetRepository(this.course, 'FETCH_HEAD', gitEnv, job);
+            confirmedRevision = await getCourseCommitHash(this.course.path);
+
+            // A push can reach the remote even when the client reports a timeout.
+            const ancestry = await execa(
+              'git',
+              ['merge-base', '--is-ancestor', candidateRevision, confirmedRevision],
+              {
+                cwd: this.course.path,
+                env: gitEnv,
+                reject: false,
+              },
+            );
+            if (ancestry.exitCode !== 0 && ancestry.exitCode !== 1) {
+              throw new Error('Could not verify whether the edit reached the remote.', {
+                cause: ancestry,
+              });
+            }
+            if (ancestry.exitCode === 1) {
+              editedPaths.clear();
+              await writeAndCommitChanges();
+              await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
+              const retryRevision = await getCourseCommitHash(this.course.path);
+              preparedCourseData = await prepareCandidate(retryRevision);
+              await push();
+              confirmedRevision = retryRevision;
+            }
+          }
+          job.data.saveSucceeded = true;
+        } catch (saveError) {
+          try {
+            await cleanAndResetRepository(
+              this.course,
+              confirmedRevision ?? initialRevision,
+              gitEnv,
+              job,
+            );
+            if (confirmedRevision) await syncConfirmedRevision(confirmedRevision);
+          } catch (recoveryError) {
+            // Preserve the original save failure if recovery fails too.
+            job.error(
+              recoveryError instanceof Error ? recoveryError.message : String(recoveryError),
+            );
+          }
+          throw saveError;
         }
+        await syncConfirmedRevision(confirmedRevision);
       });
     });
   }

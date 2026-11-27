@@ -74,12 +74,14 @@ export async function getCourseOwners(course_id: string): Promise<User[]> {
 export interface PreparedCourseData {
   data: courseDB.CourseData;
   configuration: Awaited<ReturnType<typeof getSyncConfiguration>>;
+  revision: string;
 }
 
 /** Requires the course lock. Uploads precede the transaction that activates their references. */
 export async function syncCourseFromDisk({
   course,
   startGitHash,
+  expectedRevision,
   job,
   preparedCourseData,
   editedPaths = [],
@@ -90,6 +92,7 @@ export async function syncCourseFromDisk({
 }: {
   course: Course;
   startGitHash: string | null;
+  expectedRevision?: string;
   job: ServerJob;
   preparedCourseData?: PreparedCourseData;
   editedPaths?: string[];
@@ -101,6 +104,9 @@ export async function syncCourseFromDisk({
   const configuration = await getSyncConfiguration(course);
   return await features.runWithOverrides(configuration.features, async () => {
     const endGitHash = await getCourseCommitHash(course.path);
+    if (expectedRevision !== undefined && endGitHash !== expectedRevision) {
+      throw new Error('The course checkout does not match the confirmed Git revision.');
+    }
     if (startGitHash) {
       const revision = await execa('git', ['cat-file', '-e', `${startGitHash}^{commit}`], {
         cwd: course.path,
@@ -190,7 +196,8 @@ export async function syncCourseFromDisk({
 
     job.info('Using full course sync');
     const data =
-      preparedCourseData && isDeepStrictEqual(preparedCourseData.configuration, configuration)
+      preparedCourseData?.revision === endGitHash &&
+      isDeepStrictEqual(preparedCourseData.configuration, configuration)
         ? preparedCourseData.data
         : await courseDB.loadFullCourse(course.id, course.path);
     if (!(await checkSharingConfigurationValid(course, data, job))) {

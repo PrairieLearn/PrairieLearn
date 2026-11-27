@@ -1,3 +1,6 @@
+import path from 'node:path';
+
+import { execa } from 'execa';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -9,6 +12,45 @@ import { selectQuestionsUsedInOtherCourses } from '../models/question.js';
 import { type CourseData } from './course-db.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/** A metadata-free change cannot remove a question or change its sharing declarations. */
+export async function changesOnlyQuestionContent(
+  coursePath: string,
+  previousRevision: string,
+  revision: string,
+): Promise<boolean> {
+  const diff = await execa(
+    'git',
+    ['diff', '--relative', '--no-renames', '--raw', '-z', previousRevision, revision, '--', '.'],
+    { cwd: coursePath, reject: false },
+  );
+  if (diff.exitCode !== 0) return false;
+  if (!diff.stdout) return true;
+
+  const entries = diff.stdout.split('\0');
+  for (let index = 0; index < entries.length - 1; index += 2) {
+    const [modeBefore, modeAfter] = entries[index].slice(1).split(' ');
+    const file = entries[index + 1];
+    const regularOrAbsent = /^(100644|100755|000000)$/;
+    if (
+      !regularOrAbsent.test(modeBefore) ||
+      !regularOrAbsent.test(modeAfter) ||
+      !file.startsWith('questions/') ||
+      path.posix.basename(file) === 'info.json'
+    ) {
+      return false;
+    }
+  }
+
+  const trackedFiles = await execa('git', ['ls-files', '--stage', '-z', '--', '.'], {
+    cwd: coursePath,
+    reject: false,
+  });
+  return (
+    trackedFiles.exitCode === 0 &&
+    !trackedFiles.stdout.split('\0').some((entry) => /^(120000|160000) /.test(entry))
+  );
+}
 
 interface SharedQuestion {
   id: string;
