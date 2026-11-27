@@ -424,3 +424,27 @@ export const NavigationPartSchema = z.object({
 });
 
 export type NavigationPart = z.infer<typeof NavigationPartSchema>;
+
+/** The actions the agent can run, as PrairieLearn's catalog endpoint lists them. */
+export const CourseActionCatalogSchema = z.object({
+  version: z.number(),
+  actions: z.record(
+    z.string(),
+    z.object({
+      description: z.string(),
+      /** JSON Schema of the action's input. */
+      input: z.looseObject({}),
+    }),
+  ),
+});
+
+export type CourseActionCatalog = z.infer<typeof CourseActionCatalogSchema>;
+
+/** A course action run. The agent service assigns `id` to each call, for logs and retries. */
+export const CourseActionRunSchema = z.strictObject({
+  id: z.uuid(),
+  input: z.unknown(),
+});
+
+/** PrairieLearn's reply once it has run a course action: what happened, in one sentence. */
+export const CourseActionRunReplySchema = z.object({ summary: z.string().max(1000) });

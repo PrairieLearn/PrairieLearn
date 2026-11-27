@@ -81,3 +81,14 @@ INSERT INTO
     FROM
       results
   );
+
+-- BLOCK select_assessment_instances_by_ids_for_assessment
+SELECT
+  *
+FROM
+  assessment_instances
+WHERE
+  assessment_id = $assessment_id
+  AND id = ANY ($assessment_instance_ids::bigint[])
+ORDER BY
+  id;

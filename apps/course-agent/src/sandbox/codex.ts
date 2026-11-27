@@ -77,6 +77,21 @@ const CourseDataArguments = CourseDataQuerySchema.extend({
 });
 export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
 
+const ListCourseActionsArguments = z.strictObject({});
+const CourseActionArguments = z.strictObject({
+  action: z.string().describe('Action to run, from list_course_actions.'),
+  input: z
+    .record(z.string(), z.unknown())
+    .describe("The action's input, as list_course_actions describes it."),
+});
+export type CourseActionRequest = z.infer<typeof CourseActionArguments>;
+
+/** Serves the course action tools; replies go to the model. */
+export interface CourseActionTools {
+  listCourseActions(): Promise<ToolReply>;
+  runCourseAction(request: CourseActionRequest): Promise<ToolReply>;
+}
+
 /** Serves the course data tools; replies go to the model. */
 export interface CourseDataTools {
   listCourseDatasets(): Promise<ToolReply>;
@@ -152,6 +167,7 @@ export class CodexAppServerClient {
     private courseData: CourseDataTools,
     /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
     private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
+    private courseActions: CourseActionTools,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -293,6 +309,16 @@ export class CodexAppServerClient {
         if (!request.success) return invalidArguments(request.error);
         return await replyWithError(() => this.courseData.getCourseData(request.data));
       }
+      case listCourseActionsTool.name: {
+        const request = ListCourseActionsArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseActions.listCourseActions());
+      }
+      case courseActionTool.name: {
+        const request = CourseActionArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseActions.runCourseAction(request.data));
+      }
       case requestChangesTool.name: {
         // The tool is offered only when reviews are handled, so this call is a protocol error.
         if (!this.onReview) throw new Error('Review handling is not configured');
@@ -395,6 +421,8 @@ export class CodexAppServerClient {
               ...(this.onReview ? [requestChangesTool] : []),
               listCourseDatasetsTool,
               courseDataTool,
+              listCourseActionsTool,
+              courseActionTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
               offerReloadTool,
             ],
@@ -615,6 +643,22 @@ const requestChangesTool = {
 } satisfies DynamicToolSpec;
 
 /** The model learns which pages exist from this tool, so the catalog is not repeated in instructions. */
+const listCourseActionsTool = {
+  type: 'function',
+  name: 'list_course_actions',
+  description:
+    'List the actions run_course_action can run, which change things in PrairieLearn that course files do not hold, such as closing issues or giving a student more time. Each entry says what the action does and what input it takes.',
+  inputSchema: toolInputSchema(ListCourseActionsArguments),
+} satisfies DynamicToolSpec;
+
+const courseActionTool = {
+  type: 'function',
+  name: 'run_course_action',
+  description:
+    'Run one action from list_course_actions as the instructor, with their permissions. It takes effect immediately, and the reply says what happened. Run only what the instructor asked for, and tell them what you changed.',
+  inputSchema: toolInputSchema(CourseActionArguments),
+} satisfies DynamicToolSpec;
+
 function navigateTool(pages: PageCatalog): DynamicToolSpec {
   const lines = pages.map(({ key, label, params }) => {
     const names = params.map((param) => (param.required ? param.name : `optional ${param.name}`));

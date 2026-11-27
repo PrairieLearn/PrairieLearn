@@ -59,6 +59,7 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
+import { listCourseActions, runCourseAction } from './course-actions.js';
 import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
 import { resolveNavigation } from './navigation.js';
@@ -1014,6 +1015,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           getCourseData({ ...this.prairieLearnContext(), sandbox: this.sandbox, request }),
       },
       (target) => resolveNavigation(this.prairieLearnContext(), target),
+      {
+        listCourseActions: () => listCourseActions(this.prairieLearnContext()),
+        runCourseAction: (request) => runCourseAction(this.prairieLearnContext(), request),
+      },
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();

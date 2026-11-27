@@ -553,7 +553,7 @@ export async function initExpress(): Promise<Express> {
   // service's course data requests, which use tokens rather than cookies.
   app.use(
     excludeRoutes(
-      ['/pl/api/', /^\/pl\/course\/\d+\/course_agent\/data(?:\/|$)/],
+      ['/pl/api/', /^\/pl\/course\/\d+\/course_agent\/(?:data|actions)(?:\/|$)/],
       (await import('./middlewares/csrfToken.js')).default,
     ),
   );
@@ -801,6 +801,11 @@ export async function initExpress(): Promise<Express> {
     app.use(
       '/pl/course/:course_id(\\d+)/course_agent/data',
       (await import('./ee/routers/courseAgentData/index.js')).default,
+    );
+    // The course agent service's course action requests, authenticated like its data requests.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent/actions',
+      (await import('./ee/routers/courseAgentActions.js')).default,
     );
     app.use(
       '/pl/course/:course_id(\\d+)/course_agent',

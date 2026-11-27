@@ -24,3 +24,17 @@ WHERE
   AND aq.grade_rate_minutes IS NOT NULL
   AND gj.gradable
   AND gj.grading_method NOT IN ('Manual', 'AI');
+
+-- BLOCK select_instance_questions_by_ids_for_assessment
+SELECT
+  to_jsonb(iq.*) AS instance_question,
+  to_jsonb(aq.*) AS assessment_question
+FROM
+  instance_questions AS iq
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+WHERE
+  ai.assessment_id = $assessment_id
+  AND iq.id = ANY ($instance_question_ids::bigint[])
+ORDER BY
+  iq.id;

@@ -13,6 +13,7 @@ import {
   EnumInstanceQuestionStatusSchema,
   EnumModeSchema,
 } from '../../../lib/db-types.js';
+import { toJsonSchema } from '../../lib/course-agent/json-schema.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -518,25 +519,13 @@ export const COURSE_DATA_DATASETS = {
   }),
 };
 
-type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;
+export type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;
 
 export function isCourseDataset(name: string): name is CourseDatasetName {
   return Object.hasOwn(COURSE_DATA_DATASETS, name);
 }
 
 const COURSE_DATA_VERSION = 1;
-
-/** Columns are serialized JSON, so an ID is a string of digits. */
-function toJsonSchema(schema: z.ZodType) {
-  return z.toJSONSchema(schema, {
-    unrepresentable: 'any',
-    override: ({ zodSchema, jsonSchema }) => {
-      if (zodSchema !== IdSchema) return;
-      for (const key of Object.keys(jsonSchema)) delete jsonSchema[key];
-      Object.assign(jsonSchema, { type: 'string', pattern: '^\\d+$' });
-    },
-  });
-}
 
 /** The dataset list endpoint's response. */
 export function courseDataSchema() {
