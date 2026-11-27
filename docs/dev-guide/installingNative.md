@@ -31,6 +31,12 @@ Most of these prerequisites can be installed using the package manager of your O
     sudo apt install texlive texlive-latex-extra texlive-fonts-extra dvipng
     ```
 
+    On Ubuntu 26.04, install the additional Graphviz plugin development packages required by PyGraphviz:
+
+    ```sh
+    sudo apt install libgvplugin-neato-layout-dev libgvplugin-gd-dev libgvplugin-pango-dev
+    ```
+
     Make sure you start Postgres:
 
     ```sh
