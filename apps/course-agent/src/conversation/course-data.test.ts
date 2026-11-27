@@ -70,7 +70,14 @@ describe('course data tools', () => {
 
   it('saves downloaded rows in the sandbox and tells the model how they were filtered', async () => {
     const fetch = vi.fn(
-      async () => new Response('{"id":"1","score":0.25}\n{"id":"2","score":0}\n'),
+      async () =>
+        new Response('{"id":"1","score":0.25}\n{"id":"2","score":0}\n', {
+          headers: {
+            'X-Course-Agent-Course-Instances': encodeURIComponent(
+              'Sp26: Spring 2026, Fa25: Fall 2025',
+            ),
+          },
+        }),
     );
     vi.stubGlobal('fetch', fetch);
     const sandbox = fakeSandbox();
@@ -106,7 +113,7 @@ describe('course data tools', () => {
     expect(sandbox.written()).toBe('{"id":"1","score":0.25}\n{"id":"2","score":0}\n');
     expect(reply).toEqual({
       success: true,
-      text: 'Wrote 2 rows (0.0 MB) to /workspace/session/course-data/submissions-1.jsonl. Filters: score lt 0.5 AND question_id in ["1","2","3","4","5",…] (7 values). The file holds only matching rows. Limit: 2 rows, so more rows may match. Columns: id, score.',
+      text: 'Wrote 2 rows (0.0 MB) to /workspace/session/course-data/submissions-1.jsonl. Filters: score lt 0.5 AND question_id in ["1","2","3","4","5",…] (7 values). The file holds only matching rows. Only includes these course instances, where the instructor has student data access: Sp26: Spring 2026, Fa25: Fall 2025. Limit: 2 rows, so more rows may match. Columns: id, score.',
     });
   });
 

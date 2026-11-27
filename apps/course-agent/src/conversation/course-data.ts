@@ -181,6 +181,8 @@ export async function getCourseData({
     elapsedMs: Date.now() - started,
   });
   const filters = (query.filters ?? []).map(describeFilter);
+  // Set for student data: the included course instances, as `short_name: long_name`.
+  const courseInstances = response.headers.get('X-Course-Agent-Course-Instances');
   return {
     success: true,
     text: [
@@ -188,6 +190,8 @@ export async function getCourseData({
       filters.length > 0
         ? `Filters: ${filters.join(' AND ')}. The file holds only matching rows.`
         : 'No filters.',
+      courseInstances !== null &&
+        `Only includes these course instances, where the instructor has student data access: ${decodeURIComponent(courseInstances) || 'none'}.`,
       query.limit !== undefined &&
         `Limit: ${query.limit} rows${rows === query.limit ? ', so more rows may match' : ''}.`,
       truncated &&

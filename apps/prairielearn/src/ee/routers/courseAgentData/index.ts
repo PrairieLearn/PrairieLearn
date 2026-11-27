@@ -8,7 +8,17 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  CoursePageAuthzDataSchema,
+  type Role,
+  hasRole,
+  isCourseInstanceRole,
+} from '../../../lib/authz-data-lib.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import {
+  type CourseInstanceAuthz,
+  selectCourseInstancesWithStaffAccess,
+} from '../../../models/course-instances.js';
 import { courseAgentEnabled } from '../../lib/course-agent/access.js';
 
 import { COURSE_DATA_DATASETS, courseDataSchema, isCourseDataset } from './datasets.js';
@@ -39,6 +49,30 @@ router.use(
   }),
 );
 
+/** Whether the user has one of `requiredRole` in this course instance. */
+function hasRoleInCourseInstance(
+  authzData: z.infer<typeof CoursePageAuthzDataSchema>,
+  courseInstance: CourseInstanceAuthz,
+  requiredRole: Role[],
+) {
+  return hasRole(
+    {
+      ...authzData,
+      has_course_instance_permission_view: courseInstance.has_course_instance_permission_view,
+      has_course_instance_permission_edit: courseInstance.has_course_instance_permission_edit,
+    },
+    requiredRole,
+  );
+}
+
+/** Error message for the course agent when the user lacks `requiredRole`. */
+function missingRoleMessage(requiredRole: Role[]) {
+  const where = requiredRole.some(isCourseInstanceRole)
+    ? 'in at least one course instance'
+    : 'to the course';
+  return `The instructor needs ${requiredRole.join(' or ')} access ${where} for this, which they do not have. Tell them, and do not retry. A course Owner can grant it on the Staff page.`;
+}
+
 router.get('/', (req, res) => {
   res.send(SCHEMA);
 });
@@ -60,7 +94,28 @@ router.post(
     const body = dataset.querySchema.safeParse(req.body);
     if (!body.success) throw new HttpStatusError(400, z.prettifyError(body.error));
 
-    const { rawSqlQuery, params } = selectCourseDatasetRowsQuery(dataset.query, body.data);
+    let readableCourseInstances: CourseInstanceAuthz[] | null = null;
+    if (dataset.requiredRole.some(isCourseInstanceRole)) {
+      const authzData = CoursePageAuthzDataSchema.parse(res.locals.authz_data);
+      const courseInstances = await selectCourseInstancesWithStaffAccess({
+        course: res.locals.course,
+        authzData,
+      });
+      const permitted = courseInstances.filter((ci) =>
+        hasRoleInCourseInstance(authzData, ci, dataset.requiredRole),
+      );
+      // A course with no course instances has no rows, so return none rather than a 403.
+      if (courseInstances.length > 0 && permitted.length === 0) {
+        throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
+      }
+      readableCourseInstances = permitted;
+    } else if (!hasRole(res.locals.authz_data, dataset.requiredRole)) {
+      throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
+    }
+
+    const { rawSqlQuery, params } = selectCourseDatasetRowsQuery(dataset.query, body.data, {
+      courseInstanceIds: readableCourseInstances?.map((ci) => ci.id) ?? null,
+    });
     const timeout = AbortSignal.timeout(QUERY_TIMEOUT_MS);
     const cursor = await sqldb.queryCursor(
       rawSqlQuery,
@@ -86,6 +141,17 @@ router.post(
         );
       }
       throw err;
+    }
+    if (readableCourseInstances) {
+      // Rows from other course instances are left out, so the course agent is told which it got.
+      res.set(
+        'X-Course-Agent-Course-Instances',
+        encodeURIComponent(
+          readableCourseInstances
+            .map((ci) => (ci.long_name ? `${ci.short_name}: ${ci.long_name}` : ci.short_name))
+            .join(', '),
+        ),
+      );
     }
     res.type('application/x-ndjson');
     try {
