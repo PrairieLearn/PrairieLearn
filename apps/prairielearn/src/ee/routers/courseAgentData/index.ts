@@ -94,7 +94,7 @@ router.post(
     const body = dataset.querySchema.safeParse(req.body);
     if (!body.success) throw new HttpStatusError(400, z.prettifyError(body.error));
 
-    let courseInstanceIds: string[] | null = null;
+    let readableCourseInstances: CourseInstanceAuthz[] | null = null;
     if (dataset.requiredRole.some(isCourseInstanceRole)) {
       const authzData = CoursePageAuthzDataSchema.parse(res.locals.authz_data);
       const courseInstances = await selectCourseInstancesWithStaffAccess({
@@ -108,13 +108,13 @@ router.post(
       if (courseInstances.length > 0 && permitted.length === 0) {
         throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
       }
-      courseInstanceIds = permitted.map((ci) => ci.id);
+      readableCourseInstances = permitted;
     } else if (!hasRole(res.locals.authz_data, dataset.requiredRole)) {
       throw new HttpStatusError(403, missingRoleMessage(dataset.requiredRole));
     }
 
     const { rawSqlQuery, params } = selectCourseDatasetRowsQuery(dataset.query, body.data, {
-      courseInstanceIds,
+      courseInstanceIds: readableCourseInstances?.map((ci) => ci.id) ?? null,
     });
     const timeout = AbortSignal.timeout(QUERY_TIMEOUT_MS);
     const cursor = await sqldb.queryCursor(
@@ -141,6 +141,13 @@ router.post(
         );
       }
       throw err;
+    }
+    if (readableCourseInstances) {
+      // Rows from other course instances are left out, so the course agent is told which it got.
+      res.set(
+        'X-Course-Agent-Course-Instances',
+        readableCourseInstances.map((ci) => encodeURIComponent(ci.short_name)).join(','),
+      );
     }
     res.type('application/x-ndjson');
     try {

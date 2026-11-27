@@ -306,12 +306,17 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
       const sp15Filter = [{ column: 'course_instance_id', op: 'eq', value: sp15Id }];
       assert.isEmpty(await getRows(url, publicOnly, { select, filters: sp15Filter }), name);
 
+      const included = await post(url, publicOnly, { select });
+      assert.equal(included.headers.get('X-Course-Agent-Course-Instances'), 'public', name);
+
       const refused = await post(url, noStudentData, { select });
       assert.equal(refused.status, 403, name);
       assert.include((await refused.json()).message, 'Student Data Viewer');
     }
 
-    assert.isNotEmpty(await getRows(`${dataUrl}/questions`, noStudentData, { select: ['id'] }));
+    const questions = await post(`${dataUrl}/questions`, noStudentData, { select: ['id'] });
+    assert.equal(questions.status, 200);
+    assert.isNull(questions.headers.get('X-Course-Agent-Course-Instances'));
   });
 
   test('a removed student data role applies to the next read', async function () {
