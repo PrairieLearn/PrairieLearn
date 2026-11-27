@@ -293,7 +293,12 @@ FROM
   JOIN enrollments AS e ON (e.course_instance_id = ci.id)
 WHERE
   ci.course_id = $course_id
-  AND ci.deleted_at IS NULL;
+  AND ci.deleted_at IS NULL
+  -- As in PrairieLearn's student counts, staff are not students. An invitation has no user yet.
+  AND (
+    e.user_id IS NULL
+    OR NOT users_is_instructor_in_course_instance (e.user_id, ci.id)
+  );
 
 -- BLOCK select_student_label_members_by_course_id
 SELECT
