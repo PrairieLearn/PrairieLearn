@@ -191,7 +191,7 @@ export async function getCourseData({
         ? `Filters: ${filters.join(' AND ')}. The file holds only matching rows.`
         : 'No filters.',
       courseInstances !== null &&
-        `Only includes these course instances, where the instructor has student data access: ${courseInstances.split(',').filter(Boolean).map(decodeURIComponent).join(', ') || 'none'}.`,
+        `Only includes these course instances, where the instructor has student data access: ${decodeURIComponent(courseInstances) || 'none'}.`,
       query.limit !== undefined &&
         `Limit: ${query.limit} rows${rows === query.limit ? ', so more rows may match' : ''}.`,
       truncated &&
