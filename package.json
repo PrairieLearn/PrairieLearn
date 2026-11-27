@@ -27,6 +27,7 @@
     "async": "^3.2.6"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
     "@changesets/cli": "^3.0.3",
     "@html-eslint/eslint-plugin": "^0.66.1",
     "@html-eslint/parser": "^0.66.1",

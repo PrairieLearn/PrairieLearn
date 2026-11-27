@@ -1,8 +1,7 @@
-import { createRequire } from 'node:module';
+import { S3 } from '@aws-sdk/client-s3';
 
-const require = createRequire(new URL('../apps/prairielearn/package.json', import.meta.url));
-const { S3 } = require('@aws-sdk/client-s3');
-
+// This bootstrap script only connects to the local RustFS instance.
+// oxlint-disable-next-line @prairielearn/aws-client-shared-config
 const s3 = new S3({
   region: 'us-east-1',
   endpoint: 'http://127.0.0.1:5000',

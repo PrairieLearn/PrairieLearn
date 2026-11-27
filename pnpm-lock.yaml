@@ -197,6 +197,9 @@ importers:
         specifier: ^3.2.6
         version: 3.2.6
     devDependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.1141.0
+        version: 3.1141.0
       '@changesets/cli':
         specifier: ^3.0.3
         version: 3.0.3

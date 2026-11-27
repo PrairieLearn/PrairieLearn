@@ -147,7 +147,7 @@ Most of these prerequisites can be installed using the package manager of your O
   make e2e-deps
   ```
 
-  RustFS is used for local S3-compatible storage. The installer downloads a pinned release for Linux (x86-64 or ARM64) or macOS (ARM64). On other platforms, install a compatible `rustfs` executable on your `PATH` instead. Local data previously stored by s3rver is not automatically migrated and remains in the `s3rver` directory.
+  RustFS is used for local S3-compatible storage. The installer downloads a pinned release for Linux (x86-64 or ARM64) or macOS (ARM64). On other platforms, install a compatible `rustfs` executable on your `PATH` instead.
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 
