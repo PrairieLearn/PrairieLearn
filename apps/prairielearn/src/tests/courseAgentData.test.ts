@@ -1,11 +1,32 @@
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
+import { z } from 'zod';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { COURSE_DATA_DATASETS } from '../ee/routers/courseAgentData/datasets.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import { createGroup } from '../lib/groups.js';
+import { insertIssue } from '../lib/issues.js';
+import { selectOptionalAssessmentByTid } from '../models/assessment.js';
+import { createPublishingExtensionWithEnrollments } from '../models/course-instance-publishing-extensions.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
+import { insertCourse } from '../models/course.js';
+import {
+  generateAndEnrollUsers,
+  inviteStudentByUid,
+  selectUsersAndEnrollmentsByUidsInCourseInstance,
+} from '../models/enrollment.js';
+import {
+  addLabelToEnrollments,
+  selectStudentLabelsInCourseInstance,
+} from '../models/student-label.js';
 
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
@@ -131,13 +152,123 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
   test('every dataset returns rows that match its schema exactly', async function () {
     dataUrl = `${locals.baseUrl}/course/1/course_agent/data`;
     owner = await staffHeaders('owner@example.com', 'Owner');
+    // The graded submission gives the attempt and submission datasets their rows; the rest need
+    // rows of their own.
+    const [variant] = await getRows(`${dataUrl}/variants`, owner, { select: ['id', 'user_id'] });
+    await insertIssue({
+      variantId: z.string().parse(variant.id),
+      studentMessage: 'The answer box does not accept negative numbers.',
+      instructorMessage: 'student-reported issue',
+      manuallyReported: true,
+      courseCaused: true,
+      courseData: {},
+      systemData: {},
+      userId: z.string().parse(variant.user_id),
+      authnUserId: z.string().parse(variant.user_id),
+    });
+    const consumer = await insertCourse({
+      institution_id: '1',
+      short_name: 'SHARE 101',
+      title: 'A course that uses shared questions',
+      display_timezone: 'America/Chicago',
+      path: `/course-${crypto.randomUUID()}`,
+      repository: null,
+      branch: 'master',
+      authn_user_id: '1',
+    });
+    const sharingSetId = await queryScalar(
+      sql.insert_sharing_set,
+      { course_id: '1', name: 'test-set' },
+      IdSchema,
+    );
+    await execute(sql.insert_sharing_set_course, {
+      sharing_set_id: sharingSetId,
+      course_id: consumer.id,
+    });
+    const ownerUser = await getOrCreateUser({
+      uid: 'owner@example.com',
+      name: 'owner@example.com',
+      uin: 'owner@example.com',
+    });
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      course_instance_id: '1',
+      user_id: ownerUser.id,
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: '1',
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    const [student] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
+    const enrollments = (
+      await selectUsersAndEnrollmentsByUidsInCourseInstance({
+        uids: [student.uid],
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      })
+    ).map(({ enrollment }) => enrollment);
+    const [label] = await selectStudentLabelsInCourseInstance(courseInstance);
+    await addLabelToEnrollments({ enrollments, label, authzData: dangerousFullSystemAuthz() });
+    await createPublishingExtensionWithEnrollments({
+      courseInstance,
+      name: 'Makeup week',
+      endDate: new Date('2401-01-01T00:00:00Z'),
+      enrollments,
+    });
+    await createGroup({
+      course_instance: courseInstance,
+      assessment: (await selectOptionalAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'hw5-templateGroupWork',
+      }))!,
+      group_name: 'owls',
+      uids: [student.uid],
+      authn_user_id: '1',
+      authzData: dangerousFullSystemAuthz(),
+    });
+    const invitedUid = 'invited-student@example.com';
+    await inviteStudentByUid({
+      uid: invitedUid,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    const returned: string[] = [];
     for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${dataUrl}/${name}`, owner, {
         select: Object.keys(dataset.schema.shape),
       });
       assert.isNotEmpty(rows, name);
       for (const row of rows) dataset.schema.strict().parse(row);
+      returned.push(JSON.stringify(rows));
     }
+    // The exam taker, a student in a label, an extension, and a group, an invited student, and a
+    // staff member: people appear in course data only by ID.
+    const identities = z
+      .array(z.string())
+      .parse([
+        config.authUid,
+        config.authName,
+        student.uid,
+        student.name,
+        student.email,
+        invitedUid,
+        'owner@example.com',
+      ]);
+    for (const identity of identities) assert.notInclude(returned.join('\n'), identity);
+  });
+
+  test('no dataset has a column that identifies a person', function () {
+    for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
+      for (const column of Object.keys(dataset.schema.shape)) {
+        assert.notMatch(column, /(^|_)(uid|uin|email)$/, name);
+      }
+    }
+    assert.doesNotHaveAnyKeys(COURSE_DATA_DATASETS.students.schema.shape, ['name']);
+    assert.doesNotHaveAnyKeys(COURSE_DATA_DATASETS.staff.schema.shape, ['name']);
+    assert.doesNotHaveAnyKeys(COURSE_DATA_DATASETS.staff_student_data_access.schema.shape, [
+      'name',
+    ]);
   });
 
   test('filters, select, order, and limit narrow the rows', async function () {
