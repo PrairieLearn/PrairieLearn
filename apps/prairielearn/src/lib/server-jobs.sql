@@ -33,16 +33,42 @@ WITH
       $course_request_id,
       $assessment_id,
       $assessment_question_id,
-      coalesce(max(js.number) + 1, 1),
+      -- Separate branches for the NULL and non-NULL cases let both use the
+      -- (course_id, number) index; `IS NOT DISTINCT FROM` can't. The NULL
+      -- branch orders by both index columns because the planner doesn't
+      -- treat `IS NULL` as fixing `course_id`, so `max(number)` would read
+      -- every NULL-course row.
+      coalesce(
+        CASE
+          WHEN $course_id::bigint IS NULL THEN (
+            SELECT
+              js.number
+            FROM
+              job_sequences AS js
+            WHERE
+              js.course_id IS NULL
+            ORDER BY
+              js.course_id DESC,
+              js.number DESC
+            LIMIT
+              1
+          )
+          ELSE (
+            SELECT
+              max(js.number)
+            FROM
+              job_sequences AS js
+            WHERE
+              js.course_id = $course_id
+          )
+        END,
+        0
+      ) + 1,
       $user_id,
       $authn_user_id,
       $type,
       $description,
       FALSE
-    FROM
-      job_sequences AS js
-    WHERE
-      js.course_id IS NOT DISTINCT FROM $course_id
     RETURNING
       id
   ),

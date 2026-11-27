@@ -96,18 +96,14 @@ export async function readPrintCoverPages(
   return covers;
 }
 
-/** Cycle complete student copies, then append each form's answer key once. */
+/** Combine each selected form once, padding shorter forms to the longest form's page count. */
 export async function assemblePrintPacket({
   forms,
   covers,
-  copies,
-  answerKeys = [],
   signal,
 }: {
   forms: { pdf: Uint8Array; coverPageCount: number }[];
   covers: PDFDocument[];
-  copies: number;
-  answerKeys?: Uint8Array[];
   signal?: AbortSignal;
 }): Promise<Buffer> {
   const sources = await Promise.all(
@@ -116,21 +112,19 @@ export async function assemblePrintPacket({
       document: await PDFDocument.load(form.pdf, { updateMetadata: false }),
     })),
   );
-  const answerKeyDocuments = await Promise.all(answerKeys.map((pdf) => PDFDocument.load(pdf)));
-  const coverPageCount = covers.reduce((total, cover) => total + cover.getPageCount(), 0);
-  let totalPages = answerKeyDocuments.reduce((total, key) => total + key.getPageCount(), 0);
-  for (let copy = 0; copy < copies; copy++) {
-    const form = sources[copy % sources.length];
-    totalPages += form.document.getPageCount() + coverPageCount;
-  }
+  const uploadedCoverPageCount = covers.reduce((total, cover) => total + cover.getPageCount(), 0);
+  const pagesPerForm = Math.max(
+    ...sources.map(({ document }) => document.getPageCount() + uploadedCoverPageCount),
+  );
+  const totalPages = pagesPerForm * forms.length;
   if (totalPages > MAX_PACKET_PAGES) {
     throw new PrintPacketError(
-      `This export exceeds ${MAX_PACKET_PAGES.toLocaleString('en-US')} pages. Export fewer copies at a time.`,
+      `This export exceeds ${MAX_PACKET_PAGES.toLocaleString('en-US')} pages. Export fewer forms at a time.`,
     );
   }
 
   signal?.throwIfAborted();
-  if (forms.length === 1 && copies === 1 && covers.length === 0 && answerKeys.length === 0) {
+  if (forms.length === 1 && covers.length === 0) {
     return Buffer.from(forms[0].pdf);
   }
 
@@ -140,33 +134,25 @@ export async function assemblePrintPacket({
     signal?.throwIfAborted();
     copiedCovers.push(...(await packet.copyPages(cover, cover.getPageIndices())));
   }
-  const copiedForms = [];
   for (const { document, coverPageCount } of sources) {
-    signal?.throwIfAborted();
-    copiedForms.push({
-      pages: await packet.copyPages(document, document.getPageIndices()),
-      coverPageCount,
-    });
-  }
-  for (let copy = 0; copy < copies; copy++) {
     await setImmediate();
     signal?.throwIfAborted();
-    const form = copiedForms[copy % copiedForms.length];
+    const copiedPages = await packet.copyPages(document, document.getPageIndices());
     const pages = [
-      ...form.pages.slice(0, form.coverPageCount),
+      ...copiedPages.slice(0, coverPageCount),
       ...copiedCovers,
-      ...form.pages.slice(form.coverPageCount),
+      ...copiedPages.slice(coverPageCount),
     ];
     for (const page of pages) {
-      // Each physical page needs its own page-tree entry, while sharing fonts and images.
+      // Uploaded covers may appear in several forms, so each page needs its own page-tree entry.
       const node = page.node.clone();
       packet.addPage(PDFPage.of(node, packet.context.register(node), packet));
     }
-  }
-  for (const key of answerKeyDocuments) {
-    signal?.throwIfAborted();
-    const pages = await packet.copyPages(key, key.getPageIndices());
-    for (const page of pages) packet.addPage(page);
+    const lastPage = document.getPage(document.getPageCount() - 1);
+    for (let page = pages.length; page < pagesPerForm; page++) {
+      const blank = packet.addPage([lastPage.getWidth(), lastPage.getHeight()]);
+      blank.setRotation(lastPage.getRotation());
+    }
   }
   const output = await packet.save();
   signal?.throwIfAborted();

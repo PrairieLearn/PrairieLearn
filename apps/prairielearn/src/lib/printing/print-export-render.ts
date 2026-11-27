@@ -31,8 +31,7 @@ type PrintExportSnapshot = z.infer<typeof PrintExportSnapshotSchema>;
 export const PrintExportWorkSchema = z.discriminatedUnion('format', [
   z.object({
     format: z.literal('pdf'),
-    document: z.enum(['assessment', 'answer_key', 'booklet']),
-    copies: z.number().int().positive(),
+    document: z.enum(['assessment', 'answer_key']),
     filename: z.string(),
     snapshots: z.array(PrintExportSnapshotSchema),
     covers: z.array(z.object({ name: z.string(), base64: z.string() })),
@@ -110,7 +109,6 @@ export async function renderPrintExport(
     );
   }
   const forms: { pdf: Buffer; coverPageCount: number }[] = [];
-  const answerKeys: Buffer[] = [];
   const pdfOutput = createPdfOutput();
   for (const snapshot of work.snapshots) {
     if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
@@ -123,7 +121,7 @@ export async function renderPrintExport(
         signal: shutdownSignal,
       },
       {
-        label: work.document === 'booklet' ? 'booklet PDF' : 'PDF',
+        label: 'PDF',
         produce: async (page) => {
           const state = await validateSnapshot(page, snapshot, shutdownSignal);
           return {
@@ -133,18 +131,12 @@ export async function renderPrintExport(
         },
       },
     );
-    if (work.document === 'booklet' && snapshot.printDocument === 'answer_key') {
-      answerKeys.push(rendered.pdf);
-    } else {
-      forms.push(rendered);
-    }
+    forms.push(rendered);
   }
   if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
   return await assemblePrintPacket({
     forms,
     covers,
-    copies: work.copies,
-    answerKeys,
     signal: shutdownSignal,
   });
 }

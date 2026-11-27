@@ -18,6 +18,7 @@ import {
   parseAiRubricItems,
   parseSubmission,
   prepareQuestionPrompt,
+  requireAiGradingOutput,
 } from './ai-grading-util.js';
 
 function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>): RubricItem {
@@ -521,6 +522,7 @@ describe('correctImagesOrientation', () => {
         'solution.webp': webp.toString('base64'),
       },
       model,
+      onResponse: async () => {},
     });
 
     const mediaTypes = model.doGenerateCalls.map(({ prompt }) =>
@@ -533,6 +535,88 @@ describe('correctImagesOrientation', () => {
       ['image/png', 'image/png', 'image/png', 'image/png'],
       ['image/webp', 'image/webp', 'image/webp', 'image/webp'],
     ]);
+  });
+
+  it('passes a blocked response to onResponse before rejecting', async () => {
+    const png = await sharp({
+      create: { width: 2, height: 3, channels: 3, background: '#ff0000' },
+    })
+      .png()
+      .toBuffer();
+    const model = new MockLanguageModelV3({
+      doGenerate: {
+        content: [],
+        finishReason: { unified: 'content-filter', raw: 'OTHER' },
+        usage: {
+          inputTokens: { total: 100, noCache: 100, cacheRead: undefined, cacheWrite: undefined },
+          outputTokens: { total: 0, text: 0, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+    const onResponse = vi.fn(async () => {});
+
+    await expect(
+      correctImagesOrientation({
+        submittedAnswer: { _files: [{ name: 'solution.png', contents: png.toString('base64') }] },
+        submittedImages: { 'solution.png': png.toString('base64') },
+        model,
+        onResponse,
+      }),
+    ).rejects.toThrow("The AI provider's content filter blocked this submission (reason: OTHER)");
+    expect(onResponse).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ usage: expect.objectContaining({ inputTokens: 100 }) }),
+    );
+  });
+});
+
+describe('requireAiGradingOutput', () => {
+  function mockModel(
+    content: { type: 'text'; text: string }[],
+    finishReason: { unified: 'stop' | 'content-filter'; raw: string | undefined },
+  ) {
+    return new MockLanguageModelV3({
+      doGenerate: {
+        content,
+        finishReason,
+        usage: {
+          inputTokens: {
+            total: undefined,
+            noCache: undefined,
+            cacheRead: undefined,
+            cacheWrite: undefined,
+          },
+          outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+  }
+  const output = Output.object({ schema: z.object({ score: z.number() }) });
+
+  it('returns responses that have structured output', async () => {
+    const response = requireAiGradingOutput(
+      await generateText({
+        model: mockModel([{ type: 'text', text: '{"score":90}' }], {
+          unified: 'stop',
+          raw: undefined,
+        }),
+        output,
+        prompt: 'grade this',
+      }),
+    );
+    expect(response.output).toEqual({ score: 90 });
+  });
+
+  it('explains when the provider blocks the prompt', async () => {
+    const response = await generateText({
+      model: mockModel([], { unified: 'content-filter', raw: 'OTHER' }),
+      output,
+      prompt: 'grade this',
+    });
+    expect(() => requireAiGradingOutput(response)).toThrow(
+      "The AI provider's content filter blocked this submission (reason: OTHER)",
+    );
   });
 });
 

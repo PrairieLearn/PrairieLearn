@@ -1,4 +1,12 @@
+import { createHash } from 'node:crypto';
+
+import { markdownToHtml } from '@prairielearn/markdown';
+import { escapeRegExp } from '@prairielearn/sanitize';
+
+import { renderText as renderAssessmentText } from '../assessment.js';
+import type { Assessment } from '../db-types.js';
 import { getDefaultHonorCodePledge } from '../honor-code.js';
+import { renderMustache } from '../mustache.js';
 import type { ResLocalsForPage } from '../res-locals.js';
 
 import {
@@ -10,7 +18,7 @@ import {
 
 import type { PrintDocument } from './index.js';
 
-export const HONOR_CODE_HEADING = 'Academic integrity pledge';
+export const HONOR_CODE_HEADING = 'Honor code';
 export const PRINT_FOOTER_SEPARATOR = '\u00a0\u00a0|\u00a0\u00a0';
 
 export interface PrintFooter {
@@ -21,6 +29,27 @@ export interface PrintFooter {
 
 /** Leaves space for a handwritten name on printed honor-code pledges. */
 export const BLANK_NAME_PLACEHOLDER = '____________________________';
+
+/** Renders the assessment text that the default cover includes. */
+export function getPrintCoverHtml(assessment: Assessment, urlPrefix: string) {
+  return {
+    assessmentTextHtml: renderAssessmentText(assessment, urlPrefix),
+    honorCodeHtml: assessment.honor_code
+      ? markdownToHtml(
+          renderMustache(assessment.honor_code, { user_name: BLANK_NAME_PLACEHOLDER }),
+          { allowHtml: false, interpretMath: false },
+        ).replace(new RegExp(`^<h([1-6])>${escapeRegExp(HONOR_CODE_HEADING)}</h\\1>\\s*`, 'i'), '')
+      : null,
+  };
+}
+
+/**
+ * Word exports rebuild the cover from current assessment text, so previews sign this digest
+ * to reject Word exports after the text changes.
+ */
+export function digestPrintCoverHtml(cover: ReturnType<typeof getPrintCoverHtml>): string {
+  return createHash('sha256').update(JSON.stringify(cover)).digest('hex');
+}
 
 export const DEFAULT_ASSESSMENT_INSTRUCTIONS: readonly string[] = [
   'Write your name and identifying information clearly above.',

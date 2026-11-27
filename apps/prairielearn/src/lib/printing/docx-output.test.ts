@@ -47,7 +47,7 @@ const cover: PrintableCover = {
       ],
     },
     {
-      heading: 'Academic integrity pledge',
+      heading: 'Honor code',
       blocks: [{ type: 'list', ordered: false, items: [[{ text: 'I pledge on my honor.' }]] }],
       signatureLabel: 'Signature',
     },

@@ -125,10 +125,10 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
     const res = await executor.login();
     assert.equal(res.status, 200);
 
-    // Logging in again should fail because of nonce reuse.
+    // Replaying the callback should fail because the login consumed the session state.
     await withoutLogging(async () => {
       const repeatLoginRes = await executor.login();
-      assert.equal(repeatLoginRes.status, 500);
+      assert.equal(repeatLoginRes.status, 400);
     });
   });
 
@@ -192,7 +192,7 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
           redirect: 'manual',
         },
       );
-      assert.equal(startBadLoginResponse.status, 500);
+      assert.equal(startBadLoginResponse.status, 400);
     });
 
     // Successful login to test malformed response
@@ -230,6 +230,20 @@ describe('LTI 1.3 authentication', { concurrent: false }, () => {
         redirect: 'manual',
       });
       assert.equal(finishBadLoginResponse.status, 400);
+    });
+
+    // A callback without the login session (e.g. the cookie was blocked) should
+    // return a bad request
+    await withoutLogging(async () => {
+      const finishNoSessionResponse = await fetch(redirectUri, {
+        method: 'POST',
+        body: new URLSearchParams({
+          state: 'abc',
+          id_token: 'junkjunkjunk',
+        }),
+        redirect: 'manual',
+      });
+      assert.equal(finishNoSessionResponse.status, 400);
     });
   });
 

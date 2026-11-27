@@ -5,6 +5,7 @@ import {
   type LanguageModel,
   type LanguageModelUsage,
   type ModelMessage,
+  NoOutputGeneratedError,
   Output,
   type TextPart,
   type UserContent,
@@ -929,6 +930,30 @@ export async function addAiGradingCostToIntervalUsage({
 }
 
 /**
+ * Returns the response if it has structured output. Otherwise, throws an error
+ * that says why, since the AI SDK's own error ("No output generated") doesn't.
+ * For example, Gemini can refuse a prompt outright (`promptFeedback.blockReason`),
+ * which consistently fails grading for that submission.
+ */
+export function requireAiGradingOutput<
+  T extends { readonly output: unknown; finishReason: string; rawFinishReason: string | undefined },
+>(response: T): T {
+  try {
+    void response.output;
+    return response;
+  } catch (err) {
+    if (!NoOutputGeneratedError.isInstance(err)) throw err;
+  }
+  const reason = response.rawFinishReason ?? response.finishReason;
+  if (response.finishReason === 'content-filter') {
+    throw new Error(
+      `The AI provider's content filter blocked this submission (reason: ${reason}). Grade it manually or try a different model.`,
+    );
+  }
+  throw new Error(`The AI model returned no grading result (finish reason: ${reason}).`);
+}
+
+/**
  * Rotates a base64-encoded image by the specified counterclockwise rotation.
  *
  * @param base64Image - The base64-encoded image to rotate.
@@ -959,15 +984,18 @@ async function rotateBase64Image(
  * @param params.image - The base64-encoded image to correct.
  * @param params.mediaType - The media type of the image.
  * @param params.model - The LLM to use for determining the correct orientation.
+ * @param params.onResponse - Called with the LLM response before its output is checked.
  */
 async function correctImageOrientation({
   image,
   mediaType,
   model,
+  onResponse,
 }: {
   image: string;
   mediaType: string;
   model: LanguageModel;
+  onResponse: (response: GenerateTextResult<any, any, any>) => Promise<void>;
 }): Promise<{
   correctedImage: string;
   degreesRotated: CounterClockwiseRotationDegrees;
@@ -1018,6 +1046,8 @@ async function correctImageOrientation({
     output: Output.object({ schema: RotationCorrectionOutputSchema }),
     messages: [{ role: 'user', content }],
   });
+  await onResponse(response);
+  requireAiGradingOutput(response);
 
   const index = Number.parseInt(response.output.upright_image) - 1;
 
@@ -1035,6 +1065,8 @@ async function correctImageOrientation({
  * @param param.submittedAnswer - The student's submitted answer object.
  * @param param.submittedImages - A mapping from filenames to base64-encoded images.
  * @param param.model - The LLM to use for determining the correct orientations.
+ * @param param.onResponse - Called with each LLM response before its output is checked, so usage
+ * can be recorded even if a later image fails.
  *
  * @returns An updated submitted answer with corrected images, rotations correction amounts, and LLM responses.
  */
@@ -1043,10 +1075,12 @@ export async function correctImagesOrientation({
   /** The key is the filename, and the value is the base64-encoded image */
   submittedImages,
   model,
+  onResponse,
 }: {
   submittedAnswer: Record<string, any>;
   submittedImages: Record<string, string>;
   model: LanguageModel;
+  onResponse: (response: GenerateTextResult<any, any, any>) => Promise<void>;
 }) {
   if (!submittedAnswer._files) {
     return {
@@ -1075,6 +1109,7 @@ export async function correctImagesOrientation({
       image,
       mediaType,
       model,
+      onResponse,
     });
 
     const existingIndex = submittedAnswer._files.findIndex(

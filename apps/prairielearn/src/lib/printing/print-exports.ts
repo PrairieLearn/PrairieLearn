@@ -5,6 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { Queue, Worker } from '@prairielearn/prairiemq';
 import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
@@ -15,19 +16,28 @@ import {
   selectOptionalPendingPrintExport,
   selectUnfinishedPrintExportCount,
 } from '../../models/print-export.js';
+import {
+  lockAssessmentForPrintForms,
+  lockPrintFormQuestionSelections,
+  selectPrintFormsForAssessment,
+} from '../../models/print-form.js';
 import { deleteFromS3, getFromS3, uploadToS3 } from '../aws.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../client/printing/print-snapshot.js';
 import { config } from '../config.js';
 import type { PrintExport } from '../db-types.js';
 import { getFileStoreS3Bucket } from '../file-store.js';
 
+import type { PaperSize } from './paper-size.js';
 import {
   type PrintExportWork,
   PrintExportWorkSchema,
   renderPrintExport,
 } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
+import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE, sameExcludedQuestions } from './print-settings.js';
+import { RenderQueueFullError } from './render-queue.js';
 
-import { isBrowserRenderingAvailable } from './index.js';
+import { getPrintableQuestionListDigest, isBrowserRenderingAvailable } from './index.js';
 
 const KEY_PREFIX = 'print-exports/';
 const QUEUE_NAME = 'print-exports';
@@ -35,8 +45,8 @@ const QUEUE_NAME = 'print-exports';
 // throughput scales with the number of workers. PrairieMQ persists this value in Redis
 // and stops workers that disagree, so changing it also requires a new queue prefix.
 const COURSE_CONCURRENCY = 2;
-// A run interrupted by a graceful shutdown counts as an attempt, so allow for a rolling
-// deploy interrupting it more than once. Crashed runs are recovered separately as stalls.
+// Runs interrupted by a graceful shutdown or refused by a busy renderer count as attempts,
+// so allow for more than one. Crashed runs are recovered separately as stalls.
 const MAX_ATTEMPTS = 3;
 // Spreads retries over a few seconds so a brief database or S3 outage doesn't use them all.
 const RETRY_BACKOFF = { type: 'exponential', delay: 2_000, jitter: 0.2 } as const;
@@ -98,7 +108,10 @@ export function initPrintExportWorker() {
   }
   worker = new Worker<{ printExportId: string }, void>(
     QUEUE_NAME,
-    async (job) => await processPrintExport(IdSchema.parse(job.data.printExportId)),
+    async (job) =>
+      await processPrintExport(IdSchema.parse(job.data.printExportId), {
+        finalAttempt: job.failedAttempts + 1 >= job.attempts,
+      }),
     {
       ...queueConnection(config.nonVolatileRedisUrl),
       concurrency: 2,
@@ -151,10 +164,7 @@ function getPrintExportLabel(work: PrintExportWork): string {
       ? `${form} answer key Word document`
       : `${form} Word document`;
   }
-  const { document, copies, snapshots } = work;
-  if (document === 'booklet') {
-    return `Booklet PDF for ${copies} ${copies === 1 ? 'student' : 'students'}`;
-  }
+  const { document, snapshots } = work;
   const formLabels = new Set(snapshots.map((snapshot) => snapshot.formLabel));
   if (formLabels.size === 1) {
     const form = `Form ${[...formLabels][0]}`;
@@ -184,9 +194,16 @@ function printableFailureMessage(error: unknown, format: PrintExportWork['format
 export async function queuePrintExport({
   owner,
   work,
+  formSelections,
 }: {
   owner: { assessmentId: string; authnUserId: string; courseId: string; userId: string };
   work: PrintExportWork;
+  formSelections: {
+    printFormId: string;
+    excludedQuestions: string[];
+    paperSize: PaperSize;
+    questionListDigest: string;
+  }[];
 }): Promise<string> {
   const currentQueue = getQueue();
   if (shutdownController.signal.aborted || !currentQueue) {
@@ -200,14 +217,54 @@ export async function queuePrintExport({
   await uploadToS3(bucket, inputKey, null, false, Buffer.from(JSON.stringify(work)));
   let printExportId: string;
   try {
-    printExportId = await insertPrintExport({
-      assessmentId: owner.assessmentId,
-      userId: owner.userId,
-      authnUserId: owner.authnUserId,
-      format: work.format,
-      filename: work.filename,
-      label: getPrintExportLabel(work),
-      inputKey,
+    printExportId = await runInTransactionAsync(async () => {
+      await lockAssessmentForPrintForms(owner.assessmentId);
+      const savedForms = new Map(
+        (await selectPrintFormsForAssessment({ assessmentId: owner.assessmentId })).map((form) => [
+          form.id,
+          form,
+        ]),
+      );
+      const paperSizes = new Set<PaperSize>();
+      for (const {
+        printFormId,
+        excludedQuestions,
+        paperSize,
+        questionListDigest,
+      } of formSelections) {
+        const saved = savedForms.get(printFormId);
+        if (
+          !saved ||
+          (formSelections.length > 1 && saved.archived_at !== null) ||
+          saved.settings.paperSize !== paperSize ||
+          !sameExcludedQuestions(saved.settings.excludedQuestions, excludedQuestions)
+        ) {
+          throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+        }
+        if (
+          (await getPrintableQuestionListDigest(printFormId, new Set(excludedQuestions))) !==
+          questionListDigest
+        ) {
+          throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+        }
+        paperSizes.add(paperSize);
+      }
+      if (paperSizes.size > 1) {
+        throw new HttpStatusError(400, PRINT_PAPER_SIZES_MISMATCH_MESSAGE);
+      }
+      await lockPrintFormQuestionSelections({
+        assessmentId: owner.assessmentId,
+        printFormIds: formSelections.map(({ printFormId }) => printFormId),
+      });
+      return await insertPrintExport({
+        assessmentId: owner.assessmentId,
+        userId: owner.userId,
+        authnUserId: owner.authnUserId,
+        format: work.format,
+        filename: work.filename,
+        label: getPrintExportLabel(work),
+        inputKey,
+      });
     });
   } catch (error) {
     await deleteFromS3(bucket, inputKey);
@@ -230,7 +287,10 @@ export async function queuePrintExport({
   return printExportId;
 }
 
-async function processPrintExport(printExportId: string) {
+async function processPrintExport(
+  printExportId: string,
+  { finalAttempt }: { finalAttempt: boolean },
+) {
   const signal = shutdownController.signal;
   signal.throwIfAborted();
   const printExport = await selectOptionalPendingPrintExport(printExportId);
@@ -261,6 +321,10 @@ async function processPrintExport(printExportId: string) {
   } catch (error) {
     // PrairieMQ retries a run interrupted by shutdown on another worker.
     if (signal.aborted) throw error;
+    // Let PrairieMQ retry after a backoff, since a busy renderer refuses work before starting it.
+    if (!finalAttempt && error instanceof RenderQueueFullError) {
+      throw error;
+    }
     getCounter(meter, 'print.export.failures', { valueType: ValueType.INT }).add(1, attributes);
     const failureMessage = printableFailureMessage(error, format);
     if (failureMessage === null) {
@@ -286,7 +350,10 @@ async function processPrintExport(printExportId: string) {
  * recovery finish well within that.
  */
 export function printExportResult(
-  printExport: PrintExport & { expired: boolean; overdue: boolean },
+  printExport: Pick<PrintExport, 'status' | 'failure_message'> & {
+    expired: boolean;
+    overdue: boolean;
+  },
 ) {
   if (printExport.expired && printExport.status === 'succeeded') {
     return { status: 'expired' as const, failureMessage: null };

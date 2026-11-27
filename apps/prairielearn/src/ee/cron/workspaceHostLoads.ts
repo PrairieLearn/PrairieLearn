@@ -24,7 +24,6 @@ const WorkspaceLoadStatsSchema = z.object({
   workspace_hosts_longest_draining_sec: z.number(),
   workspace_hosts_longest_unhealthy_sec: z.number(),
   workspace_hosts_longest_terminating_sec: z.number(),
-  workspace_uninitialized_count: z.number().int(),
   workspace_launching_count: z.number().int(),
   workspace_relaunching_count: z.number().int(),
   workspace_running_count: z.number().int(),
@@ -104,10 +103,6 @@ const cloudwatch_definitions: Record<string, { name: string; unit: StandardUnit 
   workspace_hosts_longest_terminating_sec: {
     name: 'MaxTerminatingHostAge',
     unit: 'Seconds',
-  },
-  workspace_uninitialized_count: {
-    name: 'WorkspacesUninitialized',
-    unit: 'Count',
   },
   workspace_launching_count: {
     name: 'WorkspacesLaunching',

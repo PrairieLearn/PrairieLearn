@@ -125,6 +125,7 @@ test('exports shadow-root figures and visible slotted text from a paginated page
     authnUserId: '45',
     search: new URLSearchParams('paper_size=Letter&document=assessment'),
     questionListDigest: 'question-list-1',
+    coverDigest: 'cover-1',
     html,
     source,
   };

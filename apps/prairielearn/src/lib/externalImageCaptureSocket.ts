@@ -97,8 +97,6 @@ export function emitExternalImageCapture({
  */
 function validateMessageContent({ variant_id, variant_token, file_name }: StatusMessage): boolean {
   if (!checkVariantToken(variant_token, variant_id)) {
-    logger.error('Invalid variant_token provided for external image capture');
-    Sentry.captureException(new Error('Invalid variant_token provided for external image capture'));
     return false;
   }
 

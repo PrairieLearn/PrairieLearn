@@ -1,10 +1,7 @@
 import { type ErrorRequestHandler, type RequestHandler, Router, raw } from 'express';
-import mustache from 'mustache';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { markdownToHtml } from '@prairielearn/markdown';
-import { escapeRegExp } from '@prairielearn/sanitize';
 import {
   IdSchema,
   JsonFromStringSchema,
@@ -13,12 +10,12 @@ import {
   parseRequestQuery,
 } from '@prairielearn/zod';
 
-import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import {
   PrintGradingTableSchema,
   PrintIdentityFieldsSchema,
 } from '../../lib/client/printing/print-cover.js';
 import { serializePrintDocument } from '../../lib/client/printing/print-document.js';
+import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/printing/print-snapshot-limits.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { config } from '../../lib/config.js';
@@ -29,8 +26,7 @@ import {
   assertPrintDocumentReady,
   describeOmittedQuestions,
   getPrintRenderer,
-  getPrintableFormQuestionIds,
-  getPrintableQuestionListDigest,
+  getPrintableFormQuestions,
   isBrowserRenderingAvailable,
   loadPrintSnapshotRoot,
   renderPrintFormQuestions,
@@ -39,9 +35,9 @@ import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import { createPrintFormQuestionAssetRouter } from '../../lib/printing/print-asset-routes.js';
 import {
-  BLANK_NAME_PLACEHOLDER,
-  HONOR_CODE_HEADING,
   buildPrintableCover,
+  digestPrintCoverHtml,
+  getPrintCoverHtml,
   getPrintFooter,
 } from '../../lib/printing/print-cover.js';
 import { queuePrintExport } from '../../lib/printing/print-exports.js';
@@ -58,7 +54,7 @@ import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.j
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import authzHasCoursePreview from '../../middlewares/authzHasCoursePreview.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
+import { requirePrintingAvailable } from '../../middlewares/requirePrintingAvailable.js';
 import { selectOptionalPrintForm } from '../../models/print-form.js';
 
 import { InstructorAssessmentPrintForm } from './instructorAssessmentPrintForm.html.js';
@@ -127,7 +123,7 @@ const PrintSnapshotSchema = z.strictObject({
 });
 
 const DocxPostRequestSchemas = {
-  query: DocumentQuerySchema,
+  query: DocumentQuerySchema.pick({ document: true }).strict(),
   body: z
     .instanceof(Buffer)
     .transform((body) => body.toString('utf8'))
@@ -162,18 +158,16 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
   };
 }
 
-function getCoverHtml(resLocals: ResLocalsForPage<'print-form'>) {
-  return {
-    assessmentTextHtml: renderAssessmentText(resLocals.assessment, resLocals.urlPrefix),
-    honorCodeHtml: resLocals.assessment.honor_code
-      ? markdownToHtml(
-          mustache.render(resLocals.assessment.honor_code, {
-            user_name: BLANK_NAME_PLACEHOLDER,
-          }),
-          { allowHtml: false, interpretMath: false },
-        ).replace(new RegExp(`^<h([1-6])>${escapeRegExp(HONOR_CODE_HEADING)}</h\\1>\\s*`, 'i'), '')
-      : null,
-  };
+/** Exports use the form's saved settings, parsed the same way as the preview's URL. */
+function savedPrintLayout(resLocals: ResLocalsForPage<'print-form'>) {
+  const search = new URLSearchParams(printLayoutSearch(resLocals.print_form.settings));
+  const query = Object.fromEntries(
+    [...new Set(search.keys())].map((key) => {
+      const values = search.getAll(key);
+      return [key, values.length === 1 ? values[0] : values];
+    }),
+  );
+  return { search, layout: parsePrintLayout(LayoutQuerySchema.parse(query)) };
 }
 
 function printAssetScope(
@@ -200,7 +194,7 @@ const parseDocxBody: RequestHandler = (req, res, next) => {
 
 const router = Router({ mergeParams: true });
 
-router.use(requirePrintableAssessments);
+router.use(requirePrintingAvailable);
 
 router.use(authzHasCoursePreview);
 router.use(
@@ -242,7 +236,8 @@ router.get(
       excludedQuestionNumbers: layout.excludedQuestionNumbers,
       document,
     });
-    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const coverHtml = getPrintCoverHtml(res.locals.assessment, res.locals.urlPrefix);
+    const { assessmentTextHtml, honorCodeHtml } = coverHtml;
     const warnings = describeOmittedQuestions(printingResult.questionResults);
 
     const rawHtml = InstructorAssessmentPrintForm({
@@ -305,6 +300,7 @@ router.get(
         authnUserId: res.locals.authn_user.id,
         search: localPreviewUrl.searchParams,
         questionListDigest: printingResult.questionListDigest,
+        coverDigest: digestPrintCoverHtml(coverHtml),
         html,
         source,
       },
@@ -335,16 +331,19 @@ router.post(
   }),
   parseDocxBody,
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
-    const layout = parsePrintLayout(query);
-    const { document } = query;
+    const {
+      query: { document },
+      body: snapshot,
+    } = parseRequest(req, DocxPostRequestSchemas);
+    const { search, layout } = savedPrintLayout(res.locals);
 
-    const printFormQuestionIds = await getPrintableFormQuestionIds(
+    const { printFormQuestionIds, questionListDigest } = await getPrintableFormQuestions(
       res.locals.print_form.id,
       layout.questionBlockSizeOverrides,
       layout.excludedQuestionNumbers,
     );
-    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const coverHtml = getPrintCoverHtml(res.locals.assessment, res.locals.urlPrefix);
+    const { assessmentTextHtml, honorCodeHtml } = coverHtml;
     const footer = getPrintFooter({
       resLocals: res.locals,
       document,
@@ -369,14 +368,10 @@ router.post(
         gradingTable,
       });
 
+    search.set('document', document);
     const localPreviewUrl = new URL(
-      req.originalUrl,
+      `${req.baseUrl}/preview?${search}`,
       `${config.serverType}://localhost:${config.serverPort}`,
-    );
-    localPreviewUrl.pathname = `${req.baseUrl}/preview`;
-    const questionListDigest = await getPrintableQuestionListDigest(
-      res.locals.print_form.id,
-      layout.excludedQuestionNumbers,
     );
     const htmlDigest = checkPrintSnapshotId(
       {
@@ -386,6 +381,7 @@ router.post(
         authnUserId: res.locals.authn_user.id,
         search: localPreviewUrl.searchParams,
         questionListDigest,
+        coverDigest: digestPrintCoverHtml(coverHtml),
       },
       config.secretKey,
     );
@@ -416,12 +412,20 @@ router.post(
         res.locals.course,
       ) +
       sanitizeString(
-        `form_${res.locals.print_form.id}_${layout.paperSize.toLowerCase()}${
+        `form_${res.locals.print_form.label}_${layout.paperSize.toLowerCase()}${
           document === 'answer_key' ? '_answer_key' : ''
         }`,
       ) +
       '.docx';
     const printExportId = await queuePrintExport({
+      formSelections: [
+        {
+          printFormId: res.locals.print_form.id,
+          excludedQuestions: [...layout.excludedQuestionNumbers],
+          paperSize: layout.paperSize,
+          questionListDigest,
+        },
+      ],
       owner: {
         assessmentId: res.locals.assessment.id,
         authnUserId: res.locals.authn_user.id,

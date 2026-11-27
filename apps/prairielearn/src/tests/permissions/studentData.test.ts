@@ -263,7 +263,7 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
     };
     const response = await helperClient.fetchCheerio(url, { headers });
     assert.equal(response.status, 403);
-    const docxUrl = new URL(`${formUrl}/docx?paper_size=Letter&document=answer_key`);
+    const docxUrl = new URL(`${formUrl}/docx?document=answer_key`);
     const docxRequest = {
       method: 'POST',
       headers: {
