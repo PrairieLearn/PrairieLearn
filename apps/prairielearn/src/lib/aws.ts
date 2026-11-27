@@ -24,13 +24,12 @@ const awsConfigProvider = makeAwsConfigProvider({
   }),
   getS3ClientConfig: () => {
     if (!config.runningInEc2) {
-      // If we're not running in EC2, assume we're running with a local s3rver instance.
-      // See https://github.com/jamhall/s3rver for more details.
+      // If we're not running in EC2, assume we're running with a local RustFS instance.
       return {
         forcePathStyle: true,
         credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
+          accessKeyId: 'rustfsadmin',
+          secretAccessKey: 'rustfsadmin',
         },
         endpoint: 'http://127.0.0.1:5000',
       };

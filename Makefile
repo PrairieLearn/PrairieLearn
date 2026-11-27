@@ -36,7 +36,10 @@ e2e-deps:
 
 deps:
 	@pnpm install
-	@$(MAKE) python-deps build
+	@$(MAKE) python-deps rustfs-deps build
+
+rustfs-deps:
+	@scripts/install_rustfs.sh
 
 migrate:
 	@pnpm migrate
@@ -54,7 +57,7 @@ dev-bun: python-deps
 	@pnpm dev-bun
 dev-workspace-host: start-support
 	@pnpm dev-workspace-host
-dev-all:
+dev-all: start-support
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
 start: start-support
@@ -69,13 +72,13 @@ start-all: start-support
 update-database-description:
 	@pnpm --filter @prairielearn/prairielearn exec pg-describe postgres -o ../../database
 
-start-support: start-postgres start-redis start-s3rver
+start-support: start-postgres start-redis start-rustfs
 start-postgres:
 	@scripts/start_postgres.sh
 start-redis:
 	@scripts/start_redis.sh
-start-s3rver:
-	@scripts/start_s3rver.sh
+start-rustfs:
+	@scripts/start_rustfs.sh
 
 # Runs additional tests that may not work in the container.
 test-all: test-js test-python test-e2e

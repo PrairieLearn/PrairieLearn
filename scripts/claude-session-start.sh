@@ -49,11 +49,12 @@ npm install -g 'pnpm@^12.17.0'
 make python-deps
 setup_succeeded=true
 time timeout 120 pnpm install || setup_succeeded=false
+make rustfs-deps || setup_succeeded=false
 
 # Start the support services.
 make start-postgres
 make start-redis
-# Starting s3rver in the session startup hook causes issues, so we wait to start it until
+# Starting RustFS in the session startup hook can cause issues, so we wait to start it until
 # `make dev` is run.
 
 # Playwright blocks downloads from within a remote Claude Code environment,
