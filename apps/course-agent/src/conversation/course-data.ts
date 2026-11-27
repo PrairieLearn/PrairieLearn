@@ -181,7 +181,7 @@ export async function getCourseData({
     elapsedMs: Date.now() - started,
   });
   const filters = (query.filters ?? []).map(describeFilter);
-  // Set for student data: the course instances whose rows PrairieLearn included.
+  // Set for student data: the included course instances, as `short_name: long_name`.
   const courseInstances = response.headers.get('X-Course-Agent-Course-Instances');
   return {
     success: true,

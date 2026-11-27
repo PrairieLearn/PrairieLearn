@@ -307,7 +307,11 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
       assert.isEmpty(await getRows(url, publicOnly, { select, filters: sp15Filter }), name);
 
       const included = await post(url, publicOnly, { select });
-      assert.equal(included.headers.get('X-Course-Agent-Course-Instances'), 'public', name);
+      assert.equal(
+        included.headers.get('X-Course-Agent-Course-Instances'),
+        encodeURIComponent('public: Public'),
+        name,
+      );
 
       const refused = await post(url, noStudentData, { select });
       assert.equal(refused.status, 403, name);

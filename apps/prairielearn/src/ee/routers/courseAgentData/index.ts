@@ -146,7 +146,11 @@ router.post(
       // Rows from other course instances are left out, so the course agent is told which it got.
       res.set(
         'X-Course-Agent-Course-Instances',
-        readableCourseInstances.map((ci) => encodeURIComponent(ci.short_name)).join(','),
+        readableCourseInstances
+          .map((ci) =>
+            encodeURIComponent(ci.long_name ? `${ci.short_name}: ${ci.long_name}` : ci.short_name),
+          )
+          .join(','),
       );
     }
     res.type('application/x-ndjson');
