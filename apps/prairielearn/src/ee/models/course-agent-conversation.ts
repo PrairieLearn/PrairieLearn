@@ -1,6 +1,10 @@
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { type CourseAgentConversation, CourseAgentConversationSchema } from '../../lib/db-types.js';
+import {
+  type CourseAgentConversation,
+  CourseAgentConversationSchema,
+  type EnumCourseAgentApprovalMode,
+} from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -18,15 +22,17 @@ export async function insertCourseAgentConversation({
   user_id,
   agent_conversation_id,
   title,
+  approval_mode,
 }: {
   course_id: string;
   user_id: string;
   agent_conversation_id: string;
   title: string;
+  approval_mode: EnumCourseAgentApprovalMode;
 }) {
   return await queryRow(
     sql.insert_course_agent_conversation,
-    { course_id, user_id, agent_conversation_id, title },
+    { course_id, user_id, agent_conversation_id, title, approval_mode },
     CourseAgentConversationSchema,
   );
 }
@@ -86,6 +92,21 @@ export async function updateCourseAgentConversationAutoApproveOffered(
   return await queryRow(
     sql.update_course_agent_conversation_auto_approve_offered,
     { id: conversation.id },
+    CourseAgentConversationSchema,
+  );
+}
+
+/** Applies to the next review the conversation submits. */
+export async function updateCourseAgentConversationApprovalMode({
+  conversation,
+  approval_mode,
+}: {
+  conversation: CourseAgentConversation;
+  approval_mode: EnumCourseAgentApprovalMode;
+}) {
+  return await queryRow(
+    sql.update_course_agent_conversation_approval_mode,
+    { id: conversation.id, approval_mode },
     CourseAgentConversationSchema,
   );
 }

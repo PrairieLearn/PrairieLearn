@@ -9,7 +9,6 @@ import { dir as temporaryDirectory } from 'tmp-promise';
 import { z } from 'zod';
 
 import {
-  type ApprovalMode,
   type PageCatalog,
   type RequestChangesResult,
   ReviewSchema,
@@ -40,7 +39,6 @@ export async function createCourseAgentConversation(binding: {
   repository: string;
   branch: string;
   pages: PageCatalog;
-  approvalMode: ApprovalMode;
 }): Promise<string> {
   return createConversation('conversations', JSON.stringify(binding), 'application/json');
 }
@@ -49,7 +47,6 @@ export async function createCourseAgentConversation(binding: {
 export async function createLocalCourseAgentConversation(
   coursePath: string,
   pages: PageCatalog,
-  approvalMode: ApprovalMode,
 ): Promise<string> {
   assert(config.devMode, 'Local course agent initialization is only available in development');
   const temporary = await temporaryDirectory({ unsafeCleanup: true });
@@ -98,7 +95,6 @@ export async function createLocalCourseAgentConversation(
       'X-PL-Course-Directory': encodeURIComponent(directory),
       // The body is the archive, so the catalog travels in a header.
       'X-PL-Pages': encodeURIComponent(JSON.stringify(pages)),
-      'X-PL-Approval-Mode': approvalMode,
     });
   } finally {
     await temporary.cleanup();
@@ -142,23 +138,6 @@ export async function resumeCourseAgentConversation(agentConversationId: string)
     );
   }
   return z.strictObject({ recovered: z.literal(true) }).parse(await response.json());
-}
-
-/** Applies to reviews the agent submits from now on; connected browsers see the change. */
-export async function setCourseAgentApprovalMode(
-  agentConversationId: string,
-  approvalMode: ApprovalMode,
-) {
-  const { url, headers } = buildCourseAgentServiceRequest(
-    `conversations/${encodeURIComponent(agentConversationId)}/approval-mode`,
-  );
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ approvalMode }),
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!response.ok) throw new error.HttpStatusError(502, 'Could not change the approval mode.');
 }
 
 /** The review and its snapshot, or null once the agent has received its result. */

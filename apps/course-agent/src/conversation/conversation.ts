@@ -10,7 +10,6 @@ import { type UIMessage, createUIMessageStreamResponse, parseJsonEventStream } f
 import { z } from 'zod';
 
 import {
-  type ApprovalMode,
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
@@ -20,6 +19,7 @@ import {
   type Review,
   type ReviewPart,
   type ReviewSnapshot,
+  ReviewSubmittedResponseSchema,
   type Usage,
   UsageDecisionSchema,
   type UsageReport,
@@ -101,8 +101,8 @@ const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
 // Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
 // within one decision.
 const MAX_PROVIDER_REQUESTS = 4;
-// Approving a review fetches its snapshot and starts the save.
-const AUTO_APPROVAL_TIMEOUT_MS = 30_000;
+// Auto-approving a review fetches its snapshot and starts the save before PrairieLearn answers.
+const REVIEW_REPORT_TIMEOUT_MS = 30_000;
 
 const OPENAI_API = 'https://api.openai.com';
 
@@ -222,8 +222,6 @@ interface RecordData {
    * the denial with that message, which the browser sends once PrairieLearn records the denial.
    */
   deniedByMessage?: string | null;
-  /** Set by PrairieLearn; absent means `approval_required`. */
-  approvalMode?: ApprovalMode;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
   /** User messages refused by the usage limit, sent to Codex with the next admitted message. */
@@ -276,7 +274,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     sandboxLost: false,
     reviewId: null,
     title: null,
-    approvalMode: 'approval_required',
   };
 
   private metering: MeteringState = {
@@ -353,7 +350,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
       title: this.record.title ?? null,
-      approvalMode: this.record.approvalMode ?? 'approval_required',
     };
     // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
     const retryAt = this.metering.limitedUntil;
@@ -432,7 +428,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * Set up conversation state and pin the course source and model.
    * The sandbox is created or restored when the first message arrives.
    */
-  initialize(config: CourseSource, pages?: PageCatalog, approvalMode?: ApprovalMode) {
+  initialize(config: CourseSource, pages?: PageCatalog) {
     if (this._record) throw new Error('Conversation is already initialized');
     // TODO: Define how existing sandboxes follow course repository/branch changes. Never
     // retarget an edited sandbox just because a reconnect supplies updated course labels.
@@ -450,7 +446,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: null,
       title: null,
       pages,
-      approvalMode,
     });
   }
 
@@ -471,11 +466,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     );
     // Idempotent: every connection shares one interval schedule.
     await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
-  }
-
-  /** Applies to reviews the agent submits from now on. */
-  setApprovalMode(approvalMode: ApprovalMode) {
-    this.setRecord({ ...this.record, approvalMode });
   }
 
   /** Clients ignore this message type; sending it only keeps proxied sockets from idling out. */
@@ -717,20 +707,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Asks PrairieLearn to approve a review because the conversation is on auto-approve, and
-   * returns whether it did. A review PrairieLearn did not approve waits for the instructor.
+   * Reports a new review to PrairieLearn, which approves it for the instructor if they chose
+   * auto-approve, and returns whether it did. Otherwise the review waits for the instructor.
    */
-  private async requestAutoApproval(reviewId: string) {
+  private async reportReview(reviewId: string) {
     try {
       const response = await this.postPlWebserver(
-        `conversations/${this.name}/reviews/${reviewId}/approve`,
-        {},
-        AUTO_APPROVAL_TIMEOUT_MS,
+        `conversations/${this.name}/reviews`,
+        { reviewId },
+        REVIEW_REPORT_TIMEOUT_MS,
       );
       if (!response.ok) throw new Error(`PrairieLearn answered ${response.status}`);
-      return true;
+      return ReviewSubmittedResponseSchema.parse(await response.json()).autoApproved;
     } catch (error) {
-      logEvent('review_auto_approval_failed', {
+      logEvent('review_report_failed', {
         conversationId: this.name,
         reviewId,
         error: String(error),
@@ -1407,8 +1397,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         waitsForResume: false,
       },
     });
-    const autoApproved =
-      this.record.approvalMode === 'always_approve' && (await this.requestAutoApproval(id));
+    const autoApproved = await this.reportReview(id);
     // Chat history shows the review by ID; its contents and outcome stay out of history. If the
     // turn ended meanwhile, the browser shows the conversation's pending review without this part.
     this.native?.emit({
@@ -1418,11 +1407,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
     return {
       success: true,
-      text: `${
-        autoApproved
-          ? 'Submitted the changes; edits after this point are not part of them. The instructor chose to approve changes without reviewing them, so they are being saved now. The result arrives in a later message.'
-          : 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message.'
-      } End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.`,
+      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.',
     };
   }
 

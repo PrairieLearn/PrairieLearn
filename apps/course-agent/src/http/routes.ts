@@ -1,9 +1,7 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
-import { z } from 'zod';
 
 import {
-  ApprovalModeSchema,
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
   MAX_THUMBNAIL_BYTES,
@@ -55,18 +53,12 @@ app.post('/conversations/local', async (c) => {
   }
   const pages = parsePagesHeader(c.req.header('X-PL-Pages'));
   if (!pages.success) return c.text('Invalid page catalog', 400);
-  const approvalMode = ApprovalModeSchema.optional().safeParse(c.req.header('X-PL-Approval-Mode'));
-  if (!approvalMode.success) return c.text('Invalid approval mode', 400);
   const id = crypto.randomUUID();
   const archiveKey = `local-sources/${id}.tar.gz`;
   await c.env.CHECKPOINTS.put(archiveKey, c.req.raw.body);
   try {
     const conversation = await getAgentByName(c.env.Conversation, id);
-    await conversation.initialize(
-      { type: 'local', archiveKey, directory },
-      pages.data,
-      approvalMode.data,
-    );
+    await conversation.initialize({ type: 'local', archiveKey, directory }, pages.data);
   } catch (error) {
     await c.env.CHECKPOINTS.delete(archiveKey);
     throw error;
@@ -79,12 +71,10 @@ app.post('/conversations', async (c) => {
   if (!input.success) return c.text('Invalid request', 400);
   const id = crypto.randomUUID();
   const conversation = await getAgentByName(c.env.Conversation, id);
-  const { pages, approvalMode, ...source } = input.data;
-  await conversation.initialize({ type: 'github', ...source }, pages, approvalMode);
+  const { pages, ...source } = input.data;
+  await conversation.initialize({ type: 'github', ...source }, pages);
   return c.json({ id }, 201);
 });
-
-const ApprovalModeBodySchema = z.strictObject({ approvalMode: ApprovalModeSchema });
 
 const conversations = new Hono<{ Bindings: Env }>();
 conversations.use('/:id/*', async (c, next) => {
@@ -114,14 +104,6 @@ conversations.post('/:id/resume', async (c) => {
     reportError(error);
     return c.json({ error: 'Could not recover the course agent' }, 503);
   }
-});
-
-conversations.put('/:id/approval-mode', async (c) => {
-  const body = ApprovalModeBodySchema.safeParse(await c.req.json().catch(() => null));
-  if (!body.success) return c.text('Invalid approval mode', 400);
-  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
-  await conversation.setApprovalMode(body.data.approvalMode);
-  return c.json(body.data);
 });
 
 // The browser uploads each attachment before sending the message that refers to it by ID.

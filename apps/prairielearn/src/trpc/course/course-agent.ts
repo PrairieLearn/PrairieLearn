@@ -1,7 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { ApprovalModeSchema, CreateConversationInput } from '@prairielearn/course-agent-types';
+import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -14,7 +15,6 @@ import {
 import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
-  setCourseAgentApprovalMode,
 } from '../../ee/lib/course-agent/client.js';
 import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
 import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
@@ -22,6 +22,7 @@ import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
+  updateCourseAgentConversationApprovalMode,
   updateCourseAgentConversationAutoApproveOffered,
   updateCourseAgentConversationTitle,
 } from '../../ee/models/course-agent-conversation.js';
@@ -35,6 +36,7 @@ import {
 } from '../../ee/models/course-agent-user-settings.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import { EnumCourseAgentApprovalModeSchema } from '../../lib/db-types.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
@@ -133,7 +135,10 @@ export const courseAgentRouter = t.router({
   // The browser sends the mode it shows, so the new conversation starts in that mode.
   create: courseAgentProcedure
     .input(
-      z.object({ text: z.string().trim().min(1).max(20_000), approvalMode: ApprovalModeSchema }),
+      z.object({
+        text: z.string().trim().min(1).max(20_000),
+        approvalMode: EnumCourseAgentApprovalModeSchema,
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const agentConversationId = await run(async () => {
@@ -141,7 +146,6 @@ export const courseAgentRouter = t.router({
           return createLocalCourseAgentConversation(
             ctx.course.path,
             buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
-            input.approvalMode,
           );
         } else {
           const repository = parseGithubRepository(ctx.course.repository ?? '');
@@ -164,7 +168,6 @@ export const courseAgentRouter = t.router({
           return createCourseAgentConversation({
             ...binding.data,
             pages: buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
-            approvalMode: input.approvalMode,
           });
         }
       });
@@ -173,37 +176,51 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
         agent_conversation_id: agentConversationId,
         title: formatCourseAgentConversationTitle(input.text),
+        approval_mode: input.approvalMode,
       });
       return StaffCourseAgentConversationSchema.parse(conversation);
     }),
 
   /** The mode a new conversation starts in: the one the user last chose in this course. */
-  defaultApprovalMode: courseAgentProcedure.output(ApprovalModeSchema).query(async ({ ctx }) => {
-    const settings = await selectCourseAgentUserSettings({
-      user_id: ctx.locals.authn_user.id,
-      course_id: ctx.course.id,
-    });
-    return settings.default_approval_mode;
-  }),
-
-  // The conversation keeps its own mode; PrairieLearn remembers the choice for new conversations.
-  // Without a conversation, only the choice for new conversations changes.
-  setApprovalMode: courseAgentProcedure
-    .input(z.object({ conversationId: IdSchema.optional(), approvalMode: ApprovalModeSchema }))
-    .mutation(async ({ ctx, input }) => {
-      if (input.conversationId) {
-        const conversation = await selectOptionalCourseAgentConversation({
-          id: input.conversationId,
-          course_id: ctx.course.id,
-          user_id: ctx.locals.authn_user.id,
-        });
-        if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-        await setCourseAgentApprovalMode(conversation.agent_conversation_id, input.approvalMode);
-      }
-      await updateCourseAgentUserDefaultApprovalMode({
+  defaultApprovalMode: courseAgentProcedure
+    .output(EnumCourseAgentApprovalModeSchema)
+    .query(async ({ ctx }) => {
+      const settings = await selectCourseAgentUserSettings({
         user_id: ctx.locals.authn_user.id,
         course_id: ctx.course.id,
-        default_approval_mode: input.approvalMode,
+      });
+      return settings.default_approval_mode;
+    }),
+
+  // Sets the conversation's mode, if one is given, and remembers the choice for new conversations.
+  setApprovalMode: courseAgentProcedure
+    .input(
+      z.object({
+        conversationId: IdSchema.optional(),
+        approvalMode: EnumCourseAgentApprovalModeSchema,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return await runInTransactionAsync(async () => {
+        const conversation = await run(async () => {
+          if (!input.conversationId) return null;
+          const conversation = await selectOptionalCourseAgentConversation({
+            id: input.conversationId,
+            course_id: ctx.course.id,
+            user_id: ctx.locals.authn_user.id,
+          });
+          if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+          return await updateCourseAgentConversationApprovalMode({
+            conversation,
+            approval_mode: input.approvalMode,
+          });
+        });
+        await updateCourseAgentUserDefaultApprovalMode({
+          user_id: ctx.locals.authn_user.id,
+          course_id: ctx.course.id,
+          default_approval_mode: input.approvalMode,
+        });
+        return conversation && StaffCourseAgentConversationSchema.parse(conversation);
       });
     }),
 

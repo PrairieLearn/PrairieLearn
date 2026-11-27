@@ -61,6 +61,7 @@ function createConversation(user: User) {
     user_id: user.id,
     agent_conversation_id: crypto.randomUUID(),
     title: 'Test conversation',
+    approval_mode: 'approval_required',
   });
 }
 
@@ -306,7 +307,7 @@ describe('Course agent access and conversation privacy', () => {
     ]);
   });
 
-  test("tells only the caller's own conversation its approval mode, and remembers it", async () => {
+  test("changes only the caller's own conversation's approval mode, and remembers it", async () => {
     const own = await createConversation(owner);
     const other = await createConversation(otherOwner);
     await withUser(owner, async () => {
@@ -317,18 +318,46 @@ describe('Course agent access and conversation privacy', () => {
           approvalMode: 'always_approve',
         }),
       ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
-      await client.courseAgent.setApprovalMode.mutate({
-        conversationId: own.id,
-        approvalMode: 'always_approve',
-      });
+      expect(
+        await client.courseAgent.setApprovalMode.mutate({
+          conversationId: own.id,
+          approvalMode: 'always_approve',
+        }),
+      ).toMatchObject({ id: own.id, approval_mode: 'always_approve' });
       expect(await client.courseAgent.defaultApprovalMode.query()).toBe('always_approve');
     });
-    expect(serviceRequests.map(({ path, body }) => ({ path, body }))).toEqual([
-      {
-        path: `/conversations/${own.agent_conversation_id}/approval-mode`,
-        body: { approvalMode: 'always_approve' },
-      },
+    const stored = await Promise.all(
+      [own, other].map((conversation) =>
+        selectOptionalCourseAgentConversation({
+          id: conversation.id,
+          course_id: '1',
+          user_id: conversation.user_id,
+        }),
+      ),
+    );
+    expect(stored.map((conversation) => conversation?.approval_mode)).toEqual([
+      'always_approve',
+      'approval_required',
     ]);
+    expect(serviceRequests).toEqual([]);
+  });
+
+  test("answers a review report from the agent service with the conversation's mode", async () => {
+    const conversation = await createConversation(owner);
+    const reportReview = (token = 'test-token') =>
+      fetch(
+        `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/reviews`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reviewId: crypto.randomUUID() }),
+        },
+      );
+    expect((await reportReview('wrong')).status).toBe(401);
+    const response = await reportReview();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ autoApproved: false });
+    expect(serviceRequests).toEqual([]);
   });
 
   test('downloads a sent file, and displays an image preview', async () => {
@@ -388,7 +417,6 @@ describe('Course agent access and conversation privacy', () => {
           repository: 'PrairieLearn/test-course',
           branch: 'pilot-edits',
           pages: expect.arrayContaining([expect.objectContaining({ key: 'assessment.settings' })]),
-          approvalMode: 'always_approve',
         },
         authorization: 'Bearer test-token',
       },
@@ -398,7 +426,10 @@ describe('Course agent access and conversation privacy', () => {
       course_id: '1',
       user_id: owner.id,
     });
-    expect(stored!.agent_conversation_id).toBe(serviceConversationId);
+    expect(stored).toMatchObject({
+      agent_conversation_id: serviceConversationId,
+      approval_mode: 'always_approve',
+    });
   });
 
   test('rejects unbound creation before calling the service or recording a conversation', async () => {

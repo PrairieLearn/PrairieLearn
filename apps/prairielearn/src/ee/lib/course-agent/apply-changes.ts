@@ -14,6 +14,7 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  type ReviewSubmittedResponse,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -269,13 +270,17 @@ export async function postReviewDecision({
 }
 
 /**
- * Handles the conversation's auto-approval request (`requestAutoApproval` in the agent service).
- * The owner must still be able to use the course agent in the course; the approval is then theirs,
- * with the same checks and saving as when they click "Approve once".
+ * Handles the agent service's report of a review the agent just submitted. If the conversation
+ * auto-approves, and its owner can still use the course agent in the course, the review is
+ * approved as theirs, with the same checks and saving as when they click "Approve once".
  */
-export async function approveReviewForOwner(agentConversationId: string, reviewId: string) {
+export async function handleSubmittedReview(
+  agentConversationId: string,
+  reviewId: string,
+): Promise<ReviewSubmittedResponse> {
   const conversation = await selectOptionalCourseAgentConversationByAgentId(agentConversationId);
   if (!conversation) throw new HttpStatusError(404, 'Conversation not found.');
+  if (conversation.approval_mode !== 'always_approve') return { autoApproved: false };
   const user = await selectUserById(conversation.user_id);
   const { authzData, course, institution } = await constructCourseOrInstanceContext({
     user,
@@ -299,9 +304,9 @@ export async function approveReviewForOwner(agentConversationId: string, reviewI
       },
     }))
   ) {
-    throw new HttpStatusError(403, 'The conversation owner cannot use the course agent here.');
+    return { autoApproved: false };
   }
-  return await postReviewDecision({
+  await postReviewDecision({
     course,
     conversation,
     user,
@@ -312,6 +317,7 @@ export async function approveReviewForOwner(agentConversationId: string, reviewI
     reviewId,
     decision: 'approved',
   });
+  return { autoApproved: true };
 }
 
 async function applyChanges(

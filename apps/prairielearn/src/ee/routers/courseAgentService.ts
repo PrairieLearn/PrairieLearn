@@ -3,13 +3,13 @@ import { timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { UsageReportSchema } from '@prairielearn/course-agent-types';
+import { ReviewSubmittedReportSchema, UsageReportSchema } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { parseRequest } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { approveReviewForOwner } from '../lib/course-agent/apply-changes.js';
+import { handleSubmittedReview } from '../lib/course-agent/apply-changes.js';
 import { recordCourseAgentUsageReport } from '../lib/course-agent/usage.js';
 
 /** Requests from the course agent service, which authenticates with its service token. */
@@ -41,18 +41,17 @@ router.post(
   }),
 );
 
-const ApproveRequestSchemas = {
-  params: z.strictObject({ agentId: z.uuid(), reviewId: z.uuid() }),
+const ReviewRequestSchemas = {
+  params: z.strictObject({ agentId: z.uuid() }),
   query: z.strictObject({}),
-  body: z.strictObject({}),
+  body: ReviewSubmittedReportSchema,
 };
 
-// The conversation submitted a review while its owner chose auto-approve.
 router.post(
-  '/conversations/:agentId/reviews/:reviewId/approve',
+  '/conversations/:agentId/reviews',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const { params } = parseRequest(req, ApproveRequestSchemas);
-    res.json(await approveReviewForOwner(params.agentId, params.reviewId));
+    const { params, body } = parseRequest(req, ReviewRequestSchemas);
+    res.json(await handleSubmittedReview(params.agentId, body.reviewId));
   }),
 );
 

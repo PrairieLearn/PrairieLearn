@@ -36,7 +36,6 @@ export type ConversationState = ConversationLifecycle & {
   reviewId: string | null;
   /** Generated from the first message; PrairieLearn shows its own fallback until then. */
   title: string | null;
-  approvalMode: ApprovalMode;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
@@ -73,20 +72,11 @@ export const PageCatalogSchema = z
 
 export type PageCatalog = z.infer<typeof PageCatalogSchema>;
 
-/**
- * Whether the instructor decides each `request_changes` review, or the conversation has PrairieLearn
- * approve it as soon as the agent submits it.
- */
-export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
-
-export type ApprovalMode = z.infer<typeof ApprovalModeSchema>;
-
 export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
   // Optional so the Worker can deploy before PrairieLearn starts sending it.
   pages: PageCatalogSchema.optional(),
-  approvalMode: ApprovalModeSchema.optional(),
 });
 
 // Leave room for base64 encoding within the Durable Object's 2 MB storage-entry limit.
@@ -352,6 +342,16 @@ export const ReviewPartSchema = z.object({
 });
 
 export type ReviewPart = z.infer<typeof ReviewPartSchema>;
+
+/** The Worker reports each review the agent submits to PrairieLearn. */
+export const ReviewSubmittedReportSchema = z.strictObject({ reviewId: z.uuid() });
+
+export type ReviewSubmittedReport = z.infer<typeof ReviewSubmittedReportSchema>;
+
+/** Whether PrairieLearn approved the review for its owner because the conversation auto-approves. */
+export const ReviewSubmittedResponseSchema = z.strictObject({ autoApproved: z.boolean() });
+
+export type ReviewSubmittedResponse = z.infer<typeof ReviewSubmittedResponseSchema>;
 
 /**
  * Input the agent requested from staff with Codex's `request_user_input_async`, in a

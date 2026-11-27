@@ -1,5 +1,3 @@
-CREATE TYPE enum_course_agent_approval_mode AS ENUM('approval_required', 'always_approve');
-
 CREATE TABLE IF NOT EXISTS course_agent_user_settings (
   user_id bigint NOT NULL REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
   course_id bigint NOT NULL REFERENCES courses ON UPDATE CASCADE ON DELETE CASCADE,
