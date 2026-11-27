@@ -35,6 +35,8 @@ dnf -y install \
     texlive-type1cm \
     tmux
 
+SEAWEEDFS_INSTALL_DIR=/usr/local/bin /PrairieLearn/scripts/install_seaweedfs.sh
+
 # Valkey uses different executable names than Redis. Symlink them to the names
 # expected by the existing startup scripts.
 ln -s /usr/bin/valkey-cli /usr/bin/redis-cli && ln -s /usr/bin/valkey-server /usr/bin/redis-server

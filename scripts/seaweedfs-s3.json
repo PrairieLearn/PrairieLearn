@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "local",
+      "credentials": [{ "accessKey": "S3RVER", "secretKey": "S3RVER" }],
+      "actions": ["Admin", "Read", "List", "Tagging", "Write"]
+    }
+  ]
+}

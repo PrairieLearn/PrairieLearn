@@ -14,6 +14,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
   - [pgvector](https://github.com/pgvector/pgvector)
+  - `curl`, `tar`, and `lsof`
 
 Most of these prerequisites can be installed using the package manager of your OS:
 
@@ -23,7 +24,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
     ```sh
     sudo apt update
-    sudo apt install git gcc g++ make libc6-dev graphviz libgraphviz-dev redis postgresql-common
+    sudo apt install git gcc g++ make libc6-dev graphviz libgraphviz-dev redis postgresql-common curl lsof
     # Configure Postgres repository
     sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
     sudo apt install postgresql-17 postgresql-17-pgvector
@@ -140,10 +141,13 @@ Most of these prerequisites can be installed using the package manager of your O
 
   ```sh
   pnpm install
+  make seaweedfs-deps
   make build
   make python-deps
   make e2e-deps
   ```
+
+  SeaweedFS provides local S3-compatible storage and uses loopback ports 5000, 8080, 8888, 9333, 15000, 18080, 18888, and 19333. The installer downloads a pinned release for Linux or macOS on x86-64 or ARM64. On other platforms, install a compatible `weed` executable on your `PATH` instead. Data previously stored by s3rver is not automatically migrated and remains in the `s3rver` directory.
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 

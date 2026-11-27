@@ -52,7 +52,7 @@ const s3 = new S3Client(
 
 The config for S3 clients can be customized independently to support pointing it to other S3-compatible stores.
 
-For instance, to use [`s3rver`](https://github.com/jamhall/s3rver) when running in dev mode, you could use something like the following config:
+For instance, to use [SeaweedFS](https://github.com/seaweedfs/seaweedfs) when running in dev mode, you could use something like the following config:
 
 ```ts
 const awsConfigProvider = makeAwsConfigProvider({
@@ -60,7 +60,7 @@ const awsConfigProvider = makeAwsConfigProvider({
   getClientConfig: () => ({
     region: 'us-east-2',
   }),
-  makeS3ClientConfig: () => {
+  getS3ClientConfig: () => {
     if (process.env.NODE_ENV !== 'production') {
       return {
         forcePathStyle: true,
