@@ -14,7 +14,7 @@ import {
   hasRole,
   isCourseInstanceRole,
 } from '../../../lib/authz-data-lib.js';
-import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
   type CourseInstanceAuthz,
   selectCourseInstancesWithStaffAccess,
@@ -49,16 +49,6 @@ router.use(
   }),
 );
 
-/** The user's course instances, with their student data permissions in each. */
-async function selectStaffCourseInstances(locals: ResLocalsForPage<'course'>) {
-  const authzData = CoursePageAuthzDataSchema.parse(locals.authz_data);
-  const courseInstances = await selectCourseInstancesWithStaffAccess({
-    course: locals.course,
-    authzData,
-  });
-  return { authzData, courseInstances };
-}
-
 /** Whether the user has one of `requiredRole` in this course instance. */
 function hasRoleInCourseInstance(
   authzData: z.infer<typeof CoursePageAuthzDataSchema>,
@@ -83,18 +73,9 @@ function missingRoleMessage(requiredRole: Role[]) {
   return `The instructor needs ${requiredRole.join(' or ')} access ${where} for this, which they do not have. Tell them, and do not retry. A course Owner can grant it on the Staff page.`;
 }
 
-router.get(
-  '/',
-  typedAsyncHandler<'course'>(async (req, res) => {
-    const { authzData, courseInstances } = await selectStaffCourseInstances(res.locals);
-    res.send({
-      ...SCHEMA,
-      student_data_course_instances: courseInstances
-        .filter((ci) => hasRoleInCourseInstance(authzData, ci, ['Student Data Viewer']))
-        .map((ci) => ci.short_name),
-    });
-  }),
-);
+router.get('/', (req, res) => {
+  res.send(SCHEMA);
+});
 
 // A POST because the request is a JSON document; it only reads data.
 router.post(
@@ -115,7 +96,11 @@ router.post(
 
     let courseInstanceIds: string[] | null = null;
     if (dataset.requiredRole.some(isCourseInstanceRole)) {
-      const { authzData, courseInstances } = await selectStaffCourseInstances(res.locals);
+      const authzData = CoursePageAuthzDataSchema.parse(res.locals.authz_data);
+      const courseInstances = await selectCourseInstancesWithStaffAccess({
+        course: res.locals.course,
+        authzData,
+      });
       const permitted = courseInstances.filter((ci) =>
         hasRoleInCourseInstance(authzData, ci, dataset.requiredRole),
       );

@@ -22,8 +22,6 @@ const ColumnSchema = JsonSchemaProperty.extend({
 });
 const SchemaResponse = z.object({
   version: z.number(),
-  /** Course instances where the instructor can see student data. */
-  student_data_course_instances: z.array(z.string()).optional(),
   datasets: z.record(
     z.string(),
     z.object({
@@ -51,22 +49,9 @@ function describeColumn(name: string, property: z.infer<typeof ColumnSchema>) {
   return `  ${name} (${type}${nullable ? ', nullable' : ''})${description ? `: ${description}` : ''}`;
 }
 
-function describeStudentDataAccess(courseInstances: string[] | undefined) {
-  if (courseInstances === undefined) return [];
-  if (courseInstances.length === 0) {
-    return [
-      "The instructor can't see student data, such as attempts and submissions, in any course instance, so PrairieLearn refuses those reads. If they ask for student data, tell them a course Owner can grant access on the Staff page. Course content, including the statistics in assessment_questions, covers every course instance.",
-    ];
-  }
-  return [
-    `Student data, such as attempts and submissions, only includes the course instances where the instructor can see it: ${courseInstances.join(', ')}. If they ask about another course instance, tell them they don't have student data access there; a course Owner can grant it on the Staff page. Course content, including the statistics in assessment_questions, covers every course instance.`,
-  ];
-}
-
 function describeSchema(schema: z.infer<typeof SchemaResponse>) {
   return [
     `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC, so convert them to the course instance's display_timezone before grouping by day. Results carry course_instance_short_name, assessment_tid, and qid, the directory names in the course files, so filter by those rather than looking up IDs. Select the columns you need; any column can be filtered (eq, lt, lte, gt, gte, or in with a list of up to ${COURSE_DATA_MAX_IN_VALUES} values) or sorted on.`,
-    ...describeStudentDataAccess(schema.student_data_course_instances),
     ...Object.entries(schema.datasets).flatMap(([name, dataset]) => [
       '',
       `${name}: ${dataset.description}`,

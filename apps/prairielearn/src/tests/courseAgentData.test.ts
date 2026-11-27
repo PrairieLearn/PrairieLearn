@@ -328,16 +328,4 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
     });
     assert.equal((await post(`${dataUrl}/submissions`, headers, body)).status, 403);
   });
-
-  test('the dataset list names the course instances whose student data the user can see', async function () {
-    const list = async (headers: Record<string, string>) => {
-      const res = await fetch(dataUrl, { headers });
-      assert.equal(res.status, 200);
-      return (await res.json()) as { student_data_course_instances: string[] };
-    };
-
-    assert.deepEqual((await list(owner)).student_data_course_instances, ['Sp15']);
-    const noStudentData = await staffHeaders('no-student-data@example.com', 'Owner');
-    assert.deepEqual((await list(noStudentData)).student_data_course_instances, []);
-  });
 });
