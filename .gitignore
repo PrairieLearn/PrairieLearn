@@ -7,7 +7,7 @@
 /start-custom.sh
 scripts/migration-report.html
 
-## s3rver S3 emulation data directory
+## Legacy s3rver data directory
 /s3rver
 
 ### https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
@@ -85,9 +85,6 @@ __pycache__/
 
 ## macOS files
 .DS_Store
-
-## s3rver file store
-/s3rver
 
 ## Turborepo caches
 .turbo

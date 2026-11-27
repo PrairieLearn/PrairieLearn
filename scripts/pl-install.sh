@@ -33,7 +33,10 @@ dnf -y install \
     texlive \
     texlive-dvipng \
     texlive-type1cm \
-    tmux
+    tmux \
+    unzip
+
+RUSTFS_INSTALL_DIR=/usr/local/bin /PrairieLearn/scripts/install_rustfs.sh
 
 # Valkey uses different executable names than Redis. Symlink them to the names
 # expected by the existing startup scripts.

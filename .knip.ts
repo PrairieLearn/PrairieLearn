@@ -91,7 +91,6 @@ const CLI_ONLY_DEPS = [
   'htmlhint',
   'markdownlint-cli2',
   'pyright',
-  's3rver',
   '@postgres-language-server/cli',
   '@typescript/native',
   '@prairielearn/pin-github-actions',

@@ -44,6 +44,9 @@ runs:
     - name: Install Node dependencies
       shell: bash
       run: pnpm install
+    - name: Install RustFS
+      shell: bash
+      run: make rustfs-deps
     - name: Install Playwright browsers
       if: inputs.install-playwright-browsers == 'true'
       shell: bash
